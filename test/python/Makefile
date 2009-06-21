@@ -33,10 +33,10 @@ OBJECTS.2=$(SOURCES.2:.c=.o)
 
 all: $(TARGET.1) $(TARGET.2)
 
-$(TARGET.1): $(OBJECTS.1)
+$(TARGET.1): $(OBJECTS.1) ../../hlhdf/libhlhdf.a ../../pyhlhdf/libpyhlhdf.a
 	$(LDSHARED) -o $@ $(OBJECTS.1) $(LDFLAGS) $(LIBRARIES)
 
-$(TARGET.2): $(OBJECTS.2)
+$(TARGET.2): $(OBJECTS.2) ../../hlhdf/libhlhdf.a ../../pyhlhdf/libpyhlhdf.a
 	$(LDSHARED) -o $@ $(OBJECTS.2) $(LDFLAGS) $(LIBRARIES)
 
 clean:
@@ -44,6 +44,7 @@ clean:
 	@\rm -f *~
 	@\rm -f so_locations
 	@\rm -f core
+	@\rm -f *.pyc
 
 distclean:
 	@\rm -f *.o
@@ -51,6 +52,7 @@ distclean:
 	@\rm -f $(TARGET.2)
 	@\rm -f *~ core
 	@\rm -f so_locations
+	@\rm -f *.pyc
 
 distribution:
 	@echo "Would bring the latest revision upto date"

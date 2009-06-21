@@ -86,5 +86,5 @@ install:
 		cd $$TDIR; \
 	done
 	@$(HL_INSTALL) -f -o -C -m644 def.mk $(prefix)/mkf/hldef.mk
-	@$(HL_INSTALL) -f -o -C install-sh.sh $(prefix)/bin/hlinstall.sh
+	@$(HL_INSTALL) -f -o -C ./tools/install-sh.sh $(prefix)/bin/hlinstall.sh
 

@@ -53,6 +53,7 @@ writeHL_NodeList(nodelist, NULL, &compr);
 \li createGroup has been removed. Same behaviour can be achieved by using H5G apis.
 \li setTypeSize has been removed, use H5Tset_size instead.
 \li createStringType has been removed, use H5T apis instead.
+\li closeHlHdfFile has been removed, use H5Fclose instead.
 \verbatim
 type = H5Tcopy(H5T_C_S1);
 H5Tset_size(type,length);

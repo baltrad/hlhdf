@@ -624,6 +624,38 @@ fail:
   return status;
 }
 
+/**
+ * Appends an REFERENCE node to the data structure. The parentNode can be either
+ * of type GROUP or DATASET.
+ * @param[in] file_id The file reference
+ * @param[in] parentNode The parent node of the datatype to be written.
+ * @param[in] parentName The name of the parent node.
+ * @param[in] childNode The node to be written.
+ * @param[in] childName the attributes name.
+ * @return 1 on success, otherwise 0
+ */
+static int doAppendHdf5Reference(hid_t rootGrp, hid_t file_id, HL_Node* parentNode,
+  char* parentName, HL_Node* childNode, char* childName)
+{
+  hid_t tmpLocId = -1;
+  HL_DEBUG0("ENTER: doWriteHdf5Reference");
+  if (!parentName || !childName) {
+    HL_ERROR0("Can't write HDF5 dataset since either parentName or childName is NULL");
+    return 0;
+  }
+  if (strcmp(parentName, "") == 0) {
+    tmpLocId = rootGrp;
+  } else {
+    tmpLocId = parentNode->hdfId;
+  }
+  if (createReference(tmpLocId, file_id, childName, (char*) childNode->data) < 0) {
+    HL_ERROR3("Failed to create reference from '%s/%s' to '%s'",
+        parentName,childName, (char*)childNode->data);
+    return 0;
+  }
+  return 1;
+}
+
 /*@} End of Private functions */
 
 /*@{ Interface functions */
@@ -636,15 +668,16 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
   char childName[256];
   hid_t file_id = -1;
   hid_t gid = -1;
-  hid_t strhid = -1;
+
   HL_DEBUG0("ENTER: writeHL_NodeList");
   if ((file_id = createHlHdfFile(nodelist->filename, property)) < 0) {
-    return 0;
+    HL_DEBUG0("Failed to create HDF5 file");
+    goto fail;;
   }
 
   if ((gid = H5Gopen(file_id, ".", H5P_DEFAULT)) < 0) {
-    HL_H5F_CLOSE(file_id);
-    return 0;
+    HL_DEBUG0("Failed to open root group");
+    goto fail;
   }
 
   for (i = 0; i < nodelist->nNodes; i++) {
@@ -708,13 +741,13 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
 
   HL_H5G_CLOSE(gid);
   HL_H5F_CLOSE(file_id);
-  HL_H5T_CLOSE(strhid);
+  HL_DEBUG0("EXIT: writeHL_NodeList");
   return 1;
 
 fail:
   HL_H5G_CLOSE(gid);
   HL_H5F_CLOSE(file_id);
-  HL_H5T_CLOSE(strhid);
+  HL_DEBUG0("EXIT: writeHL_NodeList with error");
 
   return 0;
 }
@@ -727,11 +760,16 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
   char childName[256];
   hid_t file_id = -1;
   hid_t gid = -1;
-  hid_t strhid = -1;
 
+  HL_DEBUG0("ENTER: updateHL_NodeList");
   if ((file_id = openHlHdfFile(nodelist->filename, "rw")) < 0) {
     HL_ERROR1("Failed to open file %s\n", nodelist->filename);
-    return 0;
+    goto fail;
+  }
+
+  if ((gid = H5Gopen(file_id, ".", H5P_DEFAULT)) < 0) {
+    HL_ERROR0("Failed to open root group\n");
+    goto fail;
   }
 
   for (i = 0; i < nodelist->nNodes; i++) {
@@ -745,7 +783,6 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
         HL_ERROR1("Failed to locate parent node '%s'\n", parentName);
         goto fail;
       }
-
       switch (nodelist->nodes[i]->type) {
       case ATTRIBUTE_ID: {
         if (!doAppendHdf5Attribute(file_id, parentNode, parentName,
@@ -763,12 +800,12 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
       }
       case DATASET_ID: {
         if (compression != NULL) {
-          if (!doAppendHdf5Dataset(gid, parentNode, parentName,
+          if (!doAppendHdf5Dataset(file_id, parentNode, parentName,
                                    nodelist->nodes[i], childName, compression)) {
             goto fail;
           }
         } else {
-          if (!doAppendHdf5Dataset(gid, parentNode, parentName,
+          if (!doAppendHdf5Dataset(file_id, parentNode, parentName,
                                    nodelist->nodes[i], childName,
                                    nodelist->nodes[i]->compression)) {
             goto fail;
@@ -782,8 +819,15 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
           goto fail;
         break;
       }
+      case REFERENCE_ID: {
+        if (!doAppendHdf5Reference(gid, file_id, parentNode, parentName,
+                                   nodelist->nodes[i], childName))
+          goto fail;
+        break;
+      }
       default: {
-        fprintf(stderr, "Unrecognized type\n");
+        HL_ERROR1("Unsupported node type for update '%d'\n", nodelist->nodes[i]->type);
+        goto fail;
         break;
       }
       }
@@ -792,13 +836,13 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
 
   HL_H5G_CLOSE(gid);
   HL_H5F_CLOSE(file_id);
-  HL_H5T_CLOSE(strhid);
+  HL_DEBUG0("EXIT: updateHL_NodeList");
   return 1;
 
 fail:
   HL_H5G_CLOSE(gid);
   HL_H5F_CLOSE(file_id);
-  HL_H5T_CLOSE(strhid);
+  HL_DEBUG0("EXIT: updateHL_NodeList with error");
   return 0;
 }
 

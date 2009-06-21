@@ -26,13 +26,6 @@ hid_t openHlHdfFile(const char* filename,const char* how);
 hid_t createHlHdfFile(const char* filename, HL_FileCreationProperty* property);
 
 /**
- * Closes a HDF5 file identifier.
- * @param[in] file_id the file identifier to be closed
- * @return the errors as specified by H5Fclose().
- */
-herr_t closeHlHdfFile(hid_t file_id);
-
-/**
  * Translates a HDF5 type identifier into a native type identifier. This identifier
  * is used within the HLHDF library.
  * @param[in] type the type that should be translated

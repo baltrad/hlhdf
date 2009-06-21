@@ -136,11 +136,12 @@ static int checkIfReferenceMatch(hid_t loc_id, char* path, hobj_ref_t* ref)
 
 static void markAllNodes(HL_NodeList* nodelist, HL_NodeMark mark)
 {
-   int i;
-   HL_DEBUG0("ENTER: markAllNodes");
-   for(i=0;i<nodelist->nNodes;i++) {
-      nodelist->nodes[i]->mark = mark;
-   }
+  int i;
+  HL_SPEWDEBUG0("ENTER: markAllNodes");
+  for (i = 0; i < nodelist->nNodes; i++) {
+    nodelist->nodes[i]->mark = mark;
+  }
+  HL_SPEWDEBUG0("EXIT: markAllNodes");
 }
 
 
@@ -642,7 +643,7 @@ static int fillTypeNode(hid_t file_id, HL_Node* node)
   hid_t obj = -1;
   HL_CompoundTypeDescription* typelist = NULL;
   H5G_stat_t statbuf;
-  HL_DEBUG0("ENTER: fillTypeNode");
+  HL_SPEWDEBUG0("ENTER: fillTypeNode");
 
   if ((obj = H5Topen(file_id, node->name, H5P_DEFAULT)) < 0) {
     return 0;
@@ -821,7 +822,7 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
 
   if ((file_id = openHlHdfFile(filename, "r")) < 0) {
     HL_ERROR1("Failed to open file %s",filename);
-    return NULL;
+    goto fail;
   }
 
   if (!(retv = newHL_NodeList())) {
@@ -833,8 +834,7 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
     HL_ERROR0("Failed to open root group");
     goto fail;
   }
-  H5Aiterate(gid, H5_INDEX_NAME, H5_ITER_INC, NULL, groupAttributeIterator,
-    retv);
+  H5Aiterate(gid, H5_INDEX_NAME, H5_ITER_INC, NULL, groupAttributeIterator, retv);
   HL_H5G_CLOSE(gid);
 
   if (H5Giterate(file_id, fromPath, NULL, groupIterator, retv) < 0) {
@@ -846,12 +846,14 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
 
   HL_H5F_CLOSE(file_id);
   HL_H5G_CLOSE(gid);
+  HL_DEBUG0("EXIT: readHL_NodeListFrom ");
   return retv;
 
 fail:
   HL_H5F_CLOSE(file_id);
   HL_H5G_CLOSE(gid);
   freeHL_NodeList(retv);
+  HL_DEBUG0("EXIT: readHL_NodeListFrom with Error");
   return NULL;
 }
 
@@ -860,8 +862,13 @@ fail:
  * --------------------------------------- */
 HL_NodeList* readHL_NodeList(const char* filename)
 {
+  HL_NodeList* retv = NULL;
   HL_DEBUG0("ENTER: readHL_NodeList");
-  return readHL_NodeListFrom(filename, ".");
+
+  retv = readHL_NodeListFrom(filename, ".");
+
+  HL_DEBUG0("EXIT: readHL_NodeList");
+  return retv;
 }
 
 /* ---------------------------------------
@@ -953,7 +960,7 @@ int fetchMarkedNodes(HL_NodeList* nodelist)
   hid_t file_id = -1;
   hid_t gid = -1;
   HL_DEBUG0("ENTER: fetchMarkedNodes");
-  if (!(file_id = openHlHdfFile(nodelist->filename, "r")) < 0) {
+  if ((file_id = openHlHdfFile(nodelist->filename, "r")) < 0) {
     HL_ERROR1("Could not open file '%s' when fetching data",nodelist->filename);
     return 0;
   }
@@ -971,13 +978,14 @@ int fetchMarkedNodes(HL_NodeList* nodelist)
       }
     }
   }
-
   HL_H5F_CLOSE(file_id);
   HL_H5G_CLOSE(gid);
+  HL_DEBUG0("EXIT: fetchMarkedNodes");
   return 1;
 fail:
   HL_H5F_CLOSE(file_id);
   HL_H5G_CLOSE(gid);
+  HL_DEBUG0("EXIT: fetchMarkedNodes with Error");
   return 0;
 }
 
@@ -993,6 +1001,7 @@ HL_Node* fetchNode(HL_NodeList* nodelist, const char* name)
   int foundIndex = 0;
   HL_Node* result = NULL;
 
+  HL_DEBUG0("ENTER: fetchNode");
   if (!name) {
     HL_ERROR0("Can not fetchNode when name is NULL");
     goto fail;
@@ -1007,12 +1016,12 @@ HL_Node* fetchNode(HL_NodeList* nodelist, const char* name)
 
   if (!found) {
     HL_ERROR1("No node: '%s' found", name);
-    return 0;
+    goto fail;
   }
 
   if (!(file_id = openHlHdfFile(nodelist->filename, "r")) < 0) {
     HL_ERROR1("Could not open file '%s' when fetching data",nodelist->filename);
-    return 0;
+    goto fail;
   }
 
   if ((gid = H5Gopen(file_id, ".", H5P_DEFAULT)) < 0) {
@@ -1029,6 +1038,7 @@ HL_Node* fetchNode(HL_NodeList* nodelist, const char* name)
 fail:
   HL_H5F_CLOSE(file_id);
   HL_H5G_CLOSE(gid);
+  HL_DEBUG0("EXIT: fetchNode");
   return result;
 }
 /*@} End of Interface functions */

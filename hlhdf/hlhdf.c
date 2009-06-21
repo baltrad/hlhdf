@@ -112,7 +112,7 @@ int isHdf5File(const char* filename)
 hid_t openHlHdfFile(const char* filename, const char* how)
 {
   unsigned flags = H5F_ACC_RDWR;
-  HL_DEBUG0("ENTER: openHlHdfFile");
+  HL_DEBUG2("ENTER: openHlHdfFile(%s,%s)", filename, how);
 
   if (strcmp(how, "r") == 0) {
     flags = H5F_ACC_RDONLY;
@@ -122,6 +122,7 @@ hid_t openHlHdfFile(const char* filename, const char* how)
     HL_ERROR0("Illegal mode given when opening file, should be (r|w|rw)");
     return (hid_t) -1;
   }
+  HL_DEBUG0("EXIT: openHlHdfFile");
   return H5Fopen(filename, flags, H5P_DEFAULT);
 }
 
@@ -135,66 +136,64 @@ hid_t createHlHdfFile(const char* filename,
   hid_t fileId = -1;
   hid_t fileaccesspropertyId = -1;
 
-  HL_DEBUG0("ENTER: createHlHdfFileWithProperty"); HL_DEBUG0("Using default properties");
+  HL_DEBUG0("ENTER: createHlHdfFile");
   if (property == NULL) {
-    return H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
+    HL_DEBUG0("Using default properties");
+    fileId = H5Fcreate(filename, H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   } else {
     HL_DEBUG0("Using specific properties");
     if ((propId = H5Pcreate(H5P_FILE_CREATE)) < 0) {
       HL_ERROR0("Failed to create the property");
-      goto fail;
+      goto done;
     }
 
     HL_DEBUG1("Setting userblock property to %d",property->userblock);
     if (H5Pset_userblock(propId, property->userblock) < 0) {
       HL_ERROR0("Failed to set the userblock property");
-      goto fail;
+      goto done;
     }
 
     HL_DEBUG2("Setting sizes to %d, %d",property->sizes.sizeof_addr,property->sizes.sizeof_size);
     if (H5Pset_sizes(propId, property->sizes.sizeof_addr,
                      property->sizes.sizeof_size) < 0) {
       HL_ERROR0("Failed to set the sizes property");
-      goto fail;
+      goto done;
     }
 
     HL_DEBUG2("Setting sym_k to %d, %d",property->sym_k.ik,property->sym_k.lk);
     if (H5Pset_sym_k(propId, property->sym_k.ik, property->sym_k.lk) < 0) {
       HL_ERROR0("Failed to set the sym_k property");
-      goto fail;
+      goto done;
     }
 
     HL_DEBUG1("Setting istore_k to %d",property->istore_k);
     if (H5Pset_istore_k(propId, property->istore_k) < 0) {
       HL_ERROR0("Failed to set the istore_k property");
-      goto fail;
+      goto done;
     }
 
     if (property->meta_block_size != 2048) {
       if ((fileaccesspropertyId = H5Pcreate(H5P_FILE_ACCESS)) < 0) {
         HL_ERROR0("Failed to create the H5P_FILE_ACCESS property");
-        goto fail;
+        goto done;
       }
       if (H5Pset_meta_block_size(fileaccesspropertyId,
                                  property->meta_block_size) < 0) {
         HL_ERROR0("Failed to set the meta block size");
-        goto fail;
+        goto done;
       }
       fileId = H5Fcreate(filename, H5F_ACC_TRUNC, propId, fileaccesspropertyId);
-      H5Pclose(fileaccesspropertyId);
-      H5Pclose(propId);
-      return fileId;
     } else {
       fileId = H5Fcreate(filename, H5F_ACC_TRUNC, propId, H5P_DEFAULT);
-      H5Pclose(propId);
       return fileId;
     }
   }
 
-fail:
+done:
   HL_H5P_CLOSE(propId);
   HL_H5P_CLOSE(fileaccesspropertyId);
-  return -1;
+  HL_DEBUG0("EXIT: createHlHdfFile");
+  return fileId;
 }
 
 /************************************************
@@ -276,15 +275,6 @@ void freeHL_fileCreationProperty(HL_FileCreationProperty* prop)
     return;
   }
   free(prop);
-}
-
-/************************************************
- * closeHlhdfFile
- ***********************************************/
-herr_t closeHlHdfFile(hid_t file_id)
-{
-  HL_DEBUG0("ENTER: closeHlHdfFile");
-  return H5Fclose(file_id);
 }
 
 /************************************************
@@ -483,10 +473,11 @@ done:
 hid_t translateCharToDatatype(const char* dataType)
 {
   hid_t retv = -1;
-  HL_DEBUG0("ENTER: translateCharToDatatype");
+  HL_SPEWDEBUG0("ENTER: translateCharToDatatype");
 
   if (!dataType) {
     HL_ERROR0("No type name specified");
+    HL_SPEWDEBUG0("EXIT: translateCharToDatatype");
     return retv;
   }
   if (strcmp(dataType, "char") == 0)
@@ -529,6 +520,8 @@ hid_t translateCharToDatatype(const char* dataType)
   if (retv == -1) {
     HL_ERROR1("There is no type called %s",dataType);
   }
+
+  HL_SPEWDEBUG0("EXIT: translateCharToDatatype");
   return retv;
 }
 
@@ -822,18 +815,21 @@ HL_Compression* newHL_Compression(HL_CompressionType aType)
 HL_Compression* dupHL_Compression(HL_Compression* inv)
 {
   HL_Compression* retv = NULL;
-  HL_DEBUG0("ENTER: dupHL_Compression");
+  HL_SPEWDEBUG0("ENTER: dupHL_Compression");
   if (!inv) {
-    return NULL;
+    HL_SPEWDEBUG0("dupHL_Compression: compression object NULL");
+    goto fail;
   }
   if (!(retv = (HL_Compression*) malloc(sizeof(HL_Compression)))) {
     HL_ERROR0("Failed to allocate memory for HL_Compression");
-    return NULL;
+    goto fail;
   }
   retv->type = inv->type;
   retv->level = inv->level;
   retv->szlib_mask = inv->szlib_mask;
   retv->szlib_px_per_block = inv->szlib_px_per_block;
+fail:
+  HL_SPEWDEBUG0("EXIT: dupHL_Compression");
   return retv;
 }
 

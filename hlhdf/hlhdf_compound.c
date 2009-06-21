@@ -11,36 +11,35 @@
 #include <stdlib.h>
 
 HL_CompoundTypeAttribute* newHL_CompoundTypeAttribute(char* attrname,
-                  size_t offset,
-                  char* format,
-                  size_t size,
-                  int ndims,
-                  size_t* dims)
+  size_t offset, char* format, size_t size, int ndims, size_t* dims)
 {
-   HL_CompoundTypeAttribute* retv=NULL;
-   int i;
-   HL_DEBUG0("ENTER: newHL_CompoundTypeAttribute");
-   if(!attrname) {
-      HL_ERROR0("Impossible to have an attribute without a name in a compound attribute");
-      return NULL;
-   }
-   if(!format) {
-      HL_ERROR0("Impossible to have an attribute without a format in a compound type");
-      return NULL;
-   }
-   if(!(retv=(HL_CompoundTypeAttribute*)malloc(sizeof(HL_CompoundTypeAttribute)))) {
-      HL_ERROR0("Failed to allocate CompoundTypeAttribute description");
-      return NULL;
-   }
-   strcpy(retv->attrname,attrname);
-   retv->offset=offset;
-   retv->size=size;
-   strcpy(retv->format,format);
-   retv->ndims=ndims;
-   for(i=0;i<ndims;i++)
-      retv->dims[i]=dims[i];
+  HL_CompoundTypeAttribute* retv = NULL;
+  int i;
+  HL_SPEWDEBUG0("ENTER: newHL_CompoundTypeAttribute");
+  if (!attrname) {
+    HL_ERROR0("Impossible to have an attribute without a name in a compound attribute");
+    goto fail;
+  }
+  if (!format) {
+    HL_ERROR0("Impossible to have an attribute without a format in a compound type");
+    goto fail;
+  }
+  if (!(retv = (HL_CompoundTypeAttribute*) malloc(sizeof(HL_CompoundTypeAttribute)))) {
+    HL_ERROR0("Failed to allocate CompoundTypeAttribute description");
+    goto fail;
+  }
 
-   return retv;
+  strcpy(retv->attrname, attrname);
+  retv->offset = offset;
+  retv->size = size;
+  strcpy(retv->format, format);
+  retv->ndims = ndims;
+  for (i = 0; i < ndims; i++)
+    retv->dims[i] = dims[i];
+
+fail:
+  HL_SPEWDEBUG0("EXIT: newHL_CompoundTypeAttribute");
+  return retv;
 }
 
 HL_CompoundTypeDescription* newHL_CompoundTypeDescription()
@@ -71,26 +70,31 @@ HL_CompoundTypeDescription* newHL_CompoundTypeDescription()
 
 void freeHL_CompoundTypeAttribute(HL_CompoundTypeAttribute* attr)
 {
-   HL_DEBUG0("ENTER: freeHL_CompoundTypeAttribute");
-   if(!attr)
-      return;
-   free(attr);
+   HL_SPEWDEBUG0("ENTER: freeHL_CompoundTypeAttribute");
+   if(attr) {
+     free(attr);
+   }
+   HL_SPEWDEBUG0("EXIT: freeHL_CompoundTypeAttribute");
 }
 
 void freeHL_CompoundTypeDescription(HL_CompoundTypeDescription* typelist)
 {
-   int i;
-   HL_DEBUG0("ENTER: freeHL_CompoundTypeDescription");
-   if(!typelist)
-      return;
-   if(typelist->attrs) {
-      for(i=0;i<typelist->nAttrs;i++) {
-   if(typelist->attrs[i])
-      freeHL_CompoundTypeAttribute(typelist->attrs[i]);
-      }
-      free(typelist->attrs);
-   }
-   free(typelist);
+  int i;
+  if (!typelist)
+    return;
+
+  HL_SPEWDEBUG0("ENTER: freeHL_CompoundTypeDescription");
+
+  if (typelist->attrs) {
+    for (i = 0; i < typelist->nAttrs; i++) {
+      if (typelist->attrs[i])
+        freeHL_CompoundTypeAttribute(typelist->attrs[i]);
+    }
+    free(typelist->attrs);
+  }
+  free(typelist);
+
+  HL_SPEWDEBUG0("EXIT: freeHL_CompoundTypeDescription");
 }
 
 int addHL_CompoundTypeAttribute(HL_CompoundTypeDescription* typelist,

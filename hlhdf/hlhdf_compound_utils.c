@@ -16,42 +16,56 @@
 
 hid_t createCompoundType(size_t size)
 {
-  HL_DEBUG0("ENTER: createCompoundType");
-  return H5Tcreate(H5T_COMPOUND, size);
+  hid_t retv = -1;
+  HL_SPEWDEBUG0("ENTER: createCompoundType");
+
+  retv =  H5Tcreate(H5T_COMPOUND, size);
+
+  HL_SPEWDEBUG0("EXIT: createCompoundType");
+  return retv;
 }
 
 herr_t addAttributeToCompoundType(hid_t loc_id, const char* name,
   size_t offset, hid_t type_id)
 {
-  HL_DEBUG0("ENTER: addAttributeToCompoundType");
-  return H5Tinsert(loc_id, name, offset, type_id);
+  herr_t retv = -1;
+  HL_SPEWDEBUG0("ENTER: addAttributeToCompoundType");
+
+  retv = H5Tinsert(loc_id, name, offset, type_id);
+
+  HL_SPEWDEBUG0("EXIT: addAttributeToCompoundType");
+  return retv;
 }
 
 herr_t addAttributeToCompoundType_fmt(hid_t loc_id, const char* name,
   size_t offset, const char* fmt)
 {
-  herr_t status;
+  herr_t status = -1;
   hid_t type_id = translateCharToDatatype(fmt);
-  HL_DEBUG0("ENTER: addAttributeToCompoundType_fmt");
-  if (type_id < 0)
-    return -1;
+  HL_SPEWDEBUG0("ENTER: addAttributeToCompoundType_fmt");
+  if (type_id < 0) {
+    goto fail;
+  }
   status = addAttributeToCompoundType(loc_id, name, offset, type_id);
+
+fail:
   HL_H5T_CLOSE(type_id);
+  HL_SPEWDEBUG0("EXIT: addAttributeToCompoundType_fmt");
   return status;
 }
 
 herr_t addArrayToCompoundType(hid_t loc_id, const char* name, size_t offset,
   int ndims, size_t* dims, hid_t type_id)
 {
-  herr_t status;
-  hid_t array_type;
+  herr_t status = -1;
+  hid_t array_type = -1;
   int i;
   hsize_t* dims_hsize_t = (hsize_t*) malloc(sizeof(hsize_t) * ndims);
-  HL_DEBUG0("ENTER: addArrayToCompoundType");
+  HL_SPEWDEBUG0("ENTER: addArrayToCompoundType");
 
   if (!dims_hsize_t) {
     HL_ERROR0("Failed to allocate memory for temporary hsize_t dims");
-    return -1;
+    goto fail;
   }
 
   for (i = 0; i < ndims; i++) {
@@ -60,24 +74,29 @@ herr_t addArrayToCompoundType(hid_t loc_id, const char* name, size_t offset,
 
   array_type = H5Tarray_create(type_id, ndims, dims_hsize_t);
   status = H5Tinsert(loc_id, name, offset, array_type);
-  HL_H5T_CLOSE(array_type);
 
+fail:
+  HL_H5T_CLOSE(array_type);
   HLHDF_FREE(dims_hsize_t);
+  HL_SPEWDEBUG0("EXIT: addArrayToCompoundType");
   return status;
 }
 
 herr_t addArrayToCompoundType_fmt(hid_t loc_id, const char* name,
   size_t offset, int ndims, size_t* dims, const char* fmt)
 {
-  hid_t type_id;
-  herr_t status;
-  HL_DEBUG0("ENTER: addArrayToCompoundType_fmt");
+  hid_t type_id = -1;
+  herr_t status = -1;
+  HL_SPEWDEBUG0("ENTER: addArrayToCompoundType_fmt");
   type_id = translateCharToDatatype(fmt);
-  if (type_id < 0)
-    return -1;
+  if (type_id < 0) {
+    goto fail;
+  }
 
   status = addArrayToCompoundType(loc_id, name, offset, ndims, dims, type_id);
-  HL_H5T_CLOSE(type_id);
 
+fail:
+  HL_H5T_CLOSE(type_id);
+  HL_SPEWDEBUG0("EXIT: addArrayToCompoundType_fmt");
   return status;
 }

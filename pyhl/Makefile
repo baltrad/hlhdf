@@ -35,7 +35,7 @@ OBJECTS=$(SOURCES:.c=.o)
 
 all: $(TARGET)
 
-$(TARGET): $(OBJECTS)
+$(TARGET): $(OBJECTS) ../hlhdf/libhlhdf.a ../pyhlhdf/libpyhlhdf.a
 	$(LDSHARED) -o $@ $(OBJECTS) $(LDFLAGS) $(LIBRARIES)
 
 clean:

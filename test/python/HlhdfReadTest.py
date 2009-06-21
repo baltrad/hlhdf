@@ -641,11 +641,7 @@ class HlhdfReadTest(unittest.TestCase):
   def testReadStringArray(self):
     node=self.h5nodelist.fetchNode("/stringarray")
     self.assertEqual("string", node.format()) # We are getting the fixed type format
-    arr = node.data()
-    self.assertEqual(3, len(arr))
-    self.assertEqual("ABC", arr[0])
-    self.assertEqual("def", arr[1])
-    self.assertEqual("EFG", arr[2])
+    self.assertTrue(numpy.all(["ABC","def","EFG"]==node.data()))
     self.assertEqual("/stringarray", node.name())
     self.assertEqual(_pyhl.DATASET_ID, node.type())
     try:
@@ -768,6 +764,44 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual(10.0, comp["xscale"])
     self.assertEqual(20.0, comp["yscale"])
     self.assertTrue(numpy.all(comp["area_extent"] == [1.0,2.0,3.0,4.0]))
-        
+  
+  def testSelectAndFetch_1(self):
+    self.h5nodelist.selectAll()
+    self.h5nodelist.fetch()
+    node = self.h5nodelist.getNode("/ucharvalue")
+    self.assertEqual("uchar", node.format()) # We are getting the fixed type format
+    self.assertEqual(99, node.data())
+    self.assertEqual("/ucharvalue", node.name())
+    self.assertEqual(_pyhl.ATTRIBUTE_ID, node.type())
+    self.assertEqual(99, node.rawdata())
+
+    node = self.h5nodelist.getNode("/doublearray")
+    self.assertEqual("double", node.format()) # We are getting the fixed type format
+    self.assertTrue(numpy.all([1.0,2.1,3.2]==node.data()))
+    self.assertEqual("/doublearray", node.name())
+    self.assertEqual(_pyhl.DATASET_ID, node.type())
+    
+    node = self.h5nodelist.getNode("/rootreferencetolongarray")
+    self.assertEqual("string", node.format()) # We are getting the fixed type format
+    self.assertEqual("/longarray", node.data())
+    self.assertEqual("/rootreferencetolongarray", node.name())
+    self.assertEqual(_pyhl.REFERENCE_ID, node.type())
+    self.assertEqual("/longarray", node.rawdata()) 
+
+  def testSelectAndFetch_2(self):
+    self.h5nodelist.selectNode("/ucharvalue")
+    self.h5nodelist.selectNode("/doublearray")
+    self.h5nodelist.selectNode("/rootreferencetolongarray")
+    self.h5nodelist.fetch()
+    
+    node = self.h5nodelist.getNode("/ucharvalue")
+    self.assertEqual(99, node.data())
+
+    node = self.h5nodelist.getNode("/doublearray")
+    self.assertTrue(numpy.all([1.0,2.1,3.2]==node.data()))
+    
+    node = self.h5nodelist.getNode("/rootreferencetolongarray")
+    self.assertEqual("/longarray", node.data())
+       
 if __name__ == "__main__":
     unittest.main()
