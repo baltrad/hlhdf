@@ -1,0 +1,238 @@
+/** \page creating_your_own_hdf5_product Creating your own HDF5 product (in C)
+When creating your own HDF5 product, there is one header files that
+should be included (<b>hlhdf.h</b>). If you are going to create your
+own compound datatype, then include <b>hlhdf_compound_utils.h</b> as
+well.
+
+When compiling a binary, there are three libraries that must be
+linked in; these are <b>libhlhdf.a</b>, <b>libhdf5.a</b> and <b>libz.a</b>. 
+It is also possible to link the shared library <b>libhdf5.so</b> instead of
+<b>libhdf5.a</b>.
+
+The HL-HDF package was installed with a hldef.mk file that can be
+included in your own Makefile in order to get the correct paths to both
+the zlib and the hdf5 library. It also contains information on which
+C++-compiler the HL-HDF package was compiled with and some other
+goodies.
+
+A simple Makefile could look like this:
+
+\verbatim
+include /usr/local/hlhdf/mkf/hldef.mk
+
+HLHDF_INCDIR = -I/usr/local/hlhdf/include
+HLHDF_LIBDIR = -L/usr/local/hlhdf/lib
+
+CFLAGS = $(OPTS) $(DEFS) -I. $(ZLIB_INCDIR) $(HDF5_INCDIR) \
+         $(HLHDF_INCDIR)
+
+LDFLAGS = -L. $(ZLIB_LIBDIR) $(HDF5_LIBDIR) $(HLHDF_LIBDIR)
+
+LIBS = -lhlhdf -lhdf5 -lz -lm
+
+TARGET=myTestProgram
+SOURCES=test_program.c
+OBJECTS=$(SOURCES:.c=.o)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJECTS)
+           $(CC) -o $@ $(LDFLAGS) $(OBJECTS) $(LIBS)
+
+clean:
+           @\rm -f *.o *~ so_locations core
+
+distclean: clean
+           @\rm -f $(TARGET)
+
+distribution:
+           @echo "Would bring the latest revision upto date"
+
+install:
+           @$(HL_INSTALL) -f -o -C $(TARGET) ${MY_BIN_PATH}/$(TARGET)
+\endverbatim
+
+Now, when the Makefile has been created, it might be a good idea to
+write your own HDF5 product. The following example will create a dataset
+with a two-dimensional array of integers, and two attributes connected to
+this dataset. It will also create a group containing one attribute.
+
+\verbatim
+#include <hlhdf.h>
+
+int main(int argc, char** argv)
+{
+  HL_NodeList* aList=NULL;
+  HL_Node* aNode=NULL;
+  HL_Compression compression;
+  int* anArray=NULL;
+  int anIntValue;
+  float aFloatValue;
+  hsize_t dims[]={10,10};
+  int npts=100;
+  int i;
+
+  initHlHdf();  /* Initialize the HL-HDF library */
+  debugHlHdf(2); /* Activate debugging */
+
+  if(!(aList = newHL_NodeList())) {
+    fprintf(stderr,"Failed to allocate nodelist");
+    goto fail;
+  }
+
+  if(!(anArray = malloc(sizeof(int)*npts))) {
+    fprintf(stderr,"Failed to allocate memory for array.");
+    goto fail;
+  }
+  for(i=0;i&lt;npts;i++)
+    anArray[i]=i;
+
+  addHL_Node(aList,(aNode = newHL_Group("/group1")));
+  addHL_Node(aList,(aNode = newHL_Attribute("/group1/attribute1")));
+  anIntValue=10;
+  setHL_NodeScalarValue(aNode,sizeof(anIntValue),(unsigned char*)&amp;anIntValue,"int",-1);
+
+  addHL_Node(aList,(aNode = newHL_Dataset("/dataset1")));
+  setHL_NodeArrayValue(aNode,sizeof(int),2,dims,(unsigned char*)anArray,"int",-1);
+
+  addHL_Node(aList,(aNode = newHL_Attribute("/dataset1/attribute2")));
+  anIntValue=20;
+  setHL_NodeScalarValue(aNode,sizeof(anIntValue),(unsigned char*)&amp;anIntValue,"int",-1);
+
+  addHL_Node(aList,(aNode = newHL_Attribute("/dataset1/attribute3")));
+  aFloatValue=99.99;
+  setHL_NodeScalarValue(aNode,sizeof(aFloatValue),(unsigned char*)&amp;aFloatValue,
+                        "float",-1);
+
+  strcpy(aList->filename,"written_hdffile.hdf");
+  
+  initHL_Compression(&compression, CT_ZLIB);
+  compression.level = 6;
+  writeHL_NodeList(aList,NULL,&compression);
+
+  freeHL_NodeList(aList);
+  exit(0);
+  return 0; /* Won't come here */
+ fail:
+  freeHL_NodeList(aList);
+  exit(1);
+  return 1; /* Won't come here */
+}
+\endverbatim
+
+When you have created your own HDF5 product, it might be a good idea
+to create some code for reading this file and checking its
+contents.
+
+\verbatim
+#include <hlhdf.h>
+
+int main(int argc, char** argv)
+{
+  HL_NodeList* aList=NULL;
+  HL_Node* aNode=NULL;
+  int* anArray=NULL;
+  int anIntValue;
+  float aFloatValue;
+  int npts;
+  int i;
+
+  initHlHdf();  /* Initialize the HL-HDF library */
+  debugHlHdf(2); /* Activate debugging */
+
+  if(!(aList = readHL_NodeList("written_hdffile.hdf"))) {
+    fprintf(stderr,"Failed to read nodelist\n");
+    goto fail;
+  }
+
+  selectAllNodes(aList);  /* Select everything for retrival */
+
+  fetchMarkedNodes(aList);
+
+  if((aNode = getHL_Node(aList,"/group1")))
+    printf("%s exists\n",aNode->name);
+
+  if((aNode = getHL_Node(aList,"/group1/attribute1"))) {
+    memcpy(&anIntValue,aNode->data,aNode->dSize);
+    printf("%s exists and have value %d\n",aNode->name,anIntValue);
+  }
+
+  if((aNode = getHL_Node(aList,"/dataset1"))) {
+    anArray = (int*)aNode->data;
+    npts = 1;
+    for(i=0;i&lt;aNode->ndims;i++)
+      npts*=aNode->dims[i];
+    printf("%s exists and has the values:\n",aNode->name);
+    for(i=0;i<npts;i++) {
+      printf("%d ", anArray[i]);
+      if((i%aNode->dims[0])==0) {
+        printf("\n");
+      }
+    }
+    printf("\n");
+  }
+
+  if((aNode = getHL_Node(aList,"/dataset1/attribute2"))) {
+    memcpy(&anIntValue,aNode->data,aNode->dSize);
+    printf("%s exists and have the value %d\n",aNode->name,anIntValue);
+  }
+
+  if((aNode = getHL_Node(aList,"/dataset1/attribute3"))) {
+    memcpy(&aFloatValue,aNode->data,aNode->dSize);
+    printf("%s exists and have the value %f\n",aNode->name,aFloatValue);
+  }
+  freeHL_NodeList(aList);
+  exit(0);
+  return 0; /* Never reached */
+ fail:
+  freeHL_NodeList(aList);
+  exit(1);
+  return 1; /* Never reached */
+}
+\endverbatim
+
+A small example on how to reroute the error messages is shown below, currently there
+is no similar functionality for the _pyhl module.
+
+\verbatim
+#include <hlhdf.h>
+
+void hlhdf_error_handler(char* filename, int lineno, HL_Debug lvl, const char* fmt, ...)
+{
+   va_list alist;
+   char errbuff[512];
+   va_start(alist,fmt);
+   
+   fprintf(stdout,"<hlhdferror>\n");
+   fprintf(stdout," <filename>%s</filename>\n",filename);
+   fprintf(stdout," <linenumber>%d</linenumber>\n",lineno);
+   fprintf(stdout," <level>%d</level>\n",lvl);
+   vsprintf(errbuff,fmt,alist);
+   fprintf(stdout," <message>%s</message>\n",errbuff);
+   fprintf(stdout,"</hlhdferror>\n");
+}
+
+void hdf5_error_handler(int n, H5E_error_t* rowmsg)
+{
+   fprintf(stdout,"<hdf5error>\n");
+   fprintf(stdout," <filename>%s</filename>\n",rowmsg->file_name);
+   fprintf(stdout," <linenumber>%d</linenumber>\n",rowmsg->line);
+   fprintf(stdout," <funcname>%s</funcname>\n",rowmsg->func_name);
+   fprintf(stdout," <desc>%s</desc>\n",rowmsg->desc);
+   fprintf(stdout,"</hdf5error>\n");
+}
+
+int main(int argc, char** argv)
+{
+   HL_NodeList* nodelist;
+   initHlHdf();
+   enableErrorReporting();
+   HL_setDebugFunction(hlhdf_error_handler);
+   HL_setHdf5ErrorFunction(hdf5_error_handler);
+   nodelist = readHL_NodeList("thisdoesnotexist.xxx");
+   return 0;
+}
+\endverbatim
+
+
+*/

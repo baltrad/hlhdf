@@ -1,0 +1,122 @@
+/** \page fundamentals Fundamentals
+This Chapter presents HL-HDF's building blocks so that the user will
+have a knowledge of the proper terminology prior to working hands-on with
+the library. To make the most of the functionality in HL-HDF, users should
+have a working knowledge of the C programming language.
+
+This documentation is designed to be complimentary to the official
+HDF5 documentation and users should refer to the official set for more
+detail on HDF5's internal mechanisms.
+
+\section fundamentals_hierarchy The Hierarchy
+The "H" in HDF stands for "Heirarchical" and this describes how
+HDF files are structured. An HDF file can be likened to a file system.
+At the root of the file system is a period (".") or a slash ("/") and
+the file may consist of an arbitrary number of levels of data, like
+subdirectories in a file system. For example, if a NOAA satellite image
+containing several spectral bands of data are stored in this manner, one
+way of doing so could look like this: 
+\verbatim
+.
+/NOAA 14/
+/NOAA 14/info
+/NOAA 14/info/xsize
+/NOAA 14/info/ysize
+/NOAA 14/Channel 1/
+/NOAA 14/Channel 2/
+/NOAA 14/Channel 3/
+\endverbatim
+
+where <b>info</b> is an object containing header information. 
+The same strategy could be used to store several polar scans of weather radar data, for example.
+Alternatively, a numerical weather prediction model state could be represented in part using 
+GRIB descriptors like this:
+\verbatim
+.
+/Level 0/
+/Level 0/Type 105/
+/Level 0/Type 105/Parameter 11/
+/Level 0/Type 102/
+/Level 31/
+/Level 31/Type 109/
+/Level 31/Type 109/Parameter 11/
+\endverbatim
+
+Or, why not a point from a weather station containing wind speed and direction values:
+\verbatim
+.
+/WMO 02064/
+/WMO 02064/dd/
+/WMO 02064/ff/
+/WMO 02036/
+\endverbatim
+
+\section fundamentals_hlhdf_building_blocks HL-HDF Building Blocks
+HL-HDF provides a number of building blocks which are defined in
+detail in the header file \ref hlhdf_types.h.
+
+\subsection fundamentals_datatype Datatype
+A <b>Datatype</b> is a data representation consisting of atomic data types 
+such as a string, byte, integer, floating point value of a given word size, or 
+in the form of a C <b>struct</b> containing combinations of atomic types. 
+A <b>Datatype</b> is used to describe the characteristics of one's data, and a 
+number of <b>Datatype</b>s may collectively constitute a header.
+Every <b>Datatype</b> is given a name which is stored in a string; 
+this string is used to represent the <b>Datatype</b> in the HDF file.
+
+\subsection fundamentals_attribute Attribute
+An <b>Attribute</b> contains a string used to identify it, an array with up to 
+four dimensions, and a number of <b>Datatype</b>s describing that <b>Attribute</b>.
+An <b>Attribute</b> is an appropriate object for storing point values, for example, 
+and storing time series of them is enabled in the <b>Attribute</b> object.
+
+\subsection fundamentals_reference Reference
+A <b>Reference</b> is basically a pointer to another object. A <b>Reference</b> 
+can only be pointed to a <b>Datatype</b>, a <b>Dataset</b> or a <b>Group</b>. 
+Using the <b>Reference</b> might be needed when generating HDF5 images, since a 
+reference to a palette has to be inserted in the <b>Dataset</b> object.
+
+\subsection fundamentals_dataset Dataset
+A <b>Dataset</b> is a higher level object and contains a string used to identify it, 
+an optional array with between one and four dimensions, an array of <b>Datatype</b>s, 
+and an array of <b>Attribute</b>s. A <b>Dataset</b> is an appropriate object for storing
+profile (transect) or image data, and it can be used to store time series of a given variable.
+
+\subsection fundamentals_group Group
+A <b>Group</b> is the highest level object and consists of a string used to identify it 
+and an arbitrary combination of any of the <b>Datatype</b>, <b>Attribute</b>, 
+<b>Dataset</b>, and <b>Group</b> building blocks. The root of any HDF5 file 
+(denoted with "." or "/") is always a <b>Group</b>.
+
+\subsection fundamentals_node Node
+A <b>Node</b> is a term used in the HL-HDF code to refer to any of the above mentioned 
+building blocks in an HDF5 file. In other words, any given object in the heirarchy is a
+<b>Node</b>.
+
+\subsection fundamentals_scalar Scalar
+A <b>Scalar</b> is an individual value.
+
+\subsection fundamentals_atomic Atomic
+In HDF5 the predefined datatypes (for example 'int', 'short', ...) are referred to as 
+<b>Atomic</b>, as opposed to the <b>Compound</b> datatypes which are a combination of 
+<b>Atomic</b> datatypes.
+
+\section fundamentals_c_header C Header Definitions
+The previous section presented the principles of HL-HDF building blocks. 
+This section presents their actual names and their definitions, along with 
+some fundamentals from HDF5 itself.
+
+\subsection fundamentals_c_header_hid_t hid_t
+This variable comes from HDF5 and is a type for managing references to nodes. 
+Each node reference is represented as an integer and <b>hid_t</b> keeps track of them.
+
+\subsection fundamentals_c_header_herr_t herr_t
+This variable comes from HDF5 and is a type for handling error codes.
+
+\subsection fundamentals_c_header_hsize_t hsize_t
+This variable comes from HDF5 and represents a native multiple-precision integer.
+
+\subsection fundamentals_c_header_hl_hdf_types HL-HDF defined types.
+Most of the types defined in HL-HDF can be found in \ref hlhdf_types.h.
+
+*/ 

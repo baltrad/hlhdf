@@ -1,0 +1,17 @@
+/** \page example_programs Example Programs
+Three example programs have been provided with HL-HDF. Two of them
+are modelled after the BUFR software developed and maintained by the
+EUMETNET Operational Programme for the Exchange of Weather Radar
+Information (OPERA). This software has two programs called 
+<b>encbufr</b> and <b>decbufr</b> used to encode and decode BUFR messages
+to/from an ASCII file containing header information and raw data in a
+binary file. The third example is modelled after a program called
+<b>griblist</b> developed by SMHI to query the contents of a GRIB file. 
+GRIB and BUFR are format standards specified by the World Meteorological 
+Organization.
+
+\li \ref hldec.c "hldec"
+\li \ref hlenc.c "hlenc"
+\li \ref hllist.c "hllist"
+
+*/

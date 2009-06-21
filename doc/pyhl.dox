@@ -1,0 +1,233 @@
+/** \page python_interface_pyhl Python Interface - PyHL
+PyHL is just like the HL-HDF library in that it allows the user to
+work with HDF5 at a high level. PyHL is designed to work at the highest
+level of abstraction using the Python programming language, since Python
+allows the user to interact directly with HDF5 files. In fact, PyHL is
+nothing more than a wrapper around HL-HDF but with some additional
+functionality which is only available in very high level languages such as
+Python. Like HL-HDF, it is up to the user to define appropriate ways of
+representing data and using the building blocks available in PyHL to store
+the data in HDF5.
+
+(PyHL is pronounced "pile", which is an appropriate description of a heirarchy ...)
+
+\section pyhl_compilation_and_installation Compilation and installation
+The Python programming language, version 2.5.2, is required along
+with the Numpy package. Python is found at the Corporation for
+National Research Initiatives at http://www.python.org/ and Numpy
+is found at http://numpy.scipy.org/.
+
+\subsection pyhl_create_module Create module _pyhl
+If the configure script was not called with <b>--with-python=no</b> the _pyhl 
+module should be compiled together with the rest of the code. If the configure 
+script was called with <b>--with-python=no</b>, then the best thing is to rebuild 
+the whole HL-HDF package (with <b>--with-python=yes</b>) and installation as descriped
+in Sections \ref CompilationAndInstallation.
+
+<b>NOTE:</b> Python version 2.5.2 is required to compile _pyhl; otherwise
+there will be unresolved symbols. Also, be aware that the hdf5 library
+is linked dynamically which requires that the LD_LIBRARY_PATH contains
+the path to where libhdf5.so has been installed. contains the path to
+where libhdf5.so has been installed.
+
+\subsection pyhl_examples Examples
+The creation of HDF5 files with PyHL is quite easy, and there are
+not to many things one has to know about the HDF5 internals. However, in
+order to build an HDF5 file, one has to understand that the file should
+be built sequentialy, i.e. it is not possible to create a subgroup to a
+group before the group has been created. Neither is it possible to
+create an attribute or a dataset in a group before the group has been
+created etc. In other words, always create the top nodes before trying
+to create nodes under them in the heirarchy.
+
+Another thing to bear in mind is that when the method <b>addNode</b> has been 
+called the <b>nodelist</b> instance will take control over the node, so it will 
+not be possible to alter the node after a call to <b>addNode</b> has been made.
+
+When working with compound types, remember that the data that is
+passed to <b>setScalarValue</b> and <b>setArrayValue</b> must be a Python string. 
+Also when working with compound types, the <b>itemSize</b> and <b>lhid</b> has to 
+be passed on, otherwise the compound data most likely will be corrupted.
+
+Another thing to be aware of when working with compound types is that the hdf5
+library has to be linked dynamically, otherwise it will not be possible
+to pass the <b>hid_t</b> references between the Python modules.
+
+Time to look at some simple examples. These examples can be found in <b>HLHDF/examples</b>.
+In order to get these examples to run you will need to set the LD_LIBRARY_PATH to point
+at the HDF5 so library and the PYTHONPATH needs to be pointing at both the test catalogue
+where the rave_info_type is defined and the pyhl catalogue.
+
+\verbatim
+prompt$ export LD_LIBRARY_PATH=<path to hdf5 library>
+prompt$ export PYTHONPATH=<path to HLHDF/pyhl>:<path to HLHDF/test/python>
+\endverbatim
+
+Then it is just to run the different examples by typing:
+\verbatim
+prompt% python <TestFileName.py>
+\endverbatim
+
+\subsection pyhl_examples_1 Writing a simple HDF5 file
+\verbinclude WriteSimpleFile.py
+
+When checking this file with h5dump, the command syntax would
+be: <b>prompt% h5dump simple_test.hdf</b> And the result would be:
+
+\verbatim
+HDF5 "simple_test.hdf" {
+GROUP "/" {
+   DATASET "data" {
+      DATATYPE { H5T_STD_I32LE }
+      DATASPACE { SIMPLE ( 10, 10 ) / ( 10, 10 ) }
+      DATA {
+         0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+         10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+         20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+         30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
+         40, 41, 42, 43, 44, 45, 46, 47, 48, 49,
+         50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
+         60, 61, 62, 63, 64, 65, 66, 67, 68, 69,
+         70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
+         80, 81, 82, 83, 84, 85, 86, 87, 88, 89,
+         90, 91, 92, 93, 94, 95, 96, 97, 98, 99
+      }
+   }
+   GROUP "info" {
+      ATTRIBUTE "xscale" {
+         DATATYPE { H5T_IEEE_F64LE }
+         DATASPACE { SCALAR }
+         DATA {
+            10
+         }
+      }
+      ATTRIBUTE "yscale" {
+         DATATYPE { H5T_IEEE_F64LE }
+         DATASPACE { SCALAR }
+         DATA {
+            20
+         }
+      }
+      ATTRIBUTE "xsize" {
+         DATATYPE { H5T_STD_I32LE }
+         DATASPACE { SCALAR }
+         DATA {
+            10
+         }
+      }
+      ATTRIBUTE "ysize" {
+         DATATYPE { H5T_STD_I32LE }
+         DATASPACE { SCALAR }
+         DATA {
+            10
+         }
+      }
+      ATTRIBUTE "description" {
+         DATATYPE {
+            { STRSIZE 25;
+              STRPAD H5T_STR_NULLTERM;
+              CSET H5T_CSET_ASCII;
+              CTYPE H5T_C_S1;
+            }
+         }
+         DATASPACE { SCALAR }
+         DATA {
+            "This is a simple example"
+         }
+      }
+   }
+}
+}
+\endverbatim
+
+\subsection pyhl_examples_2 Writing an HDF5 file containing a compound datatype
+This is a bit more complex since it requires the implementation
+of a Python C++-module that contains the datatype definition, and a
+couple of methods for converting data to a string and the other way
+around.
+
+There is a small example located in the <b>test/python</b> directory called 
+<b>rave_info_type.c</b> which implements a small compound type definition. 
+Basically this module defines an object containing <b>xscale</b>, <b>yscale</b>,
+<b>xsize</b> and <b>ysize</b> variables. This module has also got a type class 
+which should be used.
+
+\verbinclude WriteCompoundType.py
+
+When checking this file with h5dump, the command syntax would be: 
+<b>prompt% h5dump compound_test.hdf</b> and the result would be:
+
+\verbatim
+HDF5 "compound_test.hdf" {
+GROUP "/" {
+   ATTRIBUTE "myCompoundAttribute" {
+      DATATYPE {
+         H5T_STD_I32LE "xsize";
+         H5T_STD_I32LE "ysize";
+         H5T_IEEE_F64LE "xscale";
+         H5T_IEEE_F64LE "yscale";
+      }
+      DATASPACE { SCALAR }
+      DATA {
+         {
+            [ 10 ],
+            [ 10 ],
+            [ 150 ],
+            [ 150 ]
+         }
+      }
+   }
+   DATATYPE "MyDatatype" {
+      H5T_STD_I32LE "xsize";
+      H5T_STD_I32LE "ysize";
+      H5T_IEEE_F64LE "xscale";
+      H5T_IEEE_F64LE "yscale";
+   }
+   DATASET "myCompoundDataset" {
+      DATATYPE {
+         "/MyDatatype"
+      }
+      DATASPACE { SIMPLE ( 1 ) / ( 1 ) }
+      DATA {
+         {
+            [ 1 ],
+            [ 1 ],
+            [ 150 ],
+            [ 150 ]
+         }
+      }
+   }
+}
+}
+\endverbatim
+
+\subsection pyhl_examples_3 Reading a simple HDF5 file
+The following example code will read the <b>/info/xscale</b>,
+<b>/info/yscale</b> and <b>/data</b> fields from the HDF5 file 
+<b>simple_test.hdf</b>.
+
+\verbinclude ReadSimpleFile.py
+
+\subsection pyhl_examples_4 Reading an HDF5 file containing a compound type
+This example shows how an HDF5 file containing a compound type
+in it can be read. It will read the file "compound_test.hdf" that was
+generated above. Note that this code might not be portable to any
+other machine due to the usage of the rawdata method.
+
+\verbinclude ReadCompoundTypeRaw.py
+
+\subsection pyhl_examples_5 Reading an HDF5 file containing a compound type (alterntive)
+This example shows how an HDF5 file containing a compound type
+in it can be read. It will read the file "compound_test.hdf" that was
+generated above. This example should work on any supported platform.
+
+\verbinclude ReadCompoundType.py
+
+\subsection pyhl_examples_6 Creating a HDF5 image with a reference
+This example shows how it is possible to create a HDF5 that is
+viewable in for example the H5View visualization tool.
+
+\verbinclude HDF5ImageWithReference.py
+
+
+*/

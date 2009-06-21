@@ -1,0 +1,123 @@
+/** \page thew5_of_hlhdf The W5 of HL-HDF
+\section the_w5_of_hlhdf_what "What?"
+HL-HDF is a high level interface to the Heirachical Data Format,
+version 5, developed and maintained by the HDF Group (http://www.hdfgroup.org). 
+HDF5 is a file format designed for a maximum of flexibility and efficiency and it makes use of modern software
+technology. Briefly, HDF5 has the following characteristics:
+
+\li Platform independence. For example, an array of native floating point values written on 
+one platform will be automatically identified, byte-swapped if necessary, and returned as an
+array of native floating point values on another platform.
+\li Built-in compression using the free ZLIB compression library. ZLIB is well-known as the 
+compression used in the gzip package and it is robust and efficient.
+\li Flexible. HDF5 offers the ability to store virtually any kind of scientific data.
+\li The HDF5 Groups URL is http://www.hdfgroup.org/HDF5
+
+HL-HDF is designed to focus on selected HDF5 functionality and
+make it available to users at a high level of abstraction, the idea
+being to make the management of their data easier. A strong effort has
+been made to ensure that this functionality, although a limited subset
+of HDF5 functionality, provides a general and flexible set of tools for
+managing arbitrary data. Like HDF5, HL-HDF is meant to be used on
+different computer platforms. In practise this means different flavours
+of UNIX and NT. HDF5 may work on other systems, like the Mac, DOS and
+VMS, but The HDF Group does not support them (yet) which means that HL-HDF does
+not support them either. This is not to say that they will not work on
+these platforms, however.
+
+Binary tools available with HDF5 will work with files written with
+HL-HDF. For example, <b>h5dump</b> can be used
+to determine the contents of an HDF5 file written with HL-HDF. A few
+test programs are included with HL-HDF which can read/write raw data
+to/from HDF5 files. These test programs may be useful to users who do
+not wish to write their own routines using the functionality available
+in HL-HDF, but would prefer to rely on a simpler encoder and decoder.
+These programs can also be used as examples of how to write routines
+using HL-HDF.</para>
+
+HL-HDF is free software and it may be used used by anyone
+according to SMHI's and The HDF Groups copyright statements containined in this
+document. Users are encouraged to report their feedback to the author,
+and to contribute to its development.</para>
+
+\section the_w5_of_hlhdf_what "Why?"
+This software is designed to facilitate the management of
+scientific data from multiple sources. The integration of observations
+from various observational systems such as weather stations, satellites
+and radars is an area which is receiving increased attention. An
+increasing amount of work is also being carried out on integrating such
+observations with information from numerical models, and in assimilating
+the observations into the models. Unfortunately, most types of data are
+stored in different file formats and little effort has been made to
+facilitate the exchange of data between disciplines such as meteorology,
+hydrology and oceanography. Since SMHI is the national agency
+responsible for operational activities in all three of these
+disciplines, it would obviously be beneficial to these operations if a
+rationalization of data management procedures can be realized. This is
+the reason why the HL-HDF software has been developed.
+
+Another important reason why HL-HDF has been developed is that it
+facilitates the management of multi-source data for pure research and
+development activities. This is due to the software's flexibility which
+provides a platform for managing virtually any variable and combination
+of variables imaginable.
+
+Due to HDF5's platform independent nature, its use can even be
+considered for exchange between organizations, either domestically or
+internationally. Its built-in compression is efficient which increases
+the potential amount of data available in archives and helps make them
+more useful.
+
+\section the_w5_of_hlhdf_where "Where?"
+HL-HDF has been developed for use in three general areas:</para>
+
+\li General purpose research and development.
+\li Data management. HL-HDF can be used wherever there are
+requirements put on managing scientific data, whether it be with a
+small amount of data by a single person or with a comprehensive
+archive by a large organization.
+\li Data exchange. HL-HDF can be used almost anywhere data
+exchange is required. This can be within an organization or between
+organizations, either domestically or internationally.
+
+\section the_w5_of_hlhdf_when "When?"
+HL-HDF has been developed during the first half of 2000 on a small
+budget as a one-off pilot project. This means that there is no ongoing
+project group and no official support. The objective has been to develop
+HL-HDF and then release it for anyone to use as he or she pleases.
+Feedback is naturally welcome to the e-mail address on this document's
+front page, and we hope to be able to incorporate improvements as best
+we can.
+
+The timing of HL-HDF has been fortunate. Had we gotten underway
+earlier, we probably would have chosen HDF4. Had we waited until later,
+then several of our applications may have chosen inferiour file formats.
+It feels as though this work has been done in the right place at the
+right time.
+
+\section the_w5_of_hlhdf_who "Who?"
+Who can use HL-HDF? Anyone who works with scientific data can use
+HL-HDF, whether it be research and development with a limited amount of
+data or management of vast volumes of data in operational
+environments.</para>
+
+Who has worked on this project? The programming has been performed
+by Anders Henja. Daniel Michelson has
+coordinated the project. Mike Folk and Quincey Koziol of the HDF group
+at the NCSA have also been very helpful. An "ad hoc reference group" has
+followed the project's progress. This group consists of the following
+people:
+
+<table>
+<tr><td>Øystein Godøy</td><td>The Norwegian Meteorological Institute</td></tr>
+<tr><td>Harri Hohti</td><td>Finnish Meteorological Institute</td></tr>
+<tr><td>Otto Hyvärinen</td><td>Finnish Meteorological Institute</td></tr>
+<tr><td>Pirkko Pylkkö</td><td>Finnish Meteorological Institute</td></tr>
+<tr><td>Per Kållberg</td><td>European Centre for Medium Range Weather Forecasting and SMHI</td></tr>
+<tr><td>Hans Alexandersson</td><td>SMHI</td></tr>
+<tr><td>Bengt Carlsson</td><td>SMHI</td></tr>
+<tr><td>Adam Dybbroe</td><td>SMHI</td></tr>
+<tr><td>Jörgen Sahlberg</td><td>SMHI</td></tr>
+</table>
+
+*/

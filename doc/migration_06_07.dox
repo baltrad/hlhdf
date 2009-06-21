@@ -1,0 +1,63 @@
+/** \page migration_06_07 Migration Guide from 0.6 to 0.7
+We have had quite a few deprecated functions that has been hanging around for a while. Now, when
+HDF5 1.8.x was released and they altered some functions we have taken the opportunity to do a
+major restructure of HL-HDF. Most of the deprecated functions has been removed and other functions
+has been moved around or renamed to keep a consistent naming in HL-HDF. If, for some reason you find
+that you are missing a nessecary function and can not use the functions that are published, please
+let us know and we will attempt to implement a corresponding function.
+
+\section mig0607_header_files Header files
+Firstly, we only require that you are including one file to get access to most of the functionality.
+\verbatim
+#include <hlhdf.h>
+\endverbatim
+This file will include all other relevant files so you will not have to include several header files.
+
+The following files has been removed and relevant functionality has been moved into
+other files. Use <b>hlhdf.h</b> instead.
+\li <b>display_hlhdf.h</b>, if you want to print information about a hdf5 file, either use h5dump or print the node list manually
+\li <b>read_hlhdf.h</b>
+\li <b>read_vhlhdf.h</b>
+\li <b>update_vhlhdf.h</b>
+\li <b>vhlhdf.h</b>
+\li <b>write_hlhdf.h</b>
+\li <b>write_vhlhdf.h</b>
+
+\section mig0607_removed_functions Removed or renamed functions
+Some functions really do not have any meaning that we support since they easilly are performed
+by using the HDF5 apis instead. Other functions might only have been renamed to keep a consistent
+naming scheme or might be superfluent.
+
+\li doWriteHdf5Xxxx functions has been removed, they should not be accessed manually. It is up to writeHL_NodeList
+\li createHlHdfFile signature has been changed. See \ref createHlHdfFile
+\li addNode has been renamed to \ref addHL_Node.
+\li getNode has been renamed to \ref getHL_Node.
+\li updateNodeList has been renamed to \ref updateHL_NodeList.
+\li writeNodeList has been removed, use \ref writeHL_NodeList instead. Same behaviour can be achieved by writing
+\verbatim
+HL_Compression compr;
+initHL_Compression(&compr, CT_ZLIB);
+compr.level = doCompress;
+writeHL_NodeList(nodelist, NULL, &compr);
+\endverbatim
+\li Macro ALIGN has been renamed to \ref HLHDF_ALIGN
+\li closeDataset has been removed, use H5Dclose instead
+\li closeGroup has been removed, use H5Gclose instead
+\li addCompoundTypeAttribute has been renamed to \ref addHL_CompoundTypeAttribute
+\li copyCompoundTypeDescription has been renamed to \ref copyHL_CompoundTypeDescription
+\li setScalarValue has been renamed to \ref setHL_NodeScalarValue
+\li scanNodeList has been removed
+\li scanCompoundTypeDescription has been removed
+\li commitDatatype has been renamed to \ref commitHL_Datatype (and deprecated)
+\li findCompoundTypeDescription has been renamed to \ref findHL_CompoundTypeDescription
+\li createGroup has been removed. Same behaviour can be achieved by using H5G apis.
+\li setTypeSize has been removed, use H5Tset_size instead.
+\li createStringType has been removed, use H5T apis instead.
+\verbatim
+type = H5Tcopy(H5T_C_S1);
+H5Tset_size(type,length);
+\endverbatim
+  
+  
+ 
+*/

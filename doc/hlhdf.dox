@@ -1,0 +1,44 @@
+/** \mainpage A High Level Interface to the HDF5 File Format
+\date June, 12th 2009
+\author Daniel B. Michelson and Anders Henja
+\version 0.7 (we are getting closer to 1.0)
+\par Copyright 
+&copy; 2009 by the Swedish Meteorological and Hydrological Institute (SMHI), Norrköping, Sweden
+
+\ref HDF5Copyright
+
+\par Legals
+By obtaining, using, and/or copying this software and/or its associated 
+documentation, you agree that you have read, understood, and will comply
+with the following terms and conditions:
+
+\par
+Permission to use, copy, modify, and distribute this software and
+its documentation, without fee, is hereby granted, provided that the
+above copyright notice appear in all copies and that both that copyright
+notice and this permission notice appear in supporting documentation,
+and that the name of Swedish Meteorological and Hydrological Institute
+or SMHI not be used in advertising or publicity pertaining to
+distribution of the software without specific, written prior
+permission.
+
+\section whatsnew "Whats new in HL-HDF 0.7?"
+\li Supporting HDF5 1.8.x. 
+\li Major restructure of the APIs (See \ref migration_06_07)
+\li Documentation has been written in doxygen instead to simplify maintenance.
+\li Corrected potential memory leak/crash when translating to a native datatype
+\li _pyhl.setScalarValue and _pyhl.setSimpleValue contained a bug in PyArg_ParseTuple that caused the provided typeidentifier to be corrupted.
+\li Added a test suite that can be run after compilation. (Currently requires that HLHDF has been built with python support).
+\li Added some new functions / ways to work with HLHDF to simplify some use-cases. MORE INFO TO COME HERE...
+
+\section toc "Table of contents"
+\li \ref thew5_of_hlhdf
+\li \ref CompilationAndInstallation
+\li \ref fundamentals
+\li \ref hlhdf_c_apis
+\li \ref creating_your_own_hdf5_product
+\li \ref python_interface_pyhl
+\li \ref pyhl_api 
+\li \ref example_programs
+\li \ref migration_06_07
+*/

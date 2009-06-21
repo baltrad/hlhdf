@@ -1,0 +1,169 @@
+/** \page CompilationAndInstallation Compilation and Installation
+\section install_requirements "Requirements"
+The Heirarchical Data Format, version 5, must be built and
+accessible. Source code and prebuilt releases of HDF5 are available from
+the National Centre for Supercomputing Applications at http://www.hdfgroup.org/HDF5.
+Follow the documentation from The HDF Group if you plan on building HDF5
+yourself. An extremely important requirement is that an ANSI-compliant C
+compiler be used. Some native compilers cannot handle ANSI C and HL-HDF
+will therefore not build.
+
+\subsection install_requirements_unix UNIX
+A number of GNU tools are required, or at least highly
+recommended, in order to build HL-HDF. These tools are:
+\li <b>gzip</b> (including zlib), version 1.1.0 or higher
+\li <b>tar</b>
+\li <b>make</b>, GNU Make version 3.7x or higher (or compatible) all of which which are available from 
+http://www.gnu.org/. GNU C (and Fortran) compilers can also be retrieved from this site.
+
+In order for <b>gzip</b> to work, the ZLIB compression library must be compiled and installed. 
+ZLIB is available http://www.cdrom.com/pub/infozip/zlib/
+
+\subsection install_requirements_winnt Windows NT
+The free WiZ package, available from http://www.cdrom.com/pub/infozip/WiZ.html,
+or the proprietary WinZip package, available from http://www.winzip.com/, should be
+installed and accessible. If you choose to link in the pre-compiled
+HDF5 libs, then you'll have to use the Microsoft Visual C++ compiler,
+since this is what was used to build the HDF5 package.
+
+\subsection install_requirements_mac Mac
+No support yet
+
+\subsection install_requirements_vms VMS
+No support yet
+
+\section compilation
+Make sure that all the requirements presented in the previous section are met.
+
+\subsection compilation_unix UNIX
+The first step is to unpack the distribution. For ths purposes
+of this documentation, the path <b>/usr/local/src</b> will be the root of the
+installation. Unpack the distribution with 
+\verbatim 
+/usr/local/src % tar xvzf hlhdf_<rev>.tgz 
+\endverbatim
+ 
+This will create a directory called <b>hlhdf</b> and the distribution will be
+placed in it. If the above arguments fail, then you have not used GNU
+tar.
+
+HL-HDF has a <b>configure</b> script to determine paths to compilers, headers 
+and libraries. In short it tries to find everything HL-HDF needs to be built.
+
+Execute the <b>configure</b> script. The most relevant arguments are:
+<table>
+<tr>
+  <td>--prefix=PATH</td>
+  <td>Set the root of the installation path. Defaults to <b>/usr/local/hlhdf</b></td>
+</tr>
+<tr>
+  <td>--with-zlib=INC,LIB</td>
+  <td>Use GNU ZLIB compression headers located at <b>INC</b> and library located at
+  <b>LIB</b></td>
+</tr>
+<tr>
+  <td>--with-szlib=INC,LIB</td>
+  <td>Use SZLIB compression headers located at <b>INC</b> and library located at
+  <b>LIB</b>, this requires HDF5 versions &gt;=1.6.0</td>
+</tr>
+<tr>
+  <td>--with-hdf5=INC,LIB</td>
+  <td>Use the HDF5 headers located at <b>INC</b> and libraries located at
+  <b>LIB</b></td>
+</tr>
+<tr>
+  <td>--with-python=yes|no</td>
+  <td>Configure in Python support. Default is <b>yes</b>. Enables building a Python interface.</td>
+</tr>
+<tr>
+  <td>--with-fortran=yes|no</td>
+  <td>Configure with Fortran. Default is <b>no</b>. Useful if integrating with F77 code.</td>
+</tr>
+</table>
+
+There are a few more arguments and they are listed by executing.
+\verbatim
+/usr/local/src/hlhdf % ./configure -help
+\endverbatim
+
+ If <b>configure</b> fails, which is unlikely, then you may be in trouble. 
+ See \ref platform for platform-specific notes. The bottom line is 
+ that you may have to make some manual adjustments to your configuration files.
+
+If configuration has been carried out without any problems then you're ready to build HL-HDF with:
+
+\verbatim
+/usr/local/src/hlhdf % make
+\endverbatim
+This will generate the library <b>libhlhdf.a</b> located in the 
+<b>/usr/local/src/hlhdf/hlhdf</b> directory.
+
+\subsection compilation_winnt Windows NT
+Unpack the distribution using WiZ or WinZip. The following build
+instructions apply to the Microsoft Visual C++ 6.0 compiler.</para>
+
+\li Start a new project by selecting "File - New - Projects -
+Win32 Static Library". Add appropriate <b>Project name</b> (hlhdf) and <b>Location</b> 
+in this same window. No precompiled headers or MFC support is needed.
+\li Tools - Options - Directories. Make sure you add the path to the HDF5 header files.
+\li Project - Add to Project - Files. Go to where the source and header files for HL-HDF are 
+located and add them all.
+\li Project - Settings - C/C++. Set appropriate warning level and optimization.
+\li Build - Build hlhdf.lib
+
+This should generate the file <b>hlhdf.lib</b> in the <b>Debug</b> directory.
+
+\section testing Testing
+We have added a new test suite that can be run prior installation. Currently it
+requires that HLHDF is compiled with python support since all testcases have been
+written in python. 
+
+\subsection testing_unix UNIX
+When building on UNIX, the required libraries and modules will be compiled together
+with the rest of the software so no extra steps are required. In order to
+perform the tests, just write
+\verbatim
+/usr/local/src/hlhdf % make check
+\endverbatim
+
+If these tests pass, then HL-HDF is working as expected.
+
+\subsection testing_winnt Windows NT
+We have not run the test script on Windows NT so please let
+us know the steps you have taken in order to get it to run.
+In <b>test/python</b> there is a python script called <b>HlhdfTestSuite</b>
+that can be run to execute the tests after the python modules in that library
+has been successfully compiled.
+
+\section installation Installation
+\subsection installation_unix UNIX
+Execute
+\verbatim
+/usr/local/src/hlhdf % make install
+\endverbatim
+and the header files, libraries, binaries, scripts and a MK-file will be installed
+to the <b>include</b>, <b>lib</b>, <b>bin</b> and <b>mkf</b> directories located under the
+path specified by the <b>prefix</b> variable that was passed on to the <b>configure</b>
+script. The HL-HDF installation is complete when this step has been carried out. For information
+on how to compile and install the Python interface, see chapter \ref platform.
+
+\subsection installation_winnt Windows NT
+A specific installation has not been defined. It is up to the
+user to place the headers, library, and binaries in appropriate
+locations.
+
+\section platform Platform Notes
+HL-HDF has been built on a number of systems, most of which are
+different flavours of UNIX. Unfortunately HDF5 is not available for any
+form of VMS or other arcane operating system such as DOS. HL-HDF was
+developed with the intention that is should be possible to build it
+on most platforms, however since we only have a limited set of different
+machines, it is impossible for us to say on what machines it is possible
+to build.
+
+If the pre-compiled binaries are installed, the file <b>mkf/hldef.mk</b> has to be
+modified manually to point to the locations of the HDF5 installation,
+the ZLIB installation, the compiler, etc.
+
+For this release, development and testing has been performed on PC Linux, Ubuntu 8.04.
+*/
