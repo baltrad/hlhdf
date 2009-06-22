@@ -16,48 +16,56 @@ static HL_Node* newHL_NodeWithType(const char* name, HL_Type type)
   HL_SPEWDEBUG0("ENTER: newHL_NodeWithType");
   if (!(retv = newHL_Node(name))) {
     HL_ERROR0("Failed to allocate HL_Node item");
-    return NULL;
+    goto fail;
   }
   retv->type = type;
+fail:
+  HL_SPEWDEBUG0("EXIT: newHL_NodeWithType");
   return retv;
 }
 
 static hid_t HLNode_createStringType(size_t length)
 {
-   hid_t type;
-   type=H5Tcopy(H5T_C_S1);
-   H5Tset_size(type,length);
-   return type;
+  hid_t type;
+  HL_SPEWDEBUG0("ENTER: HLNode_createStringType");
+
+  type = H5Tcopy(H5T_C_S1);
+  H5Tset_size(type, length);
+
+  HL_SPEWDEBUG0("EXIT: HLNode_createStringType");
+  return type;
 }
 
 HL_Node* newHL_Node(const char* name)
 {
-   HL_Node* retv=NULL;
-   HL_SPEWDEBUG0("ENTER: newHL_Node");
-   if(!name) {
-      HL_ERROR0("When creating a nodelist item, name has to be specified");
-   }
+  HL_Node* retv = NULL;
+  HL_SPEWDEBUG0("ENTER: newHL_Node");
+  if (!name) {
+    HL_ERROR0("When creating a nodelist item, name has to be specified");
+    goto fail;
+  }
 
-   if(!(retv=(HL_Node*)malloc(sizeof(HL_Node)))) {
-      HL_ERROR0("Failed to allocate HL_Node");
-      return NULL;
-   }
-   retv->type=UNDEFINED_ID;
-   strcpy(retv->name,name);
-   retv->ndims=0;
-   memset(retv->dims,0,sizeof(size_t)*4);
-   retv->data=NULL;
-   retv->rawdata = NULL;
-   strcpy(retv->format,DATAFORMAT_UNDEFINED);
-   retv->typeId=-1;
-   retv->dSize=0;
-   retv->rdSize = 0;
-   retv->dataType=DTYPE_UNDEFINED_ID;
-   retv->hdfId=-1;
-   retv->mark=NMARK_CREATED;
-   retv->compoundDescription=NULL;
-   retv->compression = NULL;
-   return retv;
+  if (!(retv = (HL_Node*) malloc(sizeof(HL_Node)))) {
+    HL_ERROR0("Failed to allocate HL_Node");
+    goto fail;
+  }
+  retv->type = UNDEFINED_ID;
+  strcpy(retv->name, name);
+  retv->ndims = 0;
+  memset(retv->dims, 0, sizeof(size_t) * 4);
+  retv->data = NULL;
+  retv->rawdata = NULL;
+  strcpy(retv->format, DATAFORMAT_UNDEFINED);
+  retv->typeId = -1;
+  retv->dSize = 0;
+  retv->rdSize = 0;
+  retv->dataType = DTYPE_UNDEFINED_ID;
+  retv->hdfId = -1;
+  retv->mark = NMARK_CREATED;
+  retv->compoundDescription = NULL;
+  retv->compression = NULL;
+fail:
+  return retv;
 }
 
 HL_NodeList* newHL_NodeList(void)
@@ -172,42 +180,45 @@ HL_Node* newHL_Reference(const char* name)
 
 HL_Node* copyHL_Node(HL_Node* node)
 {
-   int i,npts;
-   HL_Node* retv=NULL;
-   HL_SPEWDEBUG0("ENTER: copyHL_Node");
-   if(!node)
-      return NULL;
-   retv=newHL_Node(node->name);
-   retv->type=node->type;
-   retv->ndims=node->ndims;
-   retv->dSize=node->dSize;
-   retv->rdSize = node->rdSize;
-   memcpy(retv->dims,node->dims,4*sizeof(hsize_t));
-   npts=1;
-   for(i=0;i<retv->ndims;i++)
-      npts*=retv->dims[i];
-   retv->data = (unsigned char*)malloc(npts*retv->dSize);
-   memcpy(retv->data,node->data,npts*retv->dSize);
+  int i, npts;
+  HL_Node* retv = NULL;
+  HL_SPEWDEBUG0("ENTER: copyHL_Node");
+  if (!node)
+    return NULL;
 
-   if(node->rawdata!=NULL) {
-      retv->rawdata = (unsigned char*)malloc(npts*retv->rdSize);
-      memcpy(retv->rawdata,node->rawdata,npts*retv->rdSize);
-   } else {
-      retv->rdSize = 0;
-      retv->rawdata = NULL;
-   }
-   strcpy(retv->format,node->format);
+  retv = newHL_Node(node->name);
+  retv->type = node->type;
+  retv->ndims = node->ndims;
+  retv->dSize = node->dSize;
+  retv->rdSize = node->rdSize;
+  memcpy(retv->dims, node->dims, 4* sizeof (hsize_t));
+  npts=1;
+  for(i=0;i<retv->ndims;i++)
+    npts*=retv->dims[i];
 
-   if(node->typeId>=0)
-      retv->typeId=H5Tcopy(node->typeId);
+  retv->data = (unsigned char*)malloc(npts*retv->dSize);
+  memcpy(retv->data,node->data,npts*retv->dSize);
 
-   retv->dataType=node->dataType;
-   retv->hdfId=-1;
-   retv->mark=node->mark;
+  if(node->rawdata!=NULL) {
+    retv->rawdata = (unsigned char*)malloc(npts*retv->rdSize);
+    memcpy(retv->rawdata,node->rawdata,npts*retv->rdSize);
+  } else {
+    retv->rdSize = 0;
+    retv->rawdata = NULL;
+  }
+  strcpy(retv->format,node->format);
 
-   retv->compoundDescription=copyHL_CompoundTypeDescription(node->compoundDescription);
+  if(node->typeId>=0)
+    retv->typeId=H5Tcopy(node->typeId);
 
-   return retv;
+  retv->dataType=node->dataType;
+  //fprintf(stderr, "Copying node with hdfId = %d\n",node->hdfId);
+  retv->hdfId=-1; //node->hdfId;
+  retv->mark=node->mark;
+
+  retv->compoundDescription=copyHL_CompoundTypeDescription(node->compoundDescription);
+
+  return retv;
 }
 
 /*
@@ -241,9 +252,9 @@ int addHL_Node(HL_NodeList* nodelist, HL_Node* node)
     if (strcmp(tmpStr, "") != 0) {
       for (i = 0; treeStructureOk == 0 && i < nodelist->nNodes; i++) {
         if (strcmp(tmpStr, nodelist->nodes[i]->name) == 0) {
-          if ((nodelist->nodes[i]->type == GROUP_ID)
-              || (nodelist->nodes[i]->type == DATASET_ID && (node->type
-                  == ATTRIBUTE_ID || node->type == REFERENCE_ID)))
+          if ((nodelist->nodes[i]->type == GROUP_ID) ||
+              (nodelist->nodes[i]->type == DATASET_ID &&
+                (node->type == ATTRIBUTE_ID || node->type == REFERENCE_ID)))
             treeStructureOk = 1;
         }
       }
@@ -263,8 +274,7 @@ int addHL_Node(HL_NodeList* nodelist, HL_Node* node)
   }
 
   newallocsize = nodelist->nAllocNodes + DEFAULT_SIZE_NODELIST;
-  if (!(nodelist->nodes = realloc(nodelist->nodes, sizeof(HL_Node*)
-      * newallocsize))) {
+  if (!(nodelist->nodes = realloc(nodelist->nodes, sizeof(HL_Node*) * newallocsize))) {
     HL_ERROR0("Serious memory error occured when reallocating Node list");
     return 0;
   }
@@ -370,26 +380,32 @@ int setHL_NodeArrayValue(HL_Node* node, size_t sz, int ndims, hsize_t* dims,
   return 1;
 }
 
-HL_CompoundTypeDescription* findHL_CompoundTypeDescription(HL_NodeList* nodelist,
-                  unsigned long objno0,
-                  unsigned long objno1)
+HL_CompoundTypeDescription* findHL_CompoundTypeDescription(
+  HL_NodeList* nodelist, unsigned long objno0, unsigned long objno1)
 {
-   int i;
-   HL_DEBUG0("ENTER: findCompoundTypeDescription");
-   for(i=0;i<nodelist->nNodes;i++) {
-      if(nodelist->nodes[i]->type==TYPE_ID && nodelist->nodes[i]->compoundDescription) {
-   if(objno0==nodelist->nodes[i]->compoundDescription->objno[0] &&
-      objno1==nodelist->nodes[i]->compoundDescription->objno[1])
-      return nodelist->nodes[i]->compoundDescription;
+  int i;
+  HL_CompoundTypeDescription* retv = NULL;
+  HL_SPEWDEBUG0("ENTER: findHL_CompoundTypeDescription");
+  for (i = 0; i < nodelist->nNodes; i++) {
+    if (nodelist->nodes[i]->type == TYPE_ID
+        && nodelist->nodes[i]->compoundDescription) {
+      if (objno0 == nodelist->nodes[i]->compoundDescription->objno[0] &&
+          objno1 == nodelist->nodes[i]->compoundDescription->objno[1]) {
+        retv = nodelist->nodes[i]->compoundDescription;
+        goto done;
       }
-   }
-   return NULL;
+    }
+  }
+done:
+  HL_SPEWDEBUG0("EXIT: findHL_CompoundTypeDescription");
+  return retv;
 }
 
 
-int commitHL_Datatype(HL_Node* node,hid_t testStruct_hid)
+int commitHL_Datatype(HL_Node* node, hid_t testStruct_hid)
 {
-   HL_DEBUG0("ENTER: commitDatatype");
-   node->hdfId=testStruct_hid;
-   return 1;
+  HL_SPEWDEBUG0("ENTER: commitDatatype");
+  node->hdfId = testStruct_hid;
+  HL_SPEWDEBUG0("EXIT: commitDatatype");
+  return 1;
 }

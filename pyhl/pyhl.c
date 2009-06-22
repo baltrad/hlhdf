@@ -1037,7 +1037,7 @@ static PyObject* _pyhl_node_commit(PyhlNode* self, PyObject* args)
   hid_t dType;
   if (!PyArg_ParseTuple(args, "i", &dType))
     return NULL;
-  if (!self->node->type == TYPE_ID) {
+  if (self->node->type != TYPE_ID) {
     setException(PyExc_AttributeError,"Trying to commit a node which not is a type node");
     return NULL;
   }
@@ -1240,17 +1240,14 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
     }
     }
   }
-  if(dims)
-    free(dims);
-  if(tmpHid>=0)
-    H5Tclose(tmpHid);
+
+  HLHDF_FREE(dims);
+  HL_H5T_CLOSE(tmpHid);
   return retv;
 fail:
   Py_XDECREF(retv);
-  if(dims)
-    free(dims);
-  if(tmpHid>=0)
-    H5Tclose(tmpHid);
+  HLHDF_FREE(dims);
+  HL_H5T_CLOSE(tmpHid);
   return NULL;
 }
 
@@ -1325,8 +1322,7 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
       break;
     }
     case H5T_STRING: {
-      retv = PyString_FromStringAndSize((char*) self->node->rawdata, typeSize
-          - 1);
+      retv = PyString_FromStringAndSize((char*) self->node->rawdata, typeSize - 1);
       break;
     }
     default: {
@@ -1382,8 +1378,7 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
         for (i = 0; i < self->node->ndims; i++)
           npts *= self->node->dims[i];
         npts *= typeSize;
-        retv
-            = PyString_FromStringAndSize((char*) self->node->rawdata, npts - 1);
+        retv = PyString_FromStringAndSize((char*) self->node->rawdata, npts - 1);
       } else {
         retv = PyList_New(0);
         for (i = 0; retv && i < self->node->dims[0]; i++) {
@@ -1619,9 +1614,33 @@ fail:
   Py_XDECREF(retv);
   Py_XDECREF(pyo);
   Py_XDECREF(pyo2);
-  if(tmpHid>=0)
-    H5Tclose(tmpHid);
+  HL_H5T_CLOSE(tmpHid);
   return NULL;
+}
+
+static PyObject* _pyhl_node_get_compound_type(PyhlNode* self, PyObject* args)
+{
+  PyObject* retv = NULL;
+
+  if (self->node->typeId < 0 ||
+      H5Tget_class(self->node->typeId) != H5T_COMPOUND) {
+    setException(PyExc_AttributeError, "This is not a compound type");
+    goto fail;
+  }
+
+  if (H5Tcommitted(self->node->typeId) > 0) {
+    if (!self->node->compoundDescription) {
+      setException(PyExc_AttributeError,"Node does not have a compound description");
+      goto fail;
+    }
+    retv = PyString_FromString(self->node->compoundDescription->hltypename);
+  } else {
+    Py_INCREF(Py_None);
+    retv = Py_None; // So that we can return retv
+  }
+
+fail:
+  return retv;
 }
 
 /**
@@ -1810,6 +1829,7 @@ static struct PyMethodDef node_methods[] =
   { "data", (PyCFunction) _pyhl_node_data, 1 },
   { "rawdata", (PyCFunction) _pyhl_node_rawdata, 1 },
   { "compound_data", (PyCFunction) _pyhl_node_get_compound_data, 1 },
+  { "compound_type", (PyCFunction) _pyhl_node_get_compound_type, 1 },
   { NULL, NULL } /* sentinel */
 };
 

@@ -13,8 +13,8 @@ class HlhdfUpdateTest(unittest.TestCase):
   TESTFILE = "testskrivning.hdf"
   
   def setUp(self):
-    #_pyhl.show_hlhdferrors(1)
-    #_pyhl.show_hdf5errors(1)
+    _pyhl.show_hlhdferrors(0)
+    _pyhl.show_hdf5errors(0)
     if os.path.isfile(self.TESTFILE):
       os.unlink(self.TESTFILE)
     a = _pyhl.nodelist()
@@ -194,7 +194,7 @@ class HlhdfUpdateTest(unittest.TestCase):
     b=a.fetchNode("/RaveType")
     #self.assertEqual("UNDEFINED", b.format())
     #self.assertEqual(_pyhl.TYPE_ID, b.type())
-    #print "DATA: " + `b.data()`
+    print "DATA: " + `b.data()`
     # Add a value using the named type
     rinfo_obj =_rave_info_type.object()
     rinfo_obj.xsize = 98
@@ -202,7 +202,7 @@ class HlhdfUpdateTest(unittest.TestCase):
     rinfo_obj.xscale = 120.0
     rinfo_obj.yscale = 130.0
     rinfo_obj.area_extent = (33.0,32.0,31.0,30.0)
-    self.addScalarValueNode(a, _pyhl.ATTRIBUTE_ID, "/attribute", rinfo_type.size(), rinfo_obj.tostring(), "compound", rinfo_type.hid())
+    self.addScalarValueNode(a, _pyhl.ATTRIBUTE_ID, "/attribute", rinfo_type.size(), rinfo_obj.tostring(), "compound", b.data())
     a.update() 
     
     #verify that the data has been updated

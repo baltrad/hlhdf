@@ -13,7 +13,8 @@ class HlhdfReadTest(unittest.TestCase):
   TESTFILE = "fixture_VhlhdfRead_datafile.h5"
   
   def setUp(self):
-    _pyhl.show_hlhdferrors(0);
+    _pyhl.show_hlhdferrors(0)
+    _pyhl.show_hdf5errors(0)
     self.h5nodelist = _pyhl.read_nodelist(self.TESTFILE) 
 
   def tearDown(self):
@@ -599,6 +600,20 @@ class HlhdfReadTest(unittest.TestCase):
     except AttributeError, e:
       pass 
 
+  def testReadDataset1Attribute(self):
+    node=self.h5nodelist.fetchNode("/dataset1/attribute1")
+    self.assertEqual("int", node.format()) # We are getting the fixed type format
+    self.assertEqual(989898, node.data())
+    self.assertEqual("/dataset1/attribute1", node.name())
+    self.assertEqual(_pyhl.ATTRIBUTE_ID, node.type())
+
+  def testReadDataset1Reference(self):
+    node=self.h5nodelist.fetchNode("/dataset1/doublearray")
+    self.assertEqual("string", node.format()) # We are getting the fixed type format
+    self.assertEqual("/doublearray", node.data())
+    self.assertEqual("/dataset1/doublearray", node.name())
+    self.assertEqual(_pyhl.REFERENCE_ID, node.type())
+
   def testReadReferenceToDoubleArray(self):
     node=self.h5nodelist.fetchNode("/references/doublearray")
     self.assertEqual("string", node.format()) # We are getting the fixed type format
@@ -764,6 +779,14 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual(10.0, comp["xscale"])
     self.assertEqual(20.0, comp["yscale"])
     self.assertTrue(numpy.all(comp["area_extent"] == [1.0,2.0,3.0,4.0]))
+  
+  def XtestGetNamedCompoundType(self):
+    node=self.h5nodelist.fetchNode("/compoundgroup/attribute2")
+    self.assertEquals("/RaveDatatype", node.compound_type())
+    
+  def XtestGetUnnamedCompoundType(self):
+    node=self.h5nodelist.fetchNode("/compoundgroup/unnamed_type_attribute")
+    self.assertEquals(None, node.compound_type())
   
   def testSelectAndFetch_1(self):
     self.h5nodelist.selectAll()

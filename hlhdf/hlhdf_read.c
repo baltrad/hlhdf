@@ -29,6 +29,14 @@ typedef struct ReferenceLookup
   struct ReferenceLookup* next; /**< next reference */
 } ReferenceLookup;
 
+/**
+ * Used when traversing over the different nodes during reading.
+ */
+typedef struct VisitorStruct {
+  char* path; /**< the root path initiating the visitor */
+  HL_NodeList* nodelist; /**< the nodelist where to add nodes */
+} VisitorStruct;
+
 /*@} End of Typedefs */
 
 /*@{ Private functions */
@@ -644,11 +652,10 @@ static int fillTypeNode(hid_t file_id, HL_Node* node)
   HL_CompoundTypeDescription* typelist = NULL;
   H5G_stat_t statbuf;
   HL_SPEWDEBUG0("ENTER: fillTypeNode");
-
   if ((obj = H5Topen(file_id, node->name, H5P_DEFAULT)) < 0) {
+    HL_ERROR1("Failed to open %s ", node->name);
     return 0;
   }
-
   H5Gget_objinfo(obj, ".", TRUE, &statbuf);
 
   if (!(typelist = buildTypeDescriptionFromTypeHid(obj))) {
@@ -665,6 +672,7 @@ static int fillTypeNode(hid_t file_id, HL_Node* node)
   node->mark = NMARK_ORIGINAL;
 
   node->hdfId = obj; /*Save hdfid for later use, which means that obj not should be closed now. */
+  //@todo This causes the file not to be closed when atempting to update a file.
   return 1;
 fail:
   HL_H5T_CLOSE(obj);
@@ -696,120 +704,165 @@ static int fillNodeWithData(hid_t file_id, HL_Node* node)
   return 0;
 }
 
-/* ---------------------------------------
- * GROUP_ATTRIBUTE_ITERATOR
- * --------------------------------------- */
-static herr_t groupAttributeIterator(hid_t loc_id, const char* name,
-  const H5A_info_t *ainfo, void* op_data)
+/**
+ * Creates an absolute path from <b>root</b> and <b>name</b> parts.
+ * @param[in] root - the root path
+ * @param[in] name - the name
+ * @return a path in the form <b>root/name</b>
+ */
+static char* hlhdf_read_createPath(const char* root, const char* name)
 {
-  HL_NodeList* nodeList = (HL_NodeList*) op_data;
-  HL_Node* node;
-  char tmp1[512], tmp2[512];
-  hid_t attrid = -1, attrtype = -1;
+  char* newpath = NULL;
+  int status = FALSE;
+  int len = 0;
 
-  HL_SPEWDEBUG0("ENTER: groupAttributeIterator");
-
-  attrid = H5Aopen_name(loc_id, name); /* Open the attribute to check what class it is */
-  attrtype = H5Aget_type(attrid); /* Need this to be able to check class */
-  strcpy(tmp1, nodeList->tmp_name);
-  sprintf(tmp2, "%s/%s", nodeList->tmp_name, name);
-  strcpy(nodeList->tmp_name, tmp2);
-  if (H5Tget_class(attrtype) == H5T_REFERENCE) {
-    /* Special case for attributes that really are references */
-    addHL_Node(nodeList, (node = newHL_Reference(nodeList->tmp_name)));
-  } else {
-    addHL_Node(nodeList, (node = newHL_Attribute(nodeList->tmp_name)));
+  if (root == NULL || name == NULL) {
+    HL_ERROR0("hlhdf_read_createPath: arguments NULL");
+    goto fail;
   }
-  strcpy(nodeList->tmp_name, tmp1);
-  H5Tclose(attrtype);
-  H5Aclose(attrid);
-  return 0;
-}
 
-/* ---------------------------------------
- * DATASET_ATTRIBUTE_ITERATOR (IS THIS REALLY NEEDED,
- * IT IS THE SAME CODE AS FOR GROUP_ATTRIBUTE_ITERATOR)
- * --------------------------------------- */
-static herr_t datasetAttributeIterator(hid_t loc_id, const char* name,
-  const H5A_info_t *ainfo, void* op_data)
-{
-  HL_NodeList* nodeList = (HL_NodeList*) op_data;
-  HL_Node* node;
-  char tmp1[512], tmp2[512];
-  hid_t attrid = -1, attrtype = -1;
-
-  HL_SPEWDEBUG0("ENTER: datasetAttributeIterator");
-
-  attrid = H5Aopen_name(loc_id, name); /* Open the attribute to check what class it is */
-  attrtype = H5Aget_type(attrid); /* Need this to be able to check class */
-  strcpy(tmp1, nodeList->tmp_name);
-  sprintf(tmp2, "%s/%s", nodeList->tmp_name, name);
-  strcpy(nodeList->tmp_name, tmp2);
-  if (H5Tget_class(attrtype) == H5T_REFERENCE) {
-    /* Special case for attributes that really are references */
-    addHL_Node(nodeList, (node = newHL_Reference(nodeList->tmp_name)));
-  } else {
-    addHL_Node(nodeList, (node = newHL_Attribute(nodeList->tmp_name)));
+  newpath = malloc(sizeof(char)*(strlen(root) + strlen(name) + 2));
+  if (newpath == NULL) {
+    HL_ERROR0("Failed to allocate memory\n");
+    goto fail;
   }
-  strcpy(nodeList->tmp_name, tmp1);
-  H5Tclose(attrtype);
-  H5Aclose(attrid);
-  return 0;
+
+  if (strcmp(".", root) == 0 || strcmp("/", root) == 0) {
+    strcpy(newpath, "");
+  } else {
+    int i = 0;
+    sprintf(newpath, "%s", root);
+    i = strlen(newpath) - 1;
+    while (i>1 && newpath[i] == '/') {
+      newpath[i] = '\0';
+      i--;
+    }
+  }
+
+  if (strcmp(name, ".") == 0) {
+    int i = strlen(newpath);
+    sprintf(&newpath[i], "/");
+  } else {
+    int i = strlen(newpath);
+    sprintf(&newpath[i], "/%s", name);
+  }
+
+  len = strlen(newpath);
+  if (len > 1 && newpath[len-1]=='/') {
+    newpath[len-1]='\0';
+  }
+
+  /*fprintf(stderr, "root='%s', name='%s' => newpath = '%s'\n", root, name, newpath);*/
+
+  status = TRUE;
+fail:
+  if (status == FALSE) {
+    HLHDF_FREE(newpath);
+  }
+  return newpath;
 }
 
-/* ---------------------------------------
- * GROUP_ITERATOR
- * --------------------------------------- */
-static herr_t groupIterator(hid_t gid, const char* name, void* op_data)
+/**
+ * Called by H5Aiterate_by_name when iterating over all attributes in a group.
+ * @param[in] location_id - the root group from where the iterator started
+ * @param[in] name - the name of the attribute
+ * @param[in] ainfo - the attribute info
+ * @param[in] op_data - the \ref VisitorStruct
+ * @return -1 on failure, otherwise 0.
+ */
+static herr_t hlhdf_node_attribute_visitor(hid_t location_id, const char *name, const H5A_info_t *ainfo, void *op_data)
 {
-   hid_t obj;
-   H5G_stat_t statbuf;
-   HL_NodeList* nodeList=(HL_NodeList*)op_data;
-   HL_Node* node;
-   char tmp1[512],tmp2[512];
+  VisitorStruct* vsp = (VisitorStruct*)op_data;
+  herr_t status = -1;
+  char* path = hlhdf_read_createPath(vsp->path, name);
+  hid_t attrid = -1;
+  hid_t typeid = -1;
 
-   HL_SPEWDEBUG0("ENTER: groupIterator");
+  if (path == NULL) {
+    HL_ERROR0("Could not create path");
+    goto fail;
+  }
 
-   H5Gget_objinfo(gid,name,0,&statbuf);
+  if ((attrid = H5Aopen(location_id, name, H5P_DEFAULT))<0) {
+    HL_ERROR1("Could not open attribute: %s", name);
+    goto fail;
+  }
 
-   strcpy(tmp1,nodeList->tmp_name);
+  if ((typeid = H5Aget_type(attrid)) < 0) {
+    HL_ERROR1("Could not get type for %s", name);
+    goto fail;
+  }
 
-   switch(statbuf.type) {
-   case H5G_GROUP:
-      if((obj=H5Gopen(gid,name,H5P_DEFAULT))>=0) {
-         sprintf(tmp2,"%s/%s",nodeList->tmp_name,name);
-         strcpy(nodeList->tmp_name,tmp2);
-         addHL_Node(nodeList, (node = newHL_Group(nodeList->tmp_name)));
-         H5Aiterate(obj,H5_INDEX_NAME, H5_ITER_INC, NULL, groupAttributeIterator, nodeList);
-         H5Giterate(obj,".", NULL, groupIterator, nodeList);
-         strcpy(nodeList->tmp_name,tmp1);
-         H5Gclose(obj);
-      }
-      break;
-   case H5G_DATASET:
-      if((obj=H5Dopen(gid,name,H5P_DEFAULT))>=0) {
-         sprintf(tmp2,"%s/%s",nodeList->tmp_name,name);
-         strcpy(nodeList->tmp_name,tmp2);
-         addHL_Node(nodeList, (node=newHL_Dataset(nodeList->tmp_name)));
-         H5Aiterate(obj,H5_INDEX_NAME, H5_ITER_INC, NULL,datasetAttributeIterator,nodeList);
-         strcpy(nodeList->tmp_name,tmp1);
-         H5Dclose(obj);
-      }
-      break;
-   case H5G_TYPE:
-      sprintf(tmp2,"%s/%s",nodeList->tmp_name,name);
-      strcpy(nodeList->tmp_name,tmp2);
-      addHL_Node(nodeList,(node=newHL_Datatype(nodeList->tmp_name)));
-      strcpy(nodeList->tmp_name,tmp1);
-      break;
-   default:
-      HL_ERROR1("Undefined type for %s",name);
-      HL_ERROR1("Name: %s",tmp1);
-      HL_ERROR1("Type id %d",statbuf.type);
-      break;
-   }
-   return 0;
+  if (H5Tget_class(typeid) == H5T_REFERENCE) {
+    addHL_Node(vsp->nodelist, newHL_Reference(path));
+  } else {
+    addHL_Node(vsp->nodelist, newHL_Attribute(path));
+  }
+
+  status = 0;
+fail:
+  HL_H5A_CLOSE(attrid);
+  HL_H5T_CLOSE(typeid);
+  HLHDF_FREE(path);
+  return status;
 }
+
+/**
+ * Called by H5Ovisit_by_name when iterating over all group/dataasets.
+ * @param[in] location_id - the root group from where the iterator started
+ * @param[in] name - the name of the attribute
+ * @param[in] info - the object info
+ * @param[in] op_data - the \ref VisitorStruct
+ * @return -1 on failure, otherwise 0.
+ */
+static herr_t hlhdf_node_visitor(hid_t g_id, const char *name, const H5O_info_t *info, void *op_data)
+{
+  VisitorStruct* vsp = (VisitorStruct*)op_data;
+  VisitorStruct vs;
+  herr_t status = -1;
+  char* path = hlhdf_read_createPath(vsp->path, name);
+
+  if (path == NULL) {
+    HL_ERROR0("Could not create path");
+    goto fail;
+  }
+
+  vs.nodelist = vsp->nodelist;
+  vs.path = path;
+  switch (info->type) {
+  case H5O_TYPE_GROUP: {
+    hsize_t n=0;
+    addHL_Node(vsp->nodelist, newHL_Group(vs.path));
+    if (H5Aiterate_by_name(g_id, name, H5_INDEX_NAME, H5_ITER_INC, &n, hlhdf_node_attribute_visitor, &vs, H5P_DEFAULT) < 0) {
+      HL_ERROR1("Failed to iterate over %s", vs.path);
+      goto fail;
+    }
+    break;
+  }
+  case H5O_TYPE_DATASET: {
+    hsize_t n=0;
+    addHL_Node(vsp->nodelist, newHL_Dataset(vs.path));
+    if (H5Aiterate_by_name(g_id,  name, H5_INDEX_NAME, H5_ITER_INC, &n, hlhdf_node_attribute_visitor, &vs, H5P_DEFAULT) < 0) {
+      HL_ERROR1("Failed to iterate over %s", vs.path);
+      goto fail;
+    }
+    break;
+  }
+  case H5O_TYPE_NAMED_DATATYPE: {
+    addHL_Node(vsp->nodelist, newHL_Datatype(vs.path));
+    break;
+  }
+  default: {
+    fprintf(stderr, "(%d) UNKNOWN: %s\n", g_id, name);
+    break;
+  }
+  }
+  status = 0;
+fail:
+  HLHDF_FREE(path);
+  return status;
+}
+
 /*@} End of Private functions */
 
 /*@{ Interface functions */
@@ -817,28 +870,39 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
 {
   hid_t file_id = -1, gid = -1;
   HL_NodeList* retv = NULL;
+  VisitorStruct vs;
+  H5O_info_t objectInfo;
 
   HL_DEBUG0("ENTER: readHL_NodeListFrom");
+
+  if (fromPath == NULL) {
+    HL_ERROR0("fromPath == NULL");
+    goto fail;
+  }
 
   if ((file_id = openHlHdfFile(filename, "r")) < 0) {
     HL_ERROR1("Failed to open file %s",filename);
     goto fail;
   }
 
+  disableErrorReporting();
+  if (H5Oget_info_by_name(file_id, fromPath, &objectInfo, H5P_DEFAULT)<0) {
+    HL_ERROR0("fromPath needs to be a dataset or group when opening a file.");
+    goto fail;
+  }
+  enableErrorReporting();
+
   if (!(retv = newHL_NodeList())) {
     HL_ERROR0("Could not allocate NodeList\n");
     goto fail;
   }
   strcpy(retv->filename, filename);
-  if ((gid = H5Gopen(file_id, fromPath, H5P_DEFAULT)) < 0) {
-    HL_ERROR0("Failed to open root group");
-    goto fail;
-  }
-  H5Aiterate(gid, H5_INDEX_NAME, H5_ITER_INC, NULL, groupAttributeIterator, retv);
-  HL_H5G_CLOSE(gid);
 
-  if (H5Giterate(file_id, fromPath, NULL, groupIterator, retv) < 0) {
-    HL_ERROR0("Could not iterate over groups");
+  vs.path = (char*)fromPath;
+  vs.nodelist = retv;
+
+  if (H5Ovisit_by_name(file_id, fromPath, H5_INDEX_NAME, H5_ITER_INC, hlhdf_node_visitor, &vs, H5P_DEFAULT)<0) {
+    HL_ERROR0("Could not iterate over file");
     goto fail;
   }
 

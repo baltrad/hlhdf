@@ -14,6 +14,8 @@ class HlhdfWriteTest(unittest.TestCase):
   TESTFILE = "testskrivning.hdf"
   
   def setUp(self):
+    _pyhl.show_hlhdferrors(0)
+    _pyhl.show_hdf5errors(0)
     if os.path.isfile(self.TESTFILE):
       os.unlink(self.TESTFILE)
     

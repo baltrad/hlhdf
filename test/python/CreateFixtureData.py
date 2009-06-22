@@ -205,6 +205,20 @@ class CreateFixtureData(object):
     c = [2, 3, 4, 5, 6]
     b.setArrayValue(1,[len(c)],c,"long",-1)  
     a.addNode(b)
+
+    # Create a dataset with an attribute and a reference in it
+    b=_pyhl.node(_pyhl.DATASET_ID, "/dataset1")
+    c = [1, 2, 3, 4]
+    b.setArrayValue(1,[len(c)],c,"int",-1)  
+    a.addNode(b) 
+    
+    b=_pyhl.node(_pyhl.ATTRIBUTE_ID,"/dataset1/attribute1")
+    b.setScalarValue(-1,989898,"int",-1)
+    a.addNode(b)    
+
+    b=_pyhl.node(_pyhl.REFERENCE_ID,"/dataset1/doublearray")
+    b.setScalarValue(-1,"/doublearray","string",-1)
+    a.addNode(b)  
     
     # REFERENCES POINTING AT DIFFERENT PLACES
     b=_pyhl.node(_pyhl.GROUP_ID, "/references")
