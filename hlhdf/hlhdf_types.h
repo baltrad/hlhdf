@@ -222,17 +222,5 @@ typedef struct HL_Node {
  * @ingroup hlhdf_c_apis
  */
 typedef struct _HL_NodeList HL_NodeList;
-#ifdef KALLE
-/**
- * Represents a HDF5 file.
- * @ingroup hlhdf_c_apis
- */
-typedef struct {
-   char* filename;     /**< The file name */
-   int nNodes;         /**< Number of nodes */
-   int nAllocNodes;    /**< Number of allocated nodes */
-   HL_Node** nodes;    /**< The list of nodes (max size is nNodes - 1) */
-} HL_NodeList;
-#endif
 
 #endif

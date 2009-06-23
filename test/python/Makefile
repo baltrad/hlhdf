@@ -20,7 +20,7 @@ CFLAGS= $(OPTS) $(DEFS) -I../../hlhdf -I../../pyhlhdf $(NUMPY_INCLUDE_DIR) \
 
 LDFLAGS= -L../../hlhdf -L../../pyhlhdf $(HDF5_LIBDIR) $(ZLIB_LIBDIR) $(SZLIB_LIBDIR)
 
-LIBRARIES= -lpyhlhdf -lhlhdf $(LD_FORCE_SHARE) -lhdf5 $(LIB_SZLIB) -lz -lm -lc
+LIBRARIES= -lpyhlhdf $(LD_FORCE_SHARE) -lhlhdf -lhdf5 $(LIB_SZLIB) -lz -lm -lc
 
 TARGET.1=_varioustestsmodule.so
 TARGET.2=_rave_info_typemodule.so
@@ -33,10 +33,10 @@ OBJECTS.2=$(SOURCES.2:.c=.o)
 
 all: $(TARGET.1) $(TARGET.2)
 
-$(TARGET.1): $(OBJECTS.1) ../../hlhdf/libhlhdf.a ../../pyhlhdf/libpyhlhdf.a
+$(TARGET.1): $(OBJECTS.1) ../../hlhdf/libhlhdf.so ../../pyhlhdf/libpyhlhdf.a
 	$(LDSHARED) -o $@ $(OBJECTS.1) $(LDFLAGS) $(LIBRARIES)
 
-$(TARGET.2): $(OBJECTS.2) ../../hlhdf/libhlhdf.a ../../pyhlhdf/libpyhlhdf.a
+$(TARGET.2): $(OBJECTS.2) ../../hlhdf/libhlhdf.so ../../pyhlhdf/libpyhlhdf.a
 	$(LDSHARED) -o $@ $(OBJECTS.2) $(LDFLAGS) $(LIBRARIES)
 
 clean:

@@ -22,11 +22,7 @@ endif
 
 LDFLAGS= -L../hlhdf -L../pyhlhdf $(HDF5_LIBDIR) $(ZLIB_LIBDIR) $(SZLIB_LIBDIR)
 
-#LIBRARIES= -lpyhlhdf -lhlhdf $(LD_FORCE_SHARE) -lhdf5 $(LD_FORCE_STATIC) -lz \
-#	   -lm -lc
-LIBRARIES= -lpyhlhdf -lhlhdf $(LD_FORCE_SHARE) -lhdf5 $(LIB_SZLIB) -lz -lm -lc
-#LIBRARIES= -lpyhlhdf -lhlhdf $(LD_FORCE_STATIC) -lhdf5 $(LD_FORCE_STATIC) -lz \
-#	   -lm -lc
+LIBRARIES= -lpyhlhdf $(LD_FORCE_SHARE) -lhlhdf -lhdf5 $(LIB_SZLIB) -lz -lm -lc
 
 TARGET=_pyhlmodule.so
 
@@ -35,7 +31,7 @@ OBJECTS=$(SOURCES:.c=.o)
 
 all: $(TARGET)
 
-$(TARGET): $(OBJECTS) ../hlhdf/libhlhdf.a ../pyhlhdf/libpyhlhdf.a
+$(TARGET): $(OBJECTS) ../hlhdf/libhlhdf.so ../pyhlhdf/libpyhlhdf.a
 	$(LDSHARED) -o $@ $(OBJECTS) $(LDFLAGS) $(LIBRARIES)
 
 clean:

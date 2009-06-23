@@ -6,6 +6,7 @@
 #include <stdarg.h>
 
 hlhdf_debug_struct hlhdfDbg;
+static int initialized = 0;
 
 /*@{ Private functions */
 static void setLogTime(char* strtime, int len)
@@ -85,10 +86,13 @@ static void HL_DefaultHdf5ErrorFunction(unsigned n, const H5E_error_t* rowmsg)
 /*@{ Interface functions */
 void HL_InitializeDebugger()
 {
-  hlhdfDbg.dbgLevel = HLHDF_SILENT;
-  hlhdfDbg.dbgfun = HL_DefaultDebugFunction;
-  hlhdfDbg.hdf5showerror = 1;
-  hlhdfDbg.hdf5fun = HL_DefaultHdf5ErrorFunction;
+  if (initialized == 0) {
+    initialized = 1;
+    hlhdfDbg.dbgLevel = HLHDF_SILENT;
+    hlhdfDbg.dbgfun = HL_DefaultDebugFunction;
+    hlhdfDbg.hdf5showerror = 1;
+    hlhdfDbg.hdf5fun = HL_DefaultHdf5ErrorFunction;
+  }
 }
 
 void HL_setDebugLevel(HL_Debug lvl)

@@ -9,20 +9,25 @@
 #
 # History:  2009-06-15 Created by Anders Henja
 ############################################################
-if [ ! -f def.mk ]; then
+SCRIPTPATH=`dirname $(readlink -f $0)`
+
+DEF_MK_FILE="${SCRIPTPATH}/../def.mk"
+
+if [ ! -f "${DEF_MK_FILE}" ]; then
   echo "configure has not been run"
   exit 255
 fi
 
 RESULT=0
 
-TESTPYTHON=`fgrep COMPILE_FOR_PYTHON def.mk | sed -e"s/\(COMPILE_FOR_PYTHON=[ \t]*\)//"`
+TESTPYTHON=`fgrep COMPILE_FOR_PYTHON "${DEF_MK_FILE}" | sed -e"s/\(COMPILE_FOR_PYTHON=[ \t]*\)//"`
 
 # RUN THE PYTHON TESTS
 if test "${TESTPYTHON}" = "yes"; then
-HDF5_LDPATH=`fgrep HDF5_LIBDIR def.mk | sed -e"s/\(HDF5_LIBDIR=[ \t]*-L\)//"`
-export LD_LIBRARY_PATH="${HDF5_LDPATH}"
-export PYHLPATH=`pwd`/pyhl
+HDF5_LDPATH=`fgrep HDF5_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(HDF5_LIBDIR=[ \t]*-L\)//"`
+LIBHLHDFPATH="${SCRIPTPATH}/../hlhdf"
+export LD_LIBRARY_PATH="${LIBHLHDFPATH}:${HDF5_LDPATH}"
+export PYHLPATH="${SCRIPTPATH}/../pyhl"
 
 if test "${PYTHONPATH}" != ""; then
   export PYTHONPATH="${PYHLPATH}:${PYTHONPATH}"
@@ -30,7 +35,7 @@ else
   export PYTHONPATH="${PYHLPATH}"
 fi
 
-cd test/python
+cd "${SCRIPTPATH}/../test/python"
 python HlhdfTestSuite.py
 VAL=$?
 if [ $VAL != 0 ]; then

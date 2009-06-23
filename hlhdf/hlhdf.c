@@ -15,6 +15,8 @@ static int errorReportingOn=1;
 static void *edata;
 static herr_t (*errorFunction)(hid_t estack, void *client_data);
 
+static int initialized = 0;
+
 /** Flag toggling the debugging */
 static int _debug_hdf;
 
@@ -65,11 +67,14 @@ void enableErrorReporting()
  ***********************************************/
 void initHlHdf()
 {
-  _debug_hdf = 0;
-  H5Eset_auto2(H5E_DEFAULT, HL_hdf5_debug_function, NULL); /* Force logging to always goto HLHDFs handler */
-  HL_InitializeDebugger();
-  HL_enableHdf5ErrorReporting();
-  disableErrorReporting();
+  if (initialized == 0) {
+    initialized = 1;
+    _debug_hdf = 0;
+    H5Eset_auto2(H5E_DEFAULT, HL_hdf5_debug_function, NULL); /* Force logging to always goto HLHDFs handler */
+    HL_InitializeDebugger();
+    HL_enableHdf5ErrorReporting();
+    disableErrorReporting();
+  }
 }
 
 /************************************************
