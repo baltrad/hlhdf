@@ -306,13 +306,14 @@ static int doWriteHdf5Group(hid_t rootGrp, HL_Node* parentNode, char* parentName
     HL_ERROR0("Can't write HDF5 group since either parentName or childName is NULL");
     return 0;
   }
+
+  HL_H5G_CLOSE(childNode->hdfId);
   if (strcmp(parentName, "") == 0) {
-    HL_H5G_CLOSE(childNode->hdfId);
     childNode->hdfId = H5Gcreate(rootGrp, childName,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   } else {
-    HL_H5G_CLOSE(childNode->hdfId);
     childNode->hdfId = H5Gcreate(parentNode->hdfId, childName,H5P_DEFAULT,H5P_DEFAULT,H5P_DEFAULT);
   }
+
   if (childNode->hdfId < 0) {
     HL_ERROR1("Failed to create group %s",childNode->name);
     return 0;
@@ -506,13 +507,7 @@ static int doAppendHdf5Attribute(hid_t file_id, HL_Node* parentNode, char* paren
   childNode->mark = NMARK_ORIGINAL;
 
 fail:
-  if (parentType == GROUP_ID) {
-    HL_H5G_CLOSE(loc_id);
-  } else if (parentType == DATASET_ID) {
-    HL_H5D_CLOSE(loc_id);
-  } else if (loc_id >= 0) {
-    HL_ERROR0("Could not determine type of loc_id, could not close\n");
-  }
+  HL_H5O_CLOSE(loc_id);
 
   return status;
 }

@@ -734,8 +734,6 @@ static char* hlhdf_read_createPath(const char* root, const char* name)
     newpath[len-1]='\0';
   }
 
-  /*fprintf(stderr, "root='%s', name='%s' => newpath = '%s'\n", root, name, newpath);*/
-
   status = TRUE;
 fail:
   if (status == FALSE) {
@@ -869,6 +867,7 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
 
   disableErrorReporting();
   if (H5Oget_info_by_name(file_id, fromPath, &objectInfo, H5P_DEFAULT)<0) {
+    enableErrorReporting();
     HL_ERROR0("fromPath needs to be a dataset or group when opening a file.");
     goto fail;
   }
@@ -879,7 +878,6 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
     goto fail;
   }
   setHL_NodeListFileName(retv, filename);
-  //strcpy(retv->filename, filename);
 
   vs.path = (char*)fromPath;
   vs.nodelist = retv;
