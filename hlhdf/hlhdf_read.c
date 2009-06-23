@@ -152,7 +152,63 @@ static void markAllNodes(HL_NodeList* nodelist, HL_NodeMark mark)
   HL_SPEWDEBUG0("EXIT: markAllNodes");
 }
 
+/**
+ * Opens a group or dataset hid and returns the type as well.
+ * @param[in] file_id - the file pointer
+ * @param[in] name - the node name to open
+ * @param[out] lid - the opened hid
+ * @param[out] type - the type of the opened hid
+ * @return 0 on failure, otherwise 1
+ */
+static int openGroupOrDataset(hid_t file_id, const char* name, hid_t* lid, HL_Type* type)
+{
+  int status = 0;
 
+  if (name == NULL || lid == NULL || type == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    goto fail;
+  }
+  *lid = -1;
+  *type = UNDEFINED_ID;
+  if (strcmp(name, "") != 0) {
+    H5O_info_t objectInfo;
+    herr_t infoStatus = -1;
+    disableErrorReporting(); /*Bypass the error reporting, if failed to open a dataset/or group*/
+    infoStatus = H5Oget_info_by_name(file_id, name, &objectInfo, H5P_DEFAULT);
+    enableErrorReporting();
+    if (infoStatus >= 0) {
+      if (objectInfo.type == H5O_TYPE_GROUP) {
+        *type = GROUP_ID;
+      } else if (objectInfo.type == H5O_TYPE_DATASET) {
+        *type = DATASET_ID;
+      } else {
+        infoStatus = -1;
+        *type = UNDEFINED_ID;
+      }
+    }
+    if (infoStatus < 0) {
+      HL_ERROR0("name needs to be a dataset or group.");
+      goto fail;
+    }
+    if ((*lid = H5Oopen(file_id, name, H5P_DEFAULT))<0) {
+      HL_ERROR1("Node '%s' could not be opened", name);
+      goto fail;
+    }
+  } else {
+    if ((*lid = H5Gopen(file_id, "/", H5P_DEFAULT)) < 0) {
+      HL_ERROR0("Could not open root group");
+      goto fail;
+    }
+    *type = GROUP_ID;
+  }
+  status = 1;
+fail:
+  if (status == 0) {
+    HL_H5O_CLOSE(*lid);
+    *type = UNDEFINED_ID;
+  }
+  return status;
+}
 /* ---------------------------------------
  * REF_GROUP_LOCATION_ITERATOR
  * Iterator function for checking group
@@ -261,45 +317,29 @@ static int fillAttributeNode(hid_t file_id, HL_Node* node)
   hsize_t* all_dims = NULL;
   hsize_t npoints;
   int ndims, i;
-  char parent[512], child[512];
+  char* parent = NULL;
+  char* child = NULL;
   unsigned char* dataptr = NULL;
   unsigned char* rawdataptr = NULL;
   char* tmpName = NULL;
   HL_Type parentType = UNDEFINED_ID;
   H5G_stat_t statbuf;
+  int result = 0;
 
   HL_SPEWDEBUG0("ENTER: fillAttributeNode");
-  if (!extractParentChildName(node, parent, child)) {
+
+  if (!extractParentChildName(node, &parent, &child)) {
     HL_ERROR0("Failed to extract parent/child");
-    return 0;
+    goto fail;
   }
 
-  if (strcmp(parent, "") != 0) {
-    disableErrorReporting(); /*Bypass the error reporting, if failed to open a dataset/or group*/
-    if ((loc_id = H5Gopen(file_id, parent, H5P_DEFAULT)) < 0) {
-      if ((loc_id = H5Dopen(file_id, parent, H5P_DEFAULT)) >= 0) {
-        parentType = DATASET_ID;
-      }
-    } else {
-      parentType = GROUP_ID;
-    }
-    enableErrorReporting();
-    if (loc_id < 0) {
-      HL_ERROR2("Parent '%s' to attribute '%s' could not be opened",
-          parent,child);
-      return 0;
-    }
-  } else {
-    if ((loc_id = H5Gopen(file_id, "/", H5P_DEFAULT)) < 0) {
-      HL_ERROR1("Could not open root group when reading attr '%s'",
-          child);
-      return 0;
-    }
-    parentType = GROUP_ID;
+  if (!openGroupOrDataset(file_id, parent, &loc_id, &parentType)) {
+    HL_ERROR1("Failed to determine and open '%s'", parent);
+    goto fail;
   }
 
   if ((obj = H5Aopen_name(loc_id, child)) < 0) {
-    return 0;
+    goto fail;
   }
 
   if ((type = H5Aget_type(obj)) < 0) {
@@ -375,49 +415,30 @@ static int fillAttributeNode(hid_t file_id, HL_Node* node)
   if (all_dims) {
     for (i = 0; i < ndims; i++)
       node->dims[i] = all_dims[i];
-    HLHDF_FREE(all_dims);
   }
   node->ndims = ndims;
-  node->typeId = mtype;
-
-  HL_H5A_CLOSE(obj);
-  if (parentType == GROUP_ID) {
-    HL_H5G_CLOSE(loc_id);
-  } else if (parentType == DATASET_ID) {
-    HL_H5D_CLOSE(loc_id);
-  } else if (loc_id >= 0) {
-    HL_ERROR1("Could not determine type of loc_id for '%s', could not close",
-      parent);
-  }
-  /* Mark the node as original */
+  node->typeId = H5Tcopy(mtype);
   node->mark = NMARK_ORIGINAL;
-
-  HL_H5T_CLOSE(type);
-  HL_H5S_CLOSE(f_space);
   node->data = dataptr;
   node->rawdata = rawdataptr; /* Ahe added this 2001-01-17 */
+  dataptr = NULL; // Responsibility for memory transfered
+  rawdataptr = NULL; // Responsibility for memory transfered
 
-  HLHDF_FREE(tmpName);
-  return 1;
+  result = 1;
 fail:
   HL_H5A_CLOSE(obj);
-  if (parentType == GROUP_ID) {
-    HL_H5G_CLOSE(loc_id);
-  } else if (parentType == DATASET_ID) {
-    HL_H5D_CLOSE(loc_id);
-  } else if (loc_id >= 0) {
-    HL_ERROR1("Could not determine type of loc_id for '%s', could not close",
-      parent);
-  }
+  HL_H5O_CLOSE(loc_id);
   HL_H5T_CLOSE(type);
   HL_H5T_CLOSE(mtype);
   HL_H5S_CLOSE(f_space);
   HLHDF_FREE(all_dims);
+  HLHDF_FREE(parent);
+  HLHDF_FREE(child);
   HLHDF_FREE(dataptr);
   HLHDF_FREE(rawdataptr);
   HLHDF_FREE(tmpName);
 
-  return 0;
+  return result;
 }
 
 /**
@@ -425,43 +446,25 @@ fail:
  */
 static int fillReferenceNode(hid_t file_id, HL_Node* node)
 {
-  hid_t obj = -1;
-  hid_t loc_id = -1;
-  char parent[512], child[512];
   HL_Type parentType = UNDEFINED_ID;
   hobj_ref_t ref;
+  hid_t obj = -1;
+  hid_t loc_id = -1;
+  char* parent = NULL;
+  char* child = NULL;
   char* refername = NULL;
   char* tmpName = NULL;
+  int status = 0;
 
   HL_DEBUG0("ENTER: fillReferenceNode");
-  if (!extractParentChildName(node, parent, child)) {
+  if (!extractParentChildName(node, &parent, &child)) {
     HL_ERROR0("Failed to extract parent/child");
-    return 0;
+    goto fail;
   }
 
-  if (strcmp(parent, "") != 0) {
-    disableErrorReporting(); /*Just quick hack to bypass the error reporting,
-     *if failed to open a dataset/or group*/
-    if ((loc_id = H5Gopen(file_id, parent, H5P_DEFAULT)) < 0) {
-      if ((loc_id = H5Dopen(file_id, parent, H5P_DEFAULT)) >= 0) {
-        parentType = DATASET_ID;
-      }
-    } else {
-      parentType = GROUP_ID;
-    }
-    enableErrorReporting();
-    if (loc_id < 0) {
-      HL_ERROR2("Parent '%s' to attribute '%s' could not be opened",
-          parent,child);
-      return 0;
-    }
-  } else {
-    if ((loc_id = H5Gopen(file_id, "/", H5P_DEFAULT)) < 0) {
-      HL_ERROR1("Could not open root group when reading attr '%s'",
-          child);
-      return 0;
-    }
-    parentType = GROUP_ID;
+  if (!openGroupOrDataset(file_id, parent, &loc_id, &parentType)) {
+    HL_ERROR1("Failed to determine and open '%s'", parent);
+    goto fail;
   }
 
   if ((obj = H5Aopen_name(loc_id, child)) < 0) {
@@ -491,26 +494,16 @@ static int fillReferenceNode(hid_t file_id, HL_Node* node)
   }
   strcpy(node->format, tmpName);
 
-  if (parentType == DATASET_ID) {
-    HL_H5D_CLOSE(loc_id);
-  } else {
-    HL_H5G_CLOSE(loc_id);
-  }
-  HL_H5A_CLOSE(obj);
-  HLHDF_FREE(refername);
-  HLHDF_FREE(tmpName);
-  return 1;
-
+  status = 1;
 fail:
-  if (parentType == DATASET_ID) {
-    HL_H5D_CLOSE(loc_id);
-  } else {
-    HL_H5G_CLOSE(loc_id);
-  }
   HL_H5A_CLOSE(obj);
+  HL_H5O_CLOSE(loc_id);
+  HLHDF_FREE(parent);
+  HLHDF_FREE(child);
   HLHDF_FREE(refername);
   HLHDF_FREE(tmpName);
-  return 0;
+
+  return status;
 }
 
 /**

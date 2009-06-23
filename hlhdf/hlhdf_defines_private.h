@@ -19,6 +19,11 @@
 #define HL_H5D_CLOSE(x) if (x>=0) {H5Dclose(x); x=-1;}
 
 /**
+ * @brief Closes a group, dataset or named datatype.
+ */
+#define HL_H5O_CLOSE(x) if (x>=0) {H5Oclose(x); x=-1;}
+
+/**
  * @brief Closes a H5 attribute identifier.
  */
 #define HL_H5A_CLOSE(x) if (x>=0) {H5Aclose(x); x=-1;}

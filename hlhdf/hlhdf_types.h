@@ -223,7 +223,6 @@ typedef struct HL_Node {
  */
 typedef struct {
    char filename[256]; /**< The file name */
-   char tmp_name[512]; /**< Used internally when traversing the HDF5 structure */
    int nNodes;         /**< Number of nodes */
    int nAllocNodes;    /**< Number of allocated nodes */
    HL_Node** nodes;    /**< The list of nodes (max size is nNodes - 1) */

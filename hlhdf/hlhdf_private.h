@@ -85,6 +85,6 @@ char* getStringCtypeName(hid_t type);
  * @param[out] child this nodes name.
  * @return 1 on success, otherwise 0.
  */
-int extractParentChildName(HL_Node* node, char* parent, char* child);
+int extractParentChildName(HL_Node* node, char** parent, char** child);
 
 #endif /* HLHDF_PRIVATE_H_ */

@@ -664,15 +664,16 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
 {
   int i;
   HL_Node* parentNode = NULL;
-  char parentName[256];
-  char childName[256];
+  char* parentName = NULL;
+  char* childName = NULL;
   hid_t file_id = -1;
   hid_t gid = -1;
+  int status = 0;
 
   HL_DEBUG0("ENTER: writeHL_NodeList");
   if ((file_id = createHlHdfFile(nodelist->filename, property)) < 0) {
     HL_DEBUG0("Failed to create HDF5 file");
-    goto fail;;
+    goto fail;
   }
 
   if ((gid = H5Gopen(file_id, ".", H5P_DEFAULT)) < 0) {
@@ -681,7 +682,9 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
   }
 
   for (i = 0; i < nodelist->nNodes; i++) {
-    if (!extractParentChildName(nodelist->nodes[i], parentName, childName)) {
+    HLHDF_FREE(parentName);
+    HLHDF_FREE(childName);
+    if (!extractParentChildName(nodelist->nodes[i], &parentName, &childName)) {
       HL_ERROR0("Failed to extract parent, child name");
       goto fail;
     }
@@ -739,27 +742,26 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
     }
   }
 
-  HL_H5G_CLOSE(gid);
-  HL_H5F_CLOSE(file_id);
-  HL_DEBUG0("EXIT: writeHL_NodeList");
-  return 1;
-
+  status = 1;
 fail:
+  HLHDF_FREE(parentName);
+  HLHDF_FREE(childName);
   HL_H5G_CLOSE(gid);
   HL_H5F_CLOSE(file_id);
   HL_DEBUG0("EXIT: writeHL_NodeList with error");
 
-  return 0;
+  return status;
 }
 
 int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
 {
   int i;
   HL_Node* parentNode = NULL;
-  char parentName[256];
-  char childName[256];
+  char* parentName = NULL;
+  char* childName = NULL;
   hid_t file_id = -1;
   hid_t gid = -1;
+  int status = 0;
 
   HL_DEBUG0("ENTER: updateHL_NodeList");
   if ((file_id = openHlHdfFile(nodelist->filename, "rw")) < 0) {
@@ -774,7 +776,9 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
 
   for (i = 0; i < nodelist->nNodes; i++) {
     if (nodelist->nodes[i]->mark == NMARK_CREATED) {
-      if (!extractParentChildName(nodelist->nodes[i], parentName, childName)) {
+      HLHDF_FREE(parentName);
+      HLHDF_FREE(childName);
+      if (!extractParentChildName(nodelist->nodes[i], &parentName, &childName)) {
         HL_ERROR0("Failed to extract parent, child name\n");
         goto fail;
       }
@@ -834,16 +838,14 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
     }
   }
 
-  HL_H5G_CLOSE(gid);
-  HL_H5F_CLOSE(file_id);
-  HL_DEBUG0("EXIT: updateHL_NodeList");
-  return 1;
-
+  status = 1;
 fail:
+  HLHDF_FREE(parentName);
+  HLHDF_FREE(childName);
   HL_H5G_CLOSE(gid);
   HL_H5F_CLOSE(file_id);
-  HL_DEBUG0("EXIT: updateHL_NodeList with error");
-  return 0;
+  HL_DEBUG1("EXIT: updateHL_NodeList with status = %d", status);
+  return status;
 }
 
 /*@} End of Interface functions */

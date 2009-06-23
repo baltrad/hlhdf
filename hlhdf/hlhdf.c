@@ -858,29 +858,45 @@ void freeHL_Compression(HL_Compression* inv)
   HLHDF_FREE(inv);
 }
 
-int extractParentChildName(HL_Node* node, char* parent, char* child)
+int extractParentChildName(HL_Node* node, char** parent, char** child)
 {
-   char tmpStr[256];
-   char* tmpPtr;
-   HL_SPEWDEBUG0("ENTER: extractParentChildName");
-   if(!parent || !child) {
-      HL_ERROR0("When extracting ParentChild name, both parent and child must be specified");
-      return 0;
-   }
+  char* tmpStr = NULL;
+  char* tmpPtr = NULL;
+  int status = 0;
 
-   strcpy(parent,"");
-   strcpy(child,"");
+  //char* tmpPtr;
+  HL_SPEWDEBUG0("ENTER: extractParentChildName");
+  if (parent == NULL || child == NULL) {
+    HL_ERROR0("When extracting ParentChild name, both parent and child must be specified");
+    return 0;
+  }
 
-   strcpy(tmpStr,node->name);
-   if(!(tmpPtr=strrchr(tmpStr,'/'))) {
-      HL_ERROR1("Could not extract '/' from node name %s",node->name);
-      return 0;
-   }
-   tmpPtr[0]='\0';
-   if(strcmp(tmpStr,"")!=0) {
-      strcpy(parent,tmpStr);
-   }
-   tmpPtr++;
-   strcpy(child,tmpPtr);
-   return 1;
+  *parent = NULL;
+  *child = NULL;
+  if ((tmpStr = strdup(node->name)) == NULL) {
+    HL_ERROR0("Could not allocate memory for node name");
+    goto fail;
+  }
+
+  if ((tmpPtr = strrchr(tmpStr, '/')) == NULL) {
+    HL_ERROR1("Could not extract '/' from node name %s", node->name);
+    goto fail;
+  }
+
+  tmpPtr[0] = '\0';
+  tmpPtr++;
+  *parent = strdup(tmpStr);
+  *child = strdup(tmpPtr);
+  if (*parent == NULL || *child == NULL) {
+    HL_ERROR0("Failed to allocate memory for parent and/or child");
+    goto fail;
+  }
+  status = 1;
+fail:
+  if (status == 0) {
+    HLHDF_FREE(*parent);
+    HLHDF_FREE(*child);
+  }
+  HLHDF_FREE(tmpStr);
+  return status;
 }

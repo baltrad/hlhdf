@@ -89,7 +89,6 @@ HL_NodeList* newHL_NodeList(void)
   }
   retv->nNodes = 0;
   retv->nAllocNodes = DEFAULT_SIZE_NODELIST;
-  strcpy(retv->tmp_name, "");
   return retv;
 }
 
