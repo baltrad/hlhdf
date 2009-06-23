@@ -311,7 +311,10 @@ int main(int argc, char** argv)
   }
   node = NULL; /*nodelist has got the responsibility now*/
 
-  strcpy(nodelist->filename, outputfile);
+  if (!setHL_NodeListFileName(nodelist,outputfile)) {
+    fprintf(stderr, "Failed to set the output filename %s\n", outputfile);
+    goto fail;
+  }
 
   initHL_Compression(&compression, CT_ZLIB);
   compression.level = compressLevel;

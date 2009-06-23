@@ -34,6 +34,7 @@ int main(int argc, char** argv)
 {
   extern int optind, opterr;
   int c, i;
+  int nNodes = 0;
 
   HL_NodeList* nodelist = NULL;
 
@@ -76,9 +77,19 @@ int main(int argc, char** argv)
     goto fail;
   }
 
-  for (i = 0; i < nodelist->nNodes; i++) {
-    printf("%-40s is ", nodelist->nodes[i]->name);
-    switch (nodelist->nodes[i]->type) {
+  if ((nNodes =  getHL_NodeListNumberOfNodes(nodelist)) < 0) {
+    fprintf(stderr, "Failed to get number of nodes\n");
+    goto fail;
+  }
+
+  for (i = 0; i < nNodes; i++) {
+    HL_Node* node = NULL;
+    if ((node = getHL_NodeListNodeByIndex(nodelist, i)) == NULL) {
+      fprintf(stderr, "Error occured when fetching node at index %d", i);
+      goto fail;
+    }
+    printf("%-40s is ", node->name);
+    switch (node->type) {
     case ATTRIBUTE_ID:
       printf("an attribute");
       break;

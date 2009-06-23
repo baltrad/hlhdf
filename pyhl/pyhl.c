@@ -461,7 +461,11 @@ static PyObject* _pyhl_write(PyhlNodelist* self, PyObject* args)
     }
   }
 
-  strcpy(self->nodelist->filename, filename);
+  if (!setHL_NodeListFileName(self->nodelist,filename)) {
+    setException(PyExc_IOError, "Could not set filename for nodelist");
+    return NULL;
+  }
+
   if (doCompress != -1) {
     theCompression = newHL_Compression(CT_ZLIB);
     theCompression->level = doCompress;
@@ -507,13 +511,26 @@ static PyObject* _pyhl_get_node_names(PyhlNodelist* self, PyObject* args)
   PyObject* retv = NULL;
   PyObject* pyo = NULL;
   int i;
+  int nNodes = 0;
+
   char errbuf[256];
   if (!(retv = PyDict_New())) {
     setException(PyExc_MemoryError,"Could not allocate dictionary");
     return NULL;
   }
-  for (i = 0; i < self->nodelist->nNodes; i++) {
-    switch (self->nodelist->nodes[i]->type) {
+
+  if ((nNodes = getHL_NodeListNumberOfNodes(self->nodelist)) < 0) {
+    setException(PyExc_IOError, "Could not read number of nodes");
+    goto fail;
+  }
+
+  for (i = 0; i < nNodes; i++) {
+    HL_Node* node = getHL_NodeListNodeByIndex(self->nodelist, i);
+    if (node == NULL) {
+      setException(PyExc_IOError, "Could not fetch node");
+      goto fail;
+    }
+    switch (node->type) {
     case ATTRIBUTE_ID:
       pyo = PyInt_FromLong(ATTRIBUTE_ID);
       break;
@@ -531,11 +548,11 @@ static PyObject* _pyhl_get_node_names(PyhlNodelist* self, PyObject* args)
       break;
     default:
       sprintf(errbuf, "Unknown type for node '%s': '%d'",
-              self->nodelist->nodes[i]->name, self->nodelist->nodes[i]->type);
+              node->name, node->type);
       setException(PyExc_TypeError,errbuf);
       goto fail;
     }
-    if (PyDict_SetItemString(retv, self->nodelist->nodes[i]->name, pyo) == -1) {
+    if (PyDict_SetItemString(retv, node->name, pyo) == -1) {
       setException(PyExc_AttributeError,"Failed to set dictionary item");
       goto fail;
     }

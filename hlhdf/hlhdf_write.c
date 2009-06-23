@@ -669,9 +669,22 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
   hid_t file_id = -1;
   hid_t gid = -1;
   int status = 0;
+  char* filename = NULL;
+  int nNodes = 0;
 
   HL_DEBUG0("ENTER: writeHL_NodeList");
-  if ((file_id = createHlHdfFile(nodelist->filename, property)) < 0) {
+
+  if (nodelist == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    goto fail;
+  }
+
+  if ((filename = getHL_NodeListFileName(nodelist)) == NULL) {
+    HL_ERROR0("Could not get filename from nodelist");
+    goto fail;
+  }
+
+  if ((file_id = createHlHdfFile(filename, property)) < 0) {
     HL_DEBUG0("Failed to create HDF5 file");
     goto fail;
   }
@@ -681,10 +694,20 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
     goto fail;
   }
 
-  for (i = 0; i < nodelist->nNodes; i++) {
+  if ((nNodes = getHL_NodeListNumberOfNodes(nodelist)) < 0) {
+    HL_ERROR0("Failed to get number of nodes");
+    goto fail;
+  }
+
+  for (i = 0; i < nNodes; i++) {
+    HL_Node* node = getHL_NodeListNodeByIndex(nodelist, i);
+    if (node == NULL) {
+      HL_ERROR1("Failed to get node at index %d", i);
+      goto fail;
+    }
     HLHDF_FREE(parentName);
     HLHDF_FREE(childName);
-    if (!extractParentChildName(nodelist->nodes[i], &parentName, &childName)) {
+    if (!extractParentChildName(node, &parentName, &childName)) {
       HL_ERROR0("Failed to extract parent, child name");
       goto fail;
     }
@@ -693,16 +716,16 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
       HL_ERROR1("Failed to locate parent node '%s'",parentName);
       goto fail;
     }
-    switch (nodelist->nodes[i]->type) {
+    switch (node->type) {
     case ATTRIBUTE_ID: {
       if (!doWriteHdf5Attribute(gid, parentNode, parentName,
-                                nodelist->nodes[i], childName)) {
+                                node, childName)) {
         goto fail;
       }
       break;
     }
     case GROUP_ID: {
-      if (!doWriteHdf5Group(gid, parentNode, parentName, nodelist->nodes[i],
+      if (!doWriteHdf5Group(gid, parentNode, parentName, node,
                             childName)) {
         goto fail;
       }
@@ -711,13 +734,13 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
     case DATASET_ID: {
       if (compression != NULL) {
         if (!doWriteHdf5Dataset(gid, parentNode, parentName,
-                                  nodelist->nodes[i], childName, compression)) {
+                                node, childName, compression)) {
           goto fail;
         }
       } else {
         if (!doWriteHdf5Dataset(gid, parentNode, parentName,
-                                  nodelist->nodes[i], childName,
-                                  nodelist->nodes[i]->compression)) {
+                                node, childName,
+                                node->compression)) {
           goto fail;
         }
       }
@@ -725,13 +748,13 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
     }
     case TYPE_ID: {
       if (!doWriteHdf5Datatype(file_id, parentNode, parentName,
-                                nodelist->nodes[i], childName))
+                               node, childName))
         goto fail;
       break;
     }
     case REFERENCE_ID: {
       if (!doWriteHdf5Reference(gid, file_id, parentNode, parentName,
-                                nodelist->nodes[i], childName))
+                                node, childName))
         goto fail;
       break;
     }
@@ -748,7 +771,8 @@ fail:
   HLHDF_FREE(childName);
   HL_H5G_CLOSE(gid);
   HL_H5F_CLOSE(file_id);
-  HL_DEBUG0("EXIT: writeHL_NodeList with error");
+  HLHDF_FREE(filename);
+  HL_DEBUG1("EXIT: writeHL_NodeList with status %d", status);
 
   return status;
 }
@@ -762,10 +786,23 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
   hid_t file_id = -1;
   hid_t gid = -1;
   int status = 0;
+  char* filename = NULL;
+  int nNodes = 0;
 
   HL_DEBUG0("ENTER: updateHL_NodeList");
-  if ((file_id = openHlHdfFile(nodelist->filename, "rw")) < 0) {
-    HL_ERROR1("Failed to open file %s\n", nodelist->filename);
+
+  if (nodelist == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    goto fail;
+  }
+
+  if ((filename = getHL_NodeListFileName(nodelist)) == NULL) {
+    HL_ERROR0("Could not get filename from nodelist");
+    goto fail;
+  }
+
+  if ((file_id = openHlHdfFile(filename, "rw")) < 0) {
+    HL_ERROR1("Failed to open file %s\n", filename);
     goto fail;
   }
 
@@ -774,11 +811,21 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
     goto fail;
   }
 
-  for (i = 0; i < nodelist->nNodes; i++) {
-    if (nodelist->nodes[i]->mark == NMARK_CREATED) {
+  if ((nNodes = getHL_NodeListNumberOfNodes(nodelist)) < 0) {
+    HL_ERROR0("Failed to get number of nodes");
+    goto fail;
+  }
+
+  for (i = 0; i < nNodes; i++) {
+    HL_Node* node = getHL_NodeListNodeByIndex(nodelist, i);
+    if (node == NULL) {
+      HL_ERROR1("Failed to get node at index %d", i);
+      goto fail;
+    }
+    if (node->mark == NMARK_CREATED) {
       HLHDF_FREE(parentName);
       HLHDF_FREE(childName);
-      if (!extractParentChildName(nodelist->nodes[i], &parentName, &childName)) {
+      if (!extractParentChildName(node, &parentName, &childName)) {
         HL_ERROR0("Failed to extract parent, child name\n");
         goto fail;
       }
@@ -787,17 +834,17 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
         HL_ERROR1("Failed to locate parent node '%s'\n", parentName);
         goto fail;
       }
-      switch (nodelist->nodes[i]->type) {
+      switch (node->type) {
       case ATTRIBUTE_ID: {
         if (!doAppendHdf5Attribute(file_id, parentNode, parentName,
-                                   nodelist->nodes[i], childName)) {
+                                   node, childName)) {
           goto fail;
         }
         break;
       }
       case GROUP_ID: {
         if (!doAppendHdf5Group(file_id, parentNode, parentName,
-                               nodelist->nodes[i], childName)) {
+                               node, childName)) {
           goto fail;
         }
         break;
@@ -805,13 +852,13 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
       case DATASET_ID: {
         if (compression != NULL) {
           if (!doAppendHdf5Dataset(file_id, parentNode, parentName,
-                                   nodelist->nodes[i], childName, compression)) {
+                                   node, childName, compression)) {
             goto fail;
           }
         } else {
           if (!doAppendHdf5Dataset(file_id, parentNode, parentName,
-                                   nodelist->nodes[i], childName,
-                                   nodelist->nodes[i]->compression)) {
+                                   node, childName,
+                                   node->compression)) {
             goto fail;
           }
         }
@@ -819,18 +866,18 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
       }
       case TYPE_ID: {
         if (!doWriteHdf5Datatype(file_id, parentNode, parentName,
-                                  nodelist->nodes[i], childName))
+                                 node, childName))
           goto fail;
         break;
       }
       case REFERENCE_ID: {
         if (!doAppendHdf5Reference(gid, file_id, parentNode, parentName,
-                                   nodelist->nodes[i], childName))
+                                   node, childName))
           goto fail;
         break;
       }
       default: {
-        HL_ERROR1("Unsupported node type for update '%d'\n", nodelist->nodes[i]->type);
+        HL_ERROR1("Unsupported node type for update '%d'\n", node->type);
         goto fail;
         break;
       }
@@ -844,6 +891,7 @@ fail:
   HLHDF_FREE(childName);
   HL_H5G_CLOSE(gid);
   HL_H5F_CLOSE(file_id);
+  HLHDF_FREE(filename);
   HL_DEBUG1("EXIT: updateHL_NodeList with status = %d", status);
   return status;
 }

@@ -141,17 +141,6 @@ static int checkIfReferenceMatch(hid_t loc_id, char* path, hobj_ref_t* ref)
   return 0;
 }
 
-
-static void markAllNodes(HL_NodeList* nodelist, HL_NodeMark mark)
-{
-  int i;
-  HL_SPEWDEBUG0("ENTER: markAllNodes");
-  for (i = 0; i < nodelist->nNodes; i++) {
-    nodelist->nodes[i]->mark = mark;
-  }
-  HL_SPEWDEBUG0("EXIT: markAllNodes");
-}
-
 /**
  * Opens a group or dataset hid and returns the type as well.
  * @param[in] file_id - the file pointer
@@ -889,7 +878,8 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
     HL_ERROR0("Could not allocate NodeList\n");
     goto fail;
   }
-  strcpy(retv->filename, filename);
+  setHL_NodeListFileName(retv, filename);
+  //strcpy(retv->filename, filename);
 
   vs.path = (char*)fromPath;
   vs.nodelist = retv;
@@ -899,7 +889,7 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
     goto fail;
   }
 
-  markAllNodes(retv, NMARK_ORIGINAL);
+  markHL_NodeListNodes(retv, NMARK_ORIGINAL);
 
   HL_H5F_CLOSE(file_id);
   HL_H5G_CLOSE(gid);
@@ -933,7 +923,7 @@ HL_NodeList* readHL_NodeList(const char* filename)
  * --------------------------------------- */
 int selectNode(HL_NodeList* nodelist, const char* name)
 {
-  int i;
+  HL_Node* node = NULL;
 
   HL_DEBUG0("ENTER: selectNode");
   if (!name) {
@@ -941,11 +931,9 @@ int selectNode(HL_NodeList* nodelist, const char* name)
     return 0;
   }
 
-  for (i = 0; i < nodelist->nNodes; i++) {
-    if (strcmp(nodelist->nodes[i]->name, name) == 0) {
-      nodelist->nodes[i]->mark = NMARK_SELECT;
-      return 1;
-    }
+  if ((node = getHL_Node(nodelist, name)) != NULL) {
+    node->mark = NMARK_SELECT;
+    return 1;
   }
 
   HL_ERROR1("Could not find any node called '%s'",name);
@@ -957,11 +945,7 @@ int selectNode(HL_NodeList* nodelist, const char* name)
  * --------------------------------------- */
 int selectAllNodes(HL_NodeList* nodelist)
 {
-  int i;
-  HL_DEBUG0("ENTER: selectAllNodes");
-  for (i = 0; i < nodelist->nNodes; i++) {
-    nodelist->nodes[i]->mark = NMARK_SELECT;
-  }
+  markHL_NodeListNodes(nodelist, NMARK_SELECT);
 
   return 1;
 }
@@ -972,12 +956,14 @@ int selectAllNodes(HL_NodeList* nodelist)
  * --------------------------------------- */
 int selectMetadataNodes(HL_NodeList* nodelist)
 {
-  int i;
+  int i = 0;
+  int nNodes = -1;
   HL_DEBUG0("ENTER: selectMetadataNodes");
-  for (i = 0; i < nodelist->nNodes; i++) {
-    if ((nodelist->nodes[i]->type != DATASET_ID)
-        && (nodelist->nodes[i]->dataType != HL_ARRAY)) {
-      nodelist->nodes[i]->mark = NMARK_SELECT;
+  nNodes = getHL_NodeListNumberOfNodes(nodelist);
+  for (i = 0; i < nNodes; i++) {
+    HL_Node* node = getHL_NodeListNodeByIndex(nodelist, i);
+    if (node->type != DATASET_ID && node->dataType != HL_ARRAY) {
+      setHL_NodeMark(node, NMARK_SELECT);
     }
   }
 
@@ -989,7 +975,7 @@ int selectMetadataNodes(HL_NodeList* nodelist)
  * --------------------------------------- */
 int deselectNode(HL_NodeList* nodelist, const char* name)
 {
-  int i;
+  HL_Node* node = NULL;
 
   HL_DEBUG0("ENTER: deselectNode");
   if (!name) {
@@ -997,11 +983,10 @@ int deselectNode(HL_NodeList* nodelist, const char* name)
     return 0;
   }
 
-  for (i = 0; i < nodelist->nNodes; i++) {
-    if (strcmp(nodelist->nodes[i]->name, name) == 0) {
-      nodelist->nodes[i]->mark = NMARK_ORIGINAL;
-      return 1;
-    }
+  node = getHL_Node(nodelist, name);
+  if (node != NULL) {
+    setHL_NodeMark(node, NMARK_ORIGINAL);
+    return 1;
   }
 
   HL_ERROR1("Could not find any node called '%s'",name);
@@ -1016,10 +1001,24 @@ int fetchMarkedNodes(HL_NodeList* nodelist)
   int i;
   hid_t file_id = -1;
   hid_t gid = -1;
+  char* filename = NULL;
+  int nNodes = 0;
+  int result = 0;
+
   HL_DEBUG0("ENTER: fetchMarkedNodes");
-  if ((file_id = openHlHdfFile(nodelist->filename, "r")) < 0) {
-    HL_ERROR1("Could not open file '%s' when fetching data",nodelist->filename);
-    return 0;
+  if (nodelist == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    goto fail;
+  }
+
+  if ((filename = getHL_NodeListFileName(nodelist)) == NULL) {
+    HL_ERROR0("Could not get filename from nodelist");
+    goto fail;
+  }
+
+  if ((file_id = openHlHdfFile(filename, "r")) < 0) {
+    HL_ERROR1("Could not open file '%s' when fetching data",filename);
+    goto fail;
   }
 
   if ((gid = H5Gopen(file_id, ".", H5P_DEFAULT)) < 0) {
@@ -1027,23 +1026,31 @@ int fetchMarkedNodes(HL_NodeList* nodelist)
     goto fail;
   }
 
-  for (i = 0; i < nodelist->nNodes; i++) {
-    if (nodelist->nodes[i]->mark == NMARK_SELECT) {
-      if (!fillNodeWithData(file_id, nodelist->nodes[i])) {
-        HL_ERROR1("Error occured when trying to fill node '%s'",nodelist->nodes[i]->name);
+  if ((nNodes =  getHL_NodeListNumberOfNodes(nodelist)) < 0) {
+    HL_ERROR0("Failed to get number of nodes");
+    goto fail;
+  }
+
+  for (i = 0; i < nNodes; i++) {
+    HL_Node* node = NULL;
+    if ((node = getHL_NodeListNodeByIndex(nodelist, i)) == NULL) {
+      HL_ERROR1("Error occured when fetching node at index %d", i);
+      goto fail;
+    }
+    if (node->mark == NMARK_SELECT) {
+      if (!fillNodeWithData(file_id, node)) {
+        HL_ERROR1("Error occured when trying to fill node '%s'",node->name);
         goto fail;
       }
     }
   }
-  HL_H5F_CLOSE(file_id);
-  HL_H5G_CLOSE(gid);
-  HL_DEBUG0("EXIT: fetchMarkedNodes");
-  return 1;
+  result = 1;
 fail:
   HL_H5F_CLOSE(file_id);
   HL_H5G_CLOSE(gid);
-  HL_DEBUG0("EXIT: fetchMarkedNodes with Error");
-  return 0;
+  HLHDF_FREE(filename);
+  HL_DEBUG1("EXIT: fetchMarkedNodes with status = %d", result);
+  return result;
 }
 
 /* ---------------------------------------
@@ -1051,33 +1058,29 @@ fail:
  * --------------------------------------- */
 HL_Node* fetchNode(HL_NodeList* nodelist, const char* name)
 {
-  int i;
   hid_t file_id = -1;
   hid_t gid = -1;
-  int found = 0;
-  int foundIndex = 0;
   HL_Node* result = NULL;
+  HL_Node* foundnode = NULL;
+  char* filename = NULL;
 
   HL_DEBUG0("ENTER: fetchNode");
-  if (!name) {
-    HL_ERROR0("Can not fetchNode when name is NULL");
+  if (name == NULL || nodelist == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    goto fail;
+  }
+  if ((filename = getHL_NodeListFileName(nodelist)) == NULL) {
+    HL_ERROR0("Could not get filename from nodelist");
     goto fail;
   }
 
-  for (i = 0; !found && i < nodelist->nNodes; i++) {
-    if (strcmp(nodelist->nodes[i]->name, name) == 0) {
-      found = 1;
-      foundIndex = i;
-    }
-  }
-
-  if (!found) {
+  if ((foundnode = getHL_Node(nodelist, name))==NULL) {
     HL_ERROR1("No node: '%s' found", name);
     goto fail;
   }
 
-  if (!(file_id = openHlHdfFile(nodelist->filename, "r")) < 0) {
-    HL_ERROR1("Could not open file '%s' when fetching data",nodelist->filename);
+  if (!(file_id = openHlHdfFile(filename, "r")) < 0) {
+    HL_ERROR1("Could not open file '%s' when fetching data",filename);
     goto fail;
   }
 
@@ -1086,15 +1089,16 @@ HL_Node* fetchNode(HL_NodeList* nodelist, const char* name)
     goto fail;
   }
 
-  if (!fillNodeWithData(file_id, nodelist->nodes[foundIndex])) {
-    HL_ERROR1("Error occured when trying to fill node '%s'", nodelist->nodes[foundIndex]->name);
+  if (!fillNodeWithData(file_id, foundnode)) {
+    HL_ERROR1("Error occured when trying to fill node '%s'", foundnode->name);
     goto fail;
   }
 
-  result = nodelist->nodes[foundIndex];
+  result = foundnode;
 fail:
   HL_H5F_CLOSE(file_id);
   HL_H5G_CLOSE(gid);
+  HLHDF_FREE(filename);
   HL_DEBUG0("EXIT: fetchNode");
   return result;
 }

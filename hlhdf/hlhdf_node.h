@@ -9,6 +9,57 @@
 #include "hlhdf_types.h"
 
 /**
+ * Creates a new HL_NodeList instance
+ * @ingroup hlhdf_c_apis
+ * @return the allocated node list on success, otherwise NULL.
+ */
+HL_NodeList* newHL_NodeList(void);
+
+/**
+ * Releasing all resources associated with this node list including the node list itself.
+ * @ingroup hlhdf_c_apis
+ * @param[in] nodelist the list that should be released.
+ */
+void freeHL_NodeList(HL_NodeList* nodelist);
+
+/**
+ * Sets the filename in the HL_NodeList instance
+ * @param[in] nodelist - the nodelist
+ * @param[in] filename - the filename that should be used
+ * @return 1 on success, otherwise 0
+ */
+int setHL_NodeListFileName(HL_NodeList* nodelist, const char* filename);
+
+/**
+ * Returns the filename of this nodelist.
+ * @param[in] nodelist - the nodelist
+ * @return the filename for this nodelist or NULL if no filename is set or failed to allocate memory.
+ */
+char* getHL_NodeListFileName(HL_NodeList* nodelist);
+
+/**
+ * Returns the number of nodes that exists in the provided nodelist.
+ * @param[in] nodelist - the node list
+ * @return the number of nodes or a negative value on failure.
+ */
+int getHL_NodeListNumberOfNodes(HL_NodeList* nodelist);
+
+/**
+ * Returns the node at the specified index.
+ * @param[in] nodelist - the node list
+ * @param[in] index - the index of the node
+ * @return the node if it exists, otherwise NULL. <b>Do not free since it is an internal pointer</b>
+ */
+HL_Node* getHL_NodeListNodeByIndex(HL_NodeList* nodelist, int index);
+
+/**
+ * Marks all nodes in the nodelist with the provided mark.
+ * @param[in] nodelist - the nodelist to be updated.
+ * @param[in] mark - the mark each node should have.
+ */
+void markHL_NodeListNodes(HL_NodeList* nodelist, const HL_NodeMark mark);
+
+/**
  * Creates a new HL_Node instance.
  * @ingroup hlhdf_c_apis
  * @param[in] name the name of this node, should be fully qualified name. I.e. /a/b/c
@@ -22,20 +73,6 @@ HL_Node* newHL_Node(const char* name);
  * @param[in] node the node that should be deallocated
  */
 void freeHL_Node(HL_Node* node);
-
-/**
- * Creates a new HL_NodeList instance
- * @ingroup hlhdf_c_apis
- * @return the allocated node list on success, otherwise NULL.
- */
-HL_NodeList* newHL_NodeList(void);
-
-/**
- * Releasing all resources associated with this node list including the node list itself.
- * @ingroup hlhdf_c_apis
- * @param[in] nodelist the list that should be released.
- */
-void freeHL_NodeList(HL_NodeList* nodelist);
 
 /**
  * Creates an empty group HL_Node of type @ref HL_Type::GROUP_ID.
@@ -130,6 +167,14 @@ int setHL_NodeScalarValue(HL_Node* node,size_t sz,unsigned char* value,const cha
  */
 int setHL_NodeArrayValue(HL_Node* node,size_t sz,int ndims,hsize_t* dims,unsigned char* value,
       const char* fmt,hid_t typid);
+
+/**
+ * Marks a node.
+ * @param[in] node - the node to be marked
+ * @param[in] mark - the node mark
+ * @return 1 on success, otherwise 0.
+ */
+int setHL_NodeMark(HL_Node* node, const HL_NodeMark mark);
 
 /**
  * Searches the nodelist for any type node, that has got the same object id as objno0 and objno1.

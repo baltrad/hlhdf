@@ -10,6 +10,21 @@
 #include <string.h>
 #include <stdlib.h>
 
+/*@{ Structs */
+/**
+ * Represents a HDF5 file.
+ * @ingroup hlhdf_c_apis
+ */
+struct  _HL_NodeList {
+   char* filename;     /**< The file name */
+   int nNodes;         /**< Number of nodes */
+   int nAllocNodes;    /**< Number of allocated nodes */
+   HL_Node** nodes;    /**< The list of nodes (max size is nNodes - 1) */
+};
+/*@{ End of Structs */
+
+/*@{ Private functions */
+
 static HL_Node* newHL_NodeWithType(const char* name, HL_Type type)
 {
   HL_Node* retv = NULL;
@@ -34,6 +49,122 @@ static hid_t HLNode_createStringType(size_t length)
 
   HL_SPEWDEBUG0("EXIT: HLNode_createStringType");
   return type;
+}
+
+/*@} End of Private functions */
+
+/*@{ Interface functions */
+HL_NodeList* newHL_NodeList(void)
+{
+  HL_NodeList* retv = NULL;
+  int i;
+  HL_SPEWDEBUG0("ENTER: newHL_NodeList");
+  if (!(retv = (HL_NodeList*) malloc(sizeof(HL_NodeList)))) {
+    HL_ERROR0("Failed to allocate memory for NODE");
+    return NULL;
+  }
+  retv->filename = NULL;
+
+  if (!(retv->nodes = (HL_Node**) malloc(sizeof(HL_Node*) * DEFAULT_SIZE_NODELIST))) {
+    HL_ERROR0("Failed to allocate memory for HL_NodeList");
+    free(retv);
+    return NULL;
+  }
+  for (i = 0; i < DEFAULT_SIZE_NODELIST; i++) {
+    retv->nodes[i] = NULL;
+  }
+  retv->nNodes = 0;
+  retv->nAllocNodes = DEFAULT_SIZE_NODELIST;
+  return retv;
+}
+
+void freeHL_NodeList(HL_NodeList* nodelist)
+{
+  int i;
+  HL_SPEWDEBUG0("ENTER: freeHL_NodeList");
+  if (!nodelist)
+    return;
+
+  if (nodelist->nodes) {
+    for (i = 0; i < nodelist->nNodes; i++) {
+      freeHL_Node(nodelist->nodes[i]);
+    }
+    HLHDF_FREE(nodelist->nodes);
+  }
+  HLHDF_FREE(nodelist->filename);
+  HLHDF_FREE(nodelist);
+}
+
+int setHL_NodeListFileName(HL_NodeList* nodelist, const char* filename)
+{
+  int status = 0;
+  char* newfilename = NULL;
+
+  if (nodelist == NULL || filename == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    goto fail;
+  }
+  if ((newfilename = strdup(filename)) == NULL) {
+    HL_ERROR1("Failed to allocate memory for file %s", filename);
+    goto fail;
+  }
+  HLHDF_FREE(nodelist->filename);
+  nodelist->filename = newfilename;
+  newfilename = NULL; // Hand over memory
+
+  status = 1;
+fail:
+  HLHDF_FREE(newfilename);
+  return status;
+}
+
+char* getHL_NodeListFileName(HL_NodeList* nodelist)
+{
+  char* retv = NULL;
+
+  if (nodelist == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    return NULL;
+  }
+
+  if (nodelist->filename != NULL) {
+    if ((retv = strdup(nodelist->filename)) == NULL) {
+      HL_ERROR1("Failed to allocate memory for filename: %s", nodelist->filename);
+    }
+  }
+
+  return retv;
+}
+
+int getHL_NodeListNumberOfNodes(HL_NodeList* nodelist)
+{
+  if (nodelist == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    return -1;
+  }
+  return nodelist->nNodes;
+}
+
+HL_Node* getHL_NodeListNodeByIndex(HL_NodeList* nodelist, int index)
+{
+  if (nodelist == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    return NULL;
+  } else if (index < 0 || index >= nodelist->nNodes) {
+    HL_ERROR0("index out of range");
+    return NULL;
+  }
+  return nodelist->nodes[index];
+}
+
+void markHL_NodeListNodes(HL_NodeList* nodelist, const HL_NodeMark mark)
+{
+  int i = 0;
+  if (nodelist != NULL) {
+    for (i = 0; i < nodelist->nNodes; i++) {
+      nodelist->nodes[i]->mark = mark;
+    }
+  }
 }
 
 HL_Node* newHL_Node(const char* name)
@@ -65,30 +196,6 @@ HL_Node* newHL_Node(const char* name)
   retv->compoundDescription = NULL;
   retv->compression = NULL;
 fail:
-  return retv;
-}
-
-HL_NodeList* newHL_NodeList(void)
-{
-  HL_NodeList* retv = NULL;
-  int i;
-  HL_SPEWDEBUG0("ENTER: newHL_NodeList");
-  if (!(retv = (HL_NodeList*) malloc(sizeof(HL_NodeList)))) {
-    HL_ERROR0("Failed to allocate memory for NODE");
-    return NULL;
-  }
-  strcpy(retv->filename, "");
-
-  if (!(retv->nodes = (HL_Node**) malloc(sizeof(HL_Node*) * DEFAULT_SIZE_NODELIST))) {
-    HL_ERROR0("Failed to allocate memory for HL_NodeList");
-    free(retv);
-    return NULL;
-  }
-  for (i = 0; i < DEFAULT_SIZE_NODELIST; i++) {
-    retv->nodes[i] = NULL;
-  }
-  retv->nNodes = 0;
-  retv->nAllocNodes = DEFAULT_SIZE_NODELIST;
   return retv;
 }
 
@@ -134,22 +241,6 @@ void freeHL_Node(HL_Node* node)
   freeHL_CompoundTypeDescription(node->compoundDescription);
   freeHL_Compression(node->compression);
   HLHDF_FREE(node);
-}
-
-void freeHL_NodeList(HL_NodeList* nodelist)
-{
-  int i;
-  HL_SPEWDEBUG0("ENTER: freeHL_NodeList");
-  if (!nodelist)
-    return;
-
-  if (nodelist->nodes) {
-    for (i = 0; i < nodelist->nNodes; i++) {
-      freeHL_Node(nodelist->nodes[i]);
-    }
-    HLHDF_FREE(nodelist->nodes);
-  }
-  HLHDF_FREE(nodelist);
 }
 
 HL_Node* newHL_Group(const char* name)
@@ -376,6 +467,16 @@ int setHL_NodeArrayValue(HL_Node* node, size_t sz, int ndims, hsize_t* dims,
   if (node->mark != NMARK_CREATED)
     node->mark = NMARK_CHANGED;
 
+  return 1;
+}
+
+int setHL_NodeMark(HL_Node* node, const HL_NodeMark mark)
+{
+  if (node == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    return 0;
+  }
+  node->mark = mark;
   return 1;
 }
 
