@@ -128,7 +128,7 @@ int main(int argc, char** argv)
       goto fail;
    }
 
-   if(node->type!=DATASET_ID && node->type!=ATTRIBUTE_ID) {
+   if(getHL_NodeType(node) != DATASET_ID && getHL_NodeType(node) != ATTRIBUTE_ID) {
       fprintf(stderr,"Specified field was not a dataset or attribute.\n");
       goto fail;
    }
@@ -145,20 +145,20 @@ int main(int argc, char** argv)
       goto fail;
    }
 
-   if(node->type==DATASET_ID) {
+   if(getHL_NodeType(node)==DATASET_ID) {
       fprintf(info_fp,"DATATYPE: DATASET\n");
 
    } else {
       fprintf(info_fp,"DATATYPE: ATTRIBUTE\n");
    }
-   fprintf(info_fp,"FIELDNAME: %s\n",node->name);
-   fprintf(info_fp,"DATASIZE: %d\n",(int)node->dSize);
-   fprintf(info_fp,"DATAFORMAT: %s\n",node->format);
-   if(node->ndims>0) {
+   fprintf(info_fp,"FIELDNAME: %s\n",getHL_NodeName(node));
+   fprintf(info_fp,"DATASIZE: %d\n",(int)getHL_NodeDataSize(node));
+   fprintf(info_fp,"DATAFORMAT: %s\n",HLNode_getFormatName(node));
+   if(getHL_NodeRank(node)>0) {
       fprintf(info_fp,"DIMS: [");
-      for(i=0;i<node->ndims;i++) {
-	 fprintf(info_fp,"%d",(int)node->dims[i]);
-	 if(i<node->ndims-1)
+      for(i = 0; i < getHL_NodeRank(node); i++) {
+	 fprintf(info_fp,"%d",(int)getHL_NodeDimension(node, i));
+	 if(i < getHL_NodeRank(node) - 1)
 	    fprintf(info_fp,",");
       }
       fprintf(info_fp,"]\n");
@@ -166,11 +166,9 @@ int main(int argc, char** argv)
       fprintf(info_fp,"DIMS: [0]\n");
    }
 
-   npts=1;
-   for(i=0;i<node->ndims;i++)
-      npts*=node->dims[i];
+   npts=(size_t)getHL_NodeNumberOfPoints(node);
 
-   if(fwrite(node->data,node->dSize,npts,data_fp)!=npts) {
+   if(fwrite(getHL_NodeData(node), getHL_NodeDataSize(node), npts, data_fp) != npts) {
       fprintf(stderr,"Failed to write datafield\n");
       goto fail;
    }

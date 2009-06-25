@@ -9,6 +9,7 @@
 #include <hdf5.h>
 #include "hlhdf_types.h"
 #include "hlhdf_node.h"
+#include "hlhdf_nodelist.h"
 #include "hlhdf_read.h"
 #include "hlhdf_write.h"
 #include "hlhdf_compound.h"
@@ -26,59 +27,6 @@
 #ifndef TRUE
 #define TRUE 1
 #endif
-
-/**
- * If a UNDEFINED definition is found, this string will be returned.
- */
-#define DATAFORMAT_UNDEFINED "UNDEFINED"
-
-/**
- * @defgroup ValidFormatSpecifiers Valid format specifiers
- * All format specifiers are passed on as constant strings. HLHDF is always atempting to work
- * with native formats which means that what is written might not be interpreeted back to
- * the same format. For example, if a 'char' is written, it might be a 'schar' that is returned
- * or if a 'llong' is written, it might actually be written as a 'long.
- *
- * Valid character strings are:
- * <ul>
- *  <li>'char'</li>
- *  <li>'schar'</li>
- *  <li>'uchar'</li>
- *  <li>'short'</li>
- *  <li>'ushort'</li>
- *  <li>'int'</li>
- *  <li>'uint'</li>
- *  <li>'long'</li>
- *  <li>'ulong'</li>
- *  <li>'llong'</li>
- *  <li>'ullong'</li>
- *  <li>'float'</li>
- *  <li>'double'</li>
- *  <li>'hsize'</li>
- *  <li>'hssize'</li>
- *  <li>'herr'</li>
- *  <li>'hbool'</li>
- * </ul>
- */
-/*@{*/
-extern const char* HLHDF_CHAR;    /**< 'char' */
-extern const char* HLHDF_SCHAR;   /**< 'schar' */
-extern const char* HLHDF_UCHAR;   /**< 'uchar' */
-extern const char* HLHDF_SHORT;   /**< 'short' */
-extern const char* HLHDF_USHORT;  /**< 'ushort' */
-extern const char* HLHDF_INT;     /**< 'int' */
-extern const char* HLHDF_UINT;    /**< 'uint' */
-extern const char* HLHDF_LONG;    /**< 'long' */
-extern const char* HLHDF_ULONG;   /**< 'ulong' */
-extern const char* HLHDF_LLONG;   /**< 'llong' */
-extern const char* HLHDF_ULLONG;  /**< 'ullong' */
-extern const char* HLHDF_FLOAT;   /**< 'float' */
-extern const char* HLHDF_DOUBLE;  /**< 'double' */
-extern const char* HLHDF_HSIZE;   /**< 'hsize' */
-extern const char* HLHDF_HSSIZE;  /**< 'hssize' */
-extern const char* HLHDF_HERR;    /**< 'herr' */
-extern const char* HLHDF_HBOOL;   /**< 'hbool' */
-/*@}*/
 
 /**
  * @defgroup hlhdf_c_apis HLHDF C-API Reference Manual
@@ -143,7 +91,8 @@ HL_FileCreationProperty* createHlHdfFileCreationProperty(void);
 void freeHL_fileCreationProperty(HL_FileCreationProperty* prop);
 
 /**
- * Calculates the size in bytes of the provided @ref ValidFormatSpecifiers "format specifier".
+ * Calculates the size in bytes of the provided @ref ValidFormatSpecifiers "format specifiers".
+ * The exception is string and compound type since they needs to be analyzed to get the size.
  * @ingroup hlhdf_c_apis
  * @param[in] format The @ref ValidFormatSpecifiers "format specifier".
  * @return the size in bytes or -1 on failure.
@@ -152,11 +101,27 @@ int whatSizeIsHdfFormat(const char* format);
 
 /**
  * Verifies if the format name is supported by HLHDF.
+ * Does not see string and compound as a supported format since they are not
+ * possible to determine without a hid.
  * @ingroup hlhdf_c_apis
  * @param[in] format the format name string
  * @return TRUE if it is supported, otherwise FALSE.
  */
 int isFormatSupported(const char* format);
+
+/**
+ * Returns the format specifier for the provided format string.
+ * @param[in] format the format name
+ * @return the format specifier. HLHDF_UNDEFINED is also returned on error
+ */
+HL_FormatSpecifier HL_getFormatSpecifier(const char* format);
+
+/**
+ * Returns the string representation of the provided specifier.
+ * @param[in] specifier - the specifier
+ * @return NULL if not a valid specifier, otherwise the format.
+ */
+const char* HL_getFormatSpecifierString(HL_FormatSpecifier specifier);
 
 /**
  * Creates an allocated and initialized instance of HL_Compression.

@@ -493,25 +493,6 @@ int setObjectString_Length(PyObject* info,char* keyname,char* in_string,int len)
    return ret;
 }
 
-#ifdef KALLE
-/**********************************************************
- *Function:	whatSizeIsHdfFormat
- **********************************************************/
-int whatSizeIsHdfFormat(const char* format)
-{
-   hid_t tmpType;
-   int size=-1;
-   tmpType=translateCharToDatatype(format);
-   if(tmpType<0) {
-      fprintf(stderr,"There is no type called %s\n",format);
-      return -1;
-   }
-   size=H5Tget_size(tmpType);
-   H5Tclose(tmpType);
-   return size;
-}
-#endif
-
 /**********************************************************
  *Function:	translatePyFormatToHlHdf
  **********************************************************/

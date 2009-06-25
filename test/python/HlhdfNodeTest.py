@@ -66,6 +66,18 @@ class HlhdfNodeTest(unittest.TestCase):
     node = nodelist.fetchNode("/dataset1/doublearray")
     self.assertEquals("/dataset1/doublearray", node.name()) 
 
+  def testAddDuplicate_GroupNode(self):
+    nodelist = _pyhl.nodelist();
+    nodelist.addNode(_pyhl.node(_pyhl.GROUP_ID, "/root"))
+    nodelist.addNode(_pyhl.node(_pyhl.GROUP_ID, "/root/group1"))
+    nodelist.addNode(_pyhl.node(_pyhl.GROUP_ID, "/root/group2"))
+    try:
+      nodelist.addNode(_pyhl.node(_pyhl.GROUP_ID, "/root/group1"))
+      self.fail("Expected IOError")
+    except IOError, e:
+      pass
+
+
 if __name__ == "__main__":
     #import sys;sys.argv = ['', 'Test.testName']
     unittest.main()

@@ -38,7 +38,7 @@ hid_t getFixedType(hid_t type);
  * @param[in] dataType Format specifier. See @ref ValidFormatSpecifiers "here" for valid format specifiers.
  * @return the reference to the type or <0 on failure.
  */
-hid_t translateCharToDatatype(const char* dataType);
+hid_t HL_translateFormatStringToDatatype(const char* dataType);
 
 /**
  * Returns the type as represented by HDF5. For example 'H5T_STD_I8BE'.
@@ -48,11 +48,18 @@ hid_t translateCharToDatatype(const char* dataType);
 char* getTypeNameString(hid_t type);
 
 /**
+ * Returns the format specifier for the provided type identifier.
+ * @param[in] type the type identifier, must be a native type.
+ * @return the format specifier or HLHDF_UNDEFINED on error.
+ */
+HL_FormatSpecifier HL_getFormatSpecifierFromType(hid_t type);
+
+/**
  * Returns the format specifier as defined by HLHDF.
  * @param[in] type the type identifier, must be a native type.
  * @return the format specifier string or NULL on failure. See @ref ValidFormatSpecifiers "here" for valid values.
  */
-char* getFormatNameString(hid_t type);
+const char* getFormatNameString(hid_t type);
 
 /**
  * Returns the String Pad name as represented by HDF5
@@ -86,5 +93,15 @@ char* getStringCtypeName(hid_t type);
  * @return 1 on success, otherwise 0.
  */
 int extractParentChildName(HL_Node* node, char** parent, char** child);
+
+/**
+ * Opens a group or dataset hid and returns the type as well.
+ * @param[in] file_id - the file pointer
+ * @param[in] name - the node name to open
+ * @param[out] lid - the opened hid
+ * @param[out] type - the type of the opened hid
+ * @return 0 on failure, otherwise 1
+ */
+int openGroupOrDataset(hid_t file_id, const char* name, hid_t* lid, HL_Type* type);
 
 #endif /* HLHDF_PRIVATE_H_ */

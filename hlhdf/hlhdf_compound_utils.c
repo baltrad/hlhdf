@@ -41,7 +41,7 @@ herr_t addAttributeToCompoundType_fmt(hid_t loc_id, const char* name,
   size_t offset, const char* fmt)
 {
   herr_t status = -1;
-  hid_t type_id = translateCharToDatatype(fmt);
+  hid_t type_id = HL_translateFormatStringToDatatype(fmt);
   HL_SPEWDEBUG0("ENTER: addAttributeToCompoundType_fmt");
   if (type_id < 0) {
     goto fail;
@@ -88,7 +88,7 @@ herr_t addArrayToCompoundType_fmt(hid_t loc_id, const char* name,
   hid_t type_id = -1;
   herr_t status = -1;
   HL_SPEWDEBUG0("ENTER: addArrayToCompoundType_fmt");
-  type_id = translateCharToDatatype(fmt);
+  type_id = HL_translateFormatStringToDatatype(fmt);
   if (type_id < 0) {
     goto fail;
   }

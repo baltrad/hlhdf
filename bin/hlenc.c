@@ -306,7 +306,7 @@ int main(int argc, char** argv)
   }
 
   if (!addHL_Node(nodelist, node)) {
-    fprintf(stderr, "Failed to add node (%s) to nodelist\n", node->name);
+    fprintf(stderr, "Failed to add node (%s) to nodelist\n", getHL_NodeName(node));
     goto fail;
   }
   node = NULL; /*nodelist has got the responsibility now*/

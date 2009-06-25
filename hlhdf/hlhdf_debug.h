@@ -204,6 +204,13 @@ hlhdfDbg.dbgfun(__FILE__,__LINE__,HLHDF_CRITICAL,msg,arg1,arg2,arg3)
 #define HL_CRITICAL4(msg,arg1,arg2,arg3,arg4) \
 hlhdfDbg.dbgfun(__FILE__,__LINE__,HLHDF_CRITICAL,msg,arg1,arg2,arg3,arg4)
 
+#define HL_ASSERT(expr, msg) \
+if(!expr) { \
+hlhdfDbg.dbgfun(__FILE__, __LINE__, HLHDF_CRITICAL, msg); \
+abort(); \
+}
+
+
 #else
 /** Spewdebug macro taking one text string.*/
 #define HL_SPEWDEBUG0(msg)
@@ -330,6 +337,15 @@ hlhdfDbg.dbgfun(__FILE__,__LINE__,HLHDF_CRITICAL,msg,arg1,arg2,arg3)
 #define HL_CRITICAL4(msg,arg1,arg2,arg3,arg4) \
 hlhdfDbg.dbgfun(__FILE__,__LINE__,HLHDF_CRITICAL,msg,arg1,arg2,arg3,arg4)
 
+/**
+ * Precondition macro, if the expression does not evaluate to true, then an
+ * CRITICAL error message will be produced and then the program will abort().
+ */
+#define HL_ASSERT(expr, msg) \
+if(!expr) { \
+hlhdfDbg.dbgfun(__FILE__, __LINE__, HLHDF_CRITICAL, msg); \
+abort(); \
+}
 
 #endif
 /*@}*/

@@ -35,7 +35,7 @@ void freeHL_CompoundTypeDescription(HL_CompoundTypeDescription* typelist);
  */
 HL_CompoundTypeAttribute* newHL_CompoundTypeAttribute(char* attrname,
                   size_t offset,
-                  char* format,
+                  const char* format,
                   size_t size,
                   int ndims,
                   size_t* dims);

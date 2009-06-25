@@ -11,6 +11,72 @@
 #include <hdf5.h>
 
 /**
+ * @defgroup ValidFormatSpecifiers Valid format specifiers
+ * All format specifiers are passed on as constant strings. HLHDF is always atempting to work
+ * with native formats which means that what is written might not be interpreeted back to
+ * the same format. For example, if a 'char' is written, it might be a 'schar' that is returned
+ * or if a 'llong' is written, it might actually be written as a 'long.
+ *
+ * Use the function \ref HL_getFormatSpecifierString to get a string representation of the string.
+ *
+ * Valid character strings are:
+ * <ul>
+ *  <li>'char'</li>
+ *  <li>'schar'</li>
+ *  <li>'uchar'</li>
+ *  <li>'short'</li>
+ *  <li>'ushort'</li>
+ *  <li>'int'</li>
+ *  <li>'uint'</li>
+ *  <li>'long'</li>
+ *  <li>'ulong'</li>
+ *  <li>'llong'</li>
+ *  <li>'ullong'</li>
+ *  <li>'float'</li>
+ *  <li>'double'</li>
+ *  <li>'ldouble'</li>
+ *  <li>'hsize'</li>
+ *  <li>'hssize'</li>
+ *  <li>'herr'</li>
+ *  <li>'hbool'</li>
+ *  <li>'string'</li>
+ *  <li>'compound'</li>
+ * </ul>
+ */
+/*@{*/
+/**
+ * These are all valid format specifiers that are used within HLHDF. HLHDF_ARRAY is not possible
+ * to use for writing and is only used when reading HDF5 files with array content.
+ */
+typedef enum HL_FormatSpecifier {
+  HLHDF_UNDEFINED = 0,  /**< 'UNDEFINED' If no format has been specified, this string will be returned */
+  HLHDF_CHAR,           /**< 'char' */
+  HLHDF_SCHAR,          /**< 'schar' */
+  HLHDF_UCHAR,          /**< 'uchar' */
+  HLHDF_SHORT,          /**< 'short' */
+  HLHDF_USHORT,         /**< 'ushort' */
+  HLHDF_INT,            /**< 'int' */
+  HLHDF_UINT,           /**< 'uint' */
+  HLHDF_LONG,           /**< 'long' */
+  HLHDF_ULONG,          /**< 'ulong' */
+  HLHDF_LLONG,          /**< 'llong' */
+  HLHDF_ULLONG,         /**< 'ullong' */
+  HLHDF_FLOAT,          /**< 'float' */
+  HLHDF_DOUBLE,         /**< 'double' */
+  HLHDF_LDOUBLE,        /**< 'ldouble' */
+  HLHDF_HSIZE,          /**< 'hsize' */
+  HLHDF_HSSIZE,         /**< 'hssize' */
+  HLHDF_HERR,           /**< 'herr' */
+  HLHDF_HBOOL,          /**< 'hbool' */
+  HLHDF_STRING,         /**< 'string' */
+  HLHDF_COMPOUND,       /**< 'compound' */
+  HLHDF_ARRAY,          /**< 'array' This is only something that will be read but is not possible to write */
+  HLHDF_END_OF_SPECIFIERS
+} HL_FormatSpecifier;
+
+/*@}*/
+
+/**
  * Defines what type of compression that should be used
  * @ingroup hlhdf_c_apis
  *  */
@@ -159,6 +225,7 @@ typedef enum HL_DataType {
  * @ingroup hlhdf_c_apis
  */
 typedef enum HL_NodeMark {
+  NMARK_UNDEFINED=-1, /**< Undefined type */
   NMARK_ORIGINAL=0, /**< Nothing has been done on the node, e.g. it has been read but nothing else */
   NMARK_CREATED,    /**< If a node has been created but not been written */
   NMARK_CHANGED,    /**< If a nodes value has been changed and needs to be written */
@@ -199,23 +266,7 @@ typedef struct {
  * Each entry and type in a HDF5 file is represented by a HL_Node.
  * @ingroup hlhdf_c_apis
  */
-typedef struct HL_Node {
-   HL_Type type;               /**< The type of this node */
-   char name[256];             /**< The name of this node */
-   int ndims;                  /**< Number of dimensions if this node is represented by a HL_Type#ATTRIBUTE_ID or HL_Type#TYPE_ID*/
-   hsize_t dims[4];            /**< The dimension size */
-   unsigned char* data;        /**< The data in fixed-type format */
-   unsigned char* rawdata;     /**< Unconverted data, exactly as read from the file */
-   char format[64];            /**< @ref ValidFormatSpecifiers "Format specifier" */
-   hid_t typeId;               /**< HDF5 type identifier */
-   size_t dSize;               /**< Size for data (fixed type) */
-   size_t rdSize;              /**< Size for rawdata */
-   HL_DataType dataType;       /**< Type of data */
-   hid_t hdfId;                /**< The hdf id that this node represents (used internally)*/
-   HL_NodeMark mark;           /**< Current state of this node */
-   HL_CompoundTypeDescription* compoundDescription; /**< The compound type description if this is a TYPE node*/
-   HL_Compression* compression; /**< Compression settings for this node */
-} HL_Node;
+typedef struct _HL_Node HL_Node;
 
 /**
  * Represents a HDF5 file.

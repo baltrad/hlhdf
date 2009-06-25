@@ -11,7 +11,7 @@
 #include <stdlib.h>
 
 HL_CompoundTypeAttribute* newHL_CompoundTypeAttribute(char* attrname,
-  size_t offset, char* format, size_t size, int ndims, size_t* dims)
+  size_t offset, const char* format, size_t size, int ndims, size_t* dims)
 {
   HL_CompoundTypeAttribute* retv = NULL;
   int i;

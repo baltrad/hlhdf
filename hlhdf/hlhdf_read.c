@@ -8,6 +8,7 @@
 #include "hlhdf_private.h"
 #include "hlhdf_debug.h"
 #include "hlhdf_defines_private.h"
+#include "hlhdf_node_private.h"
 #include <string.h>
 #include <stdlib.h>
 
@@ -52,7 +53,8 @@ static HL_CompoundTypeDescription* buildTypeDescriptionFromTypeHid(hid_t type_id
   hsize_t* dims_h514 = NULL;
   size_t dSize;
   int ndims;
-  char* tmpName = NULL;
+  HL_FormatSpecifier format = HLHDF_UNDEFINED;
+
   HL_DEBUG0("ENTER: buildTypeDescriptionFromTypeHid");
   if (!(typelist = newHL_CompoundTypeDescription())) {
     HL_ERROR0("Failed to create datatype nodelist");
@@ -71,7 +73,9 @@ static HL_CompoundTypeDescription* buildTypeDescriptionFromTypeHid(hid_t type_id
       goto fail;
     }
 
-    if (!(tmpName = getFormatNameString(fixedType))) {
+    format = HL_getFormatSpecifierFromType(fixedType);
+    if (format == HLHDF_UNDEFINED) {
+      HL_ERROR0("Undefined format specifier");
       goto fail;
     }
 
@@ -96,14 +100,18 @@ static HL_CompoundTypeDescription* buildTypeDescriptionFromTypeHid(hid_t type_id
       HL_ERROR0("fname is NULL, cant use it to create CompoundTypeAttribute\n");
       goto fail;
     }
-    typenode = newHL_CompoundTypeAttribute(fname, offset, tmpName, dSize, ndims, dims);
+    typenode = newHL_CompoundTypeAttribute(fname,
+                                           offset,
+                                           HL_getFormatSpecifierString(format),
+                                           dSize,
+                                           ndims,
+                                           dims);
     if (!addHL_CompoundTypeAttribute(typelist, typenode))
       goto fail;
     HLHDF_FREE(dims);
     HLHDF_FREE(dims_h514);
     HL_H5T_CLOSE(mtype);
     HLHDF_FREE(fname);
-    HLHDF_FREE(tmpName);
     HL_H5T_CLOSE(fixedType);
   }
 
@@ -112,7 +120,6 @@ static HL_CompoundTypeDescription* buildTypeDescriptionFromTypeHid(hid_t type_id
   HL_H5T_CLOSE(mtype);
   HL_H5T_CLOSE(fixedType);
   HLHDF_FREE(fname);
-  HLHDF_FREE(tmpName);
   return typelist;
 fail:
   HLHDF_FREE(dims);
@@ -120,7 +127,6 @@ fail:
   HL_H5T_CLOSE(mtype);
   HL_H5T_CLOSE(fixedType);
   HLHDF_FREE(fname);
-  HLHDF_FREE(tmpName);
   freeHL_CompoundTypeDescription(typelist);
   return NULL;
 }
@@ -141,63 +147,6 @@ static int checkIfReferenceMatch(hid_t loc_id, char* path, hobj_ref_t* ref)
   return 0;
 }
 
-/**
- * Opens a group or dataset hid and returns the type as well.
- * @param[in] file_id - the file pointer
- * @param[in] name - the node name to open
- * @param[out] lid - the opened hid
- * @param[out] type - the type of the opened hid
- * @return 0 on failure, otherwise 1
- */
-static int openGroupOrDataset(hid_t file_id, const char* name, hid_t* lid, HL_Type* type)
-{
-  int status = 0;
-
-  if (name == NULL || lid == NULL || type == NULL) {
-    HL_ERROR0("Inparameters NULL");
-    goto fail;
-  }
-  *lid = -1;
-  *type = UNDEFINED_ID;
-  if (strcmp(name, "") != 0) {
-    H5O_info_t objectInfo;
-    herr_t infoStatus = -1;
-    disableErrorReporting(); /*Bypass the error reporting, if failed to open a dataset/or group*/
-    infoStatus = H5Oget_info_by_name(file_id, name, &objectInfo, H5P_DEFAULT);
-    enableErrorReporting();
-    if (infoStatus >= 0) {
-      if (objectInfo.type == H5O_TYPE_GROUP) {
-        *type = GROUP_ID;
-      } else if (objectInfo.type == H5O_TYPE_DATASET) {
-        *type = DATASET_ID;
-      } else {
-        infoStatus = -1;
-        *type = UNDEFINED_ID;
-      }
-    }
-    if (infoStatus < 0) {
-      HL_ERROR0("name needs to be a dataset or group.");
-      goto fail;
-    }
-    if ((*lid = H5Oopen(file_id, name, H5P_DEFAULT))<0) {
-      HL_ERROR1("Node '%s' could not be opened", name);
-      goto fail;
-    }
-  } else {
-    if ((*lid = H5Gopen(file_id, "/", H5P_DEFAULT)) < 0) {
-      HL_ERROR0("Could not open root group");
-      goto fail;
-    }
-    *type = GROUP_ID;
-  }
-  status = 1;
-fail:
-  if (status == 0) {
-    HL_H5O_CLOSE(*lid);
-    *type = UNDEFINED_ID;
-  }
-  return status;
-}
 /* ---------------------------------------
  * REF_GROUP_LOCATION_ITERATOR
  * Iterator function for checking group
@@ -293,6 +242,100 @@ fail:
   return NULL;
 }
 
+static int hlhdf_read_readAttributeData(hid_t obj, hid_t type, hsize_t npoints,
+  size_t* dSize, unsigned char** dataptr)
+{
+  int status = 0;
+  if (dSize == NULL || dataptr == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    return 0;
+  }
+
+  *dSize = H5Tget_size(type);
+  if (!(*dataptr = (unsigned char*) malloc((*dSize) * npoints))) {
+    HL_ERROR0("Could not allocate memory for attribute data");
+    goto fail;
+  }
+
+  if (H5Aread(obj, type, *dataptr) < 0) {
+    HL_ERROR0("Could not read attribute data\n");
+    goto fail;
+  }
+  status = 1;
+
+fail:
+  if (status == 0) {
+    *dSize = 0;
+    HLHDF_FREE(*dataptr);
+  }
+  return status;
+}
+
+/**
+ * Fills the attribute with the data or the rawdata depending on rawdata-attribute
+ * @param[in] node the node
+ * @param[in] obj the attribute hid
+ * @param[in] type the data type
+ * @param[in] npoints the number of values
+ * @param[in] rawdata if 0, data will be set, if 1 rawdata will be set.
+ */
+static int hlhdf_read_fillAttributeNodeWithData(HL_Node* node, hid_t obj, hid_t type, int npoints, int rawdata)
+{
+  size_t dSize = 0;
+  unsigned char* dataptr = NULL;
+  int status = 0;
+
+  if (!hlhdf_read_readAttributeData(obj, type, npoints, &dSize, &dataptr)) {
+    HL_ERROR0("Failed to read attribute data");
+    goto fail;
+  }
+
+  if (!rawdata) {
+    HLNodePrivate_setData(node, dSize, dataptr);
+  } else {
+    HLNodePrivate_setRawdata(node,dSize,dataptr);
+  }
+  dataptr = NULL;
+
+  status = 1;
+fail:
+  HLHDF_FREE(dataptr);
+  return status;
+}
+
+/**
+ * Gets the space dimension information.
+ * @param[in] spaceid the space identifier
+ * @param[out] ndims the rank
+ * @param[out] npoints the number of values
+ * @param[out] the dimensions
+ * @return 1 on success, 0 on failure and in that case dims is guaranteed to be NULL
+ */
+static int hlhdf_read_getSpaceDimensions(hid_t spaceid, int* ndims, hsize_t* npoints, hsize_t** dims)
+{
+  int status = 0;
+
+  HL_ASSERT((ndims != NULL && npoints != NULL && dims != NULL), "Inparameters NULL");
+
+  *ndims = H5Sget_simple_extent_ndims(spaceid);
+  *npoints = H5Sget_simple_extent_npoints(spaceid);
+  *dims = NULL;
+  if (*ndims > 0) {
+    *dims = (hsize_t*)malloc(sizeof(hsize_t)* (*ndims));
+    if (H5Sget_simple_extent_dims(spaceid, *dims, NULL) != *ndims) {
+      HL_ERROR0("Could not get dimensions from space");
+      goto fail;
+    }
+  }
+  status = 1;
+fail:
+  if (status == 0) {
+    *ndims = 0;
+    *npoints = 0;
+    HLHDF_FREE(*dims);
+  }
+  return status;
+}
 
 /**
  * Fills an attribute with data
@@ -303,14 +346,8 @@ static int fillAttributeNode(hid_t file_id, HL_Node* node)
   hid_t loc_id = -1;
   hid_t type = -1, mtype = -1;
   hid_t f_space = -1;
-  hsize_t* all_dims = NULL;
-  hsize_t npoints;
-  int ndims, i;
   char* parent = NULL;
   char* child = NULL;
-  unsigned char* dataptr = NULL;
-  unsigned char* rawdataptr = NULL;
-  char* tmpName = NULL;
   HL_Type parentType = UNDEFINED_ID;
   H5G_stat_t statbuf;
   int result = 0;
@@ -342,49 +379,45 @@ static int fillAttributeNode(hid_t file_id, HL_Node* node)
   }
 
   if (H5Tget_class(mtype) == H5T_COMPOUND) {
-    if (H5Tcommitted(type) > 0) {
-      H5Gget_objinfo(type, ".", TRUE, &statbuf);
-    }
-    if (!(node->compoundDescription = buildTypeDescriptionFromTypeHid(mtype))) {
+    HL_CompoundTypeDescription* descr = buildTypeDescriptionFromTypeHid(mtype);
+    if (descr == NULL) {
       HL_ERROR0("Failed to create compound data description for attribute");
       goto fail;
     }
+
     if (H5Tcommitted(type) > 0) {
-      node->compoundDescription->objno[0] = statbuf.objno[0];
-      node->compoundDescription->objno[1] = statbuf.objno[1];
+      H5Gget_objinfo(type, ".", TRUE, &statbuf);
+      descr->objno[0] = statbuf.objno[0];
+      descr->objno[1] = statbuf.objno[1];
     }
+
+    setHL_NodeCompoundDescription(node, descr);
   }
 
   if ((f_space = H5Aget_space(obj)) >= 0) {
-    ndims = H5Sget_simple_extent_ndims(f_space);
-    npoints = H5Sget_simple_extent_npoints(f_space);
-    if (ndims > 0) {
-      if (!(all_dims = (hsize_t*) malloc(sizeof(hsize_t) * ndims))) {
-        HL_ERROR0("Could not allocate memory for node dims\n");
+    hsize_t* all_dims = NULL;
+    hsize_t npoints;
+    int ndims;
+
+    if (!hlhdf_read_getSpaceDimensions(f_space, &ndims, &npoints, &all_dims)) {
+      HL_ERROR0("Could not read space dimensions");
+      goto fail;
+    } else {
+      if (!setHL_NodeDimensions(node, ndims, all_dims)) {
+        HL_ERROR0("Failed to set node dimensions");
+        HLHDF_FREE(all_dims);
         goto fail;
       }
+      HLHDF_FREE(all_dims);
     }
 
-    H5Sget_simple_extent_dims(f_space, all_dims, NULL);
     if (H5Sis_simple(f_space) >= 0) {
-      node->dSize = H5Tget_size(mtype);
-      if (!(dataptr = (unsigned char*) malloc(H5Tget_size(mtype) * npoints))) {
-        HL_ERROR0("Could not allocate memory for attribute data");
+      if (!hlhdf_read_fillAttributeNodeWithData(node, obj, mtype, npoints, 0)) {
+        HL_ERROR0("Failed to read fixed attribute data");
         goto fail;
       }
-      if (H5Aread(obj, mtype, dataptr) < 0) {
-        HL_ERROR0("Could not read attribute data\n");
-        goto fail;
-      }
-
-      /* Ahe added this 2001-01-17 */
-      node->rdSize = H5Tget_size(type);
-      if (!(rawdataptr = (unsigned char*) malloc(H5Tget_size(type) * npoints))) {
-        HL_ERROR0("Could not allocate memory for raw attribute data");
-        goto fail;
-      }
-      if (H5Aread(obj, type, rawdataptr) < 0) {
-        HL_ERROR0("Could not read raw attribute data");
+      if (!hlhdf_read_fillAttributeNodeWithData(node, obj, type, npoints, 1)) {
+        HL_ERROR0("Failed to read fixed attribute data");
         goto fail;
       }
     } else {
@@ -396,22 +429,11 @@ static int fillAttributeNode(hid_t file_id, HL_Node* node)
     goto fail;
   }
 
-  if (!(tmpName = getFormatNameString(mtype))) {
+  if (!HLNodePrivate_setTypeIdAndDeriveFormat(node, mtype)) {
+    HL_ERROR0("Failed to set type and format on node");
     goto fail;
   }
-  strcpy(node->format, tmpName);
-
-  if (all_dims) {
-    for (i = 0; i < ndims; i++)
-      node->dims[i] = all_dims[i];
-  }
-  node->ndims = ndims;
-  node->typeId = H5Tcopy(mtype);
-  node->mark = NMARK_ORIGINAL;
-  node->data = dataptr;
-  node->rawdata = rawdataptr; /* Ahe added this 2001-01-17 */
-  dataptr = NULL; // Responsibility for memory transfered
-  rawdataptr = NULL; // Responsibility for memory transfered
+  setHL_NodeMark(node, NMARK_ORIGINAL);
 
   result = 1;
 fail:
@@ -420,12 +442,8 @@ fail:
   HL_H5T_CLOSE(type);
   HL_H5T_CLOSE(mtype);
   HL_H5S_CLOSE(f_space);
-  HLHDF_FREE(all_dims);
   HLHDF_FREE(parent);
   HLHDF_FREE(child);
-  HLHDF_FREE(dataptr);
-  HLHDF_FREE(rawdataptr);
-  HLHDF_FREE(tmpName);
 
   return result;
 }
@@ -442,8 +460,8 @@ static int fillReferenceNode(hid_t file_id, HL_Node* node)
   char* parent = NULL;
   char* child = NULL;
   char* refername = NULL;
-  char* tmpName = NULL;
   int status = 0;
+  hid_t strtype = -1;
 
   HL_DEBUG0("ENTER: fillReferenceNode");
   if (!extractParentChildName(node, &parent, &child)) {
@@ -465,23 +483,22 @@ static int fillReferenceNode(hid_t file_id, HL_Node* node)
   }
 
   if (!(refername = locateNameForReference(file_id, &ref))) {
-    HL_ERROR2("WARNING: Could not locate name of object referenced by: %s/%s"
-        " will set referenced object to UNKNOWN.", parent,child);
+    HL_INFO2("WARNING: Could not locate name of object referenced by: %s/%s"
+             " will set referenced object to UNKNOWN.", parent, child);
     refername = strdup("UNKNOWN");
   }
-  node->dSize = strlen(refername) + 1;
-  node->data = (unsigned char*) strdup(refername);
-  node->rdSize = strlen(refername) + 1;
-  node->rawdata = (unsigned char*) strdup(refername);
-  node->ndims = 0;
-  node->mark = NMARK_ORIGINAL;
-  node->typeId = H5Tcopy(H5T_C_S1);
-  H5Tset_size(node->typeId, node->dSize);
-  if (!(tmpName = getFormatNameString(node->typeId))) {
-    HL_ERROR0("Failed to get name string");
+
+  HLNodePrivate_setData(node, strlen(refername)+1, (unsigned char*)strdup(refername));
+  HLNodePrivate_setRawdata(node, strlen(refername)+1, (unsigned char*)strdup(refername));
+  setHL_NodeDimensions(node, 0, NULL);
+  setHL_NodeMark(node, NMARK_ORIGINAL);
+
+  strtype = H5Tcopy(H5T_C_S1);
+  H5Tset_size(strtype, strlen(refername)+1);
+  if(!HLNodePrivate_setTypeIdAndDeriveFormat(node, strtype)) {
+    HL_ERROR0("Failed to set type and format");
     goto fail;
   }
-  strcpy(node->format, tmpName);
 
   status = 1;
 fail:
@@ -490,7 +507,7 @@ fail:
   HLHDF_FREE(parent);
   HLHDF_FREE(child);
   HLHDF_FREE(refername);
-  HLHDF_FREE(tmpName);
+  HL_H5T_CLOSE(strtype);
 
   return status;
 }
@@ -503,17 +520,13 @@ static int fillDatasetNode(hid_t file_id, HL_Node* node)
   hid_t obj = -1;
   hid_t type = -1;
   H5G_stat_t statbuf;
-  int ndims, i;
-  hsize_t* all_dims = NULL;
-  hsize_t npoints;
   hid_t f_space = -1;
   hid_t mtype = -1;
-  unsigned char* dataptr = NULL;
-  char* tmpName = NULL;
+  int status = 0;
 
   HL_DEBUG0("ENTER: fillDatasetNode");
 
-  if ((obj = H5Dopen(file_id, node->name, H5P_DEFAULT)) < 0) {
+  if ((obj = H5Dopen(file_id, HLNodePrivate_getName(node), H5P_DEFAULT)) < 0) {
     goto fail;
   }
 
@@ -525,40 +538,57 @@ static int fillDatasetNode(hid_t file_id, HL_Node* node)
 
   /* What size does the type have? */
   if ((f_space = H5Dget_space(obj)) > 0) { /*Get the space description for the dataset */
-    ndims = H5Sget_simple_extent_ndims(f_space);
-    npoints = H5Sget_simple_extent_npoints(f_space);
-    all_dims = (hsize_t*) malloc(sizeof(hsize_t) * ndims);
-    if (H5Sget_simple_extent_dims(f_space, all_dims, NULL) != ndims) {
-      HL_ERROR0("Could not get dimensions from dataset");
-      goto fail;
-    }
-    /* Translate the type into a native dataspace */
-    mtype = getFixedType(type);
-    /*mtype = H5Tcopy(type);*/
+    hsize_t* all_dims = NULL;
+    hsize_t npoints;
+    int ndims;
 
-    if (H5Tget_class(mtype) == H5T_COMPOUND) {
-      if (H5Tcommitted(type) > 0) {
-        H5Gget_objinfo(type, ".", TRUE, &statbuf);
-      }
-      if (!(node->compoundDescription = buildTypeDescriptionFromTypeHid(mtype))) {
-        HL_ERROR0("Failed to create compound data description for dataset");
+    if (!hlhdf_read_getSpaceDimensions(f_space, &ndims, &npoints, &all_dims)) {
+      HL_ERROR0("Could not read space dimensions");
+      goto fail;
+    } else {
+      if (!setHL_NodeDimensions(node, ndims, all_dims)) {
+        HL_ERROR0("Failed to set node dimensions");
+        HLHDF_FREE(all_dims);
         goto fail;
       }
-      if (H5Tcommitted(type) > 0) {
-        node->compoundDescription->objno[0] = statbuf.objno[0];
-        node->compoundDescription->objno[1] = statbuf.objno[1];
+      HLHDF_FREE(all_dims);
+    }
+
+    /* Translate the type into a native dataspace */
+    mtype = getFixedType(type);
+
+    if (H5Tget_class(mtype) == H5T_COMPOUND) {
+      HL_CompoundTypeDescription* descr = buildTypeDescriptionFromTypeHid(mtype);
+      if (descr == NULL) {
+        HL_ERROR0("Failed to create compound data description for attribute");
+        goto fail;
       }
+
+      if (H5Tcommitted(type) > 0) {
+        H5Gget_objinfo(type, ".", TRUE, &statbuf);
+        descr->objno[0] = statbuf.objno[0];
+        descr->objno[1] = statbuf.objno[1];
+      }
+
+      setHL_NodeCompoundDescription(node, descr);
     }
 
     if (H5Sis_simple(f_space) >= 0) { /*Only allow simple dataspace, nothing else supported by HDF5 anyway */
-      node->dSize = H5Tget_size(mtype);
-      node->rdSize = 0;
-      dataptr = (unsigned char*) malloc(H5Tget_size(mtype) * npoints);
-      H5Sselect_all(f_space); /* Mark for selection */
-      if (H5Dread(obj, mtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, dataptr) < 0) {
-        HL_ERROR0("Failed to read dataset");
+      unsigned char* dataptr = NULL;
+      size_t dSize = H5Tget_size(mtype);
+      dataptr = (unsigned char*) malloc(dSize * npoints);
+      if (dataptr == NULL) {
+        HL_ERROR0("Failed to allocate memory for dataset arrray");
         goto fail;
       }
+      H5Sselect_all(f_space);
+      if (H5Dread(obj, mtype, H5S_ALL, H5S_ALL, H5P_DEFAULT, dataptr) < 0) {
+        HL_ERROR0("Failed to read dataset");
+        HLHDF_FREE(dataptr);
+        goto fail;
+      }
+
+      HLNodePrivate_setData(node, dSize, dataptr);
     } else {
       HL_ERROR0("Dataspace for dataset was not simple, this is not supported");
       goto fail;
@@ -568,43 +598,21 @@ static int fillDatasetNode(hid_t file_id, HL_Node* node)
     goto fail;
   }
 
-  /* Translate the type into a recognizable string, e.g. int, short, string, compound */
-  if (!(tmpName = getFormatNameString(mtype))) {
+  if(!HLNodePrivate_setTypeIdAndDeriveFormat(node, mtype)) {
+    HL_ERROR0("Failed to set type and format");
     goto fail;
   }
-  strcpy(node->format, tmpName);
-
-  /* Filling dataset */
-  node->ndims = ndims;
-  for (i = 0; i < ndims; i++) {
-    node->dims[i] = all_dims[i];
-  }
-
-  /* Remember to keep the type pointer, can be hard to interpreet the data
-   * later otherwise. */
-  node->typeId = mtype;
-
-  /*Better keep data also*/
-  node->data = (unsigned char*) dataptr;
 
   /* Mark the node as original */
-  node->mark = NMARK_ORIGINAL;
+  setHL_NodeMark(node, NMARK_ORIGINAL);
 
-  HL_H5D_CLOSE(obj);
-  HL_H5T_CLOSE(type);
-  HLHDF_FREE(all_dims);
-  HL_H5S_CLOSE(f_space);
-  HLHDF_FREE(tmpName);
-  return 1;
+  status = 1;
 fail:
   HL_H5D_CLOSE(obj);
   HL_H5T_CLOSE(type);
-  HLHDF_FREE(all_dims);
   HL_H5S_CLOSE(f_space);
   HL_H5T_CLOSE(mtype);
-  HLHDF_FREE(dataptr);
-  HLHDF_FREE(tmpName);
-  return 0;
+  return status;
 }
 
 /**
@@ -613,13 +621,12 @@ fail:
 static int fillGroupNode(hid_t file_id, HL_Node* node)
 {
   hid_t obj;
-  HL_SPEWDEBUG0("ENTER: fillGroupNode");
-  if ((obj = H5Gopen(file_id, node->name, H5P_DEFAULT)) < 0) {
+
+  if ((obj = H5Gopen(file_id, HLNodePrivate_getName(node), H5P_DEFAULT)) < 0) {
     return 0;
   }
 
-  /* Mark the node as original */
-  node->mark = NMARK_ORIGINAL;
+  setHL_NodeMark(node, NMARK_ORIGINAL);
 
   HL_H5G_CLOSE(obj);
   return 1;
@@ -633,9 +640,9 @@ static int fillTypeNode(hid_t file_id, HL_Node* node)
   hid_t obj = -1;
   HL_CompoundTypeDescription* typelist = NULL;
   H5G_stat_t statbuf;
-  HL_SPEWDEBUG0("ENTER: fillTypeNode");
-  if ((obj = H5Topen(file_id, node->name, H5P_DEFAULT)) < 0) {
-    HL_ERROR1("Failed to open %s ", node->name);
+
+  if ((obj = H5Topen(file_id, HLNodePrivate_getName(node), H5P_DEFAULT)) < 0) {
+    HL_ERROR1("Failed to open %s ", HLNodePrivate_getName(node));
     return 0;
   }
   H5Gget_objinfo(obj, ".", TRUE, &statbuf);
@@ -644,16 +651,18 @@ static int fillTypeNode(hid_t file_id, HL_Node* node)
     HL_ERROR0("Failed to create datatype nodelist");
     goto fail;
   }
-  strcpy(typelist->hltypename, node->name);
+  strcpy(typelist->hltypename, HLNodePrivate_getName(node));
   typelist->objno[0] = statbuf.objno[0];
   typelist->objno[1] = statbuf.objno[1];
 
-  node->compoundDescription = typelist;
+  setHL_NodeCompoundDescription(node, typelist);
+  typelist = NULL; /* Ownership transfered. */
 
-  /* Mark the node as original */
-  node->mark = NMARK_ORIGINAL;
+  setHL_NodeMark(node, NMARK_ORIGINAL);
 
-  node->hdfId = obj; /*Save hdfid for later use, which means that obj not should be closed now. */
+  HLNodePrivate_setHdfID(node, obj);
+
+  //node->hdfId = obj; /*Save hdfid for later use, which means that obj not should be closed now. */
   //@todo This causes the file not to be closed when atempting to update a file.
   return 1;
 fail:
@@ -668,7 +677,7 @@ fail:
 static int fillNodeWithData(hid_t file_id, HL_Node* node)
 {
   HL_SPEWDEBUG0("ENTER: fillNodeWithData");
-  switch (node->type) {
+  switch (getHL_NodeType(node)) {
   case ATTRIBUTE_ID:
     return fillAttributeNode(file_id, node);
   case DATASET_ID:
@@ -680,7 +689,7 @@ static int fillNodeWithData(hid_t file_id, HL_Node* node)
   case REFERENCE_ID:
     return fillReferenceNode(file_id, node);
   default:
-    HL_ERROR1("Can't handle other nodetypes but '%d'",node->type);
+    HL_ERROR1("Can't handle other nodetypes but '%d'",HLNodePrivate_getName(node));
     break;
   }
   return 0;
@@ -865,13 +874,10 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
     goto fail;
   }
 
-  disableErrorReporting();
   if (H5Oget_info_by_name(file_id, fromPath, &objectInfo, H5P_DEFAULT)<0) {
-    enableErrorReporting();
     HL_ERROR0("fromPath needs to be a dataset or group when opening a file.");
     goto fail;
   }
-  enableErrorReporting();
 
   if (!(retv = newHL_NodeList())) {
     HL_ERROR0("Could not allocate NodeList\n");
@@ -930,7 +936,7 @@ int selectNode(HL_NodeList* nodelist, const char* name)
   }
 
   if ((node = getHL_Node(nodelist, name)) != NULL) {
-    node->mark = NMARK_SELECT;
+    setHL_NodeMark(node, NMARK_SELECT);
     return 1;
   }
 
@@ -960,7 +966,7 @@ int selectMetadataNodes(HL_NodeList* nodelist)
   nNodes = getHL_NodeListNumberOfNodes(nodelist);
   for (i = 0; i < nNodes; i++) {
     HL_Node* node = getHL_NodeListNodeByIndex(nodelist, i);
-    if (node->type != DATASET_ID && node->dataType != HL_ARRAY) {
+    if (getHL_NodeType(node) != DATASET_ID && getHL_NodeDataType(node) != HL_ARRAY) {
       setHL_NodeMark(node, NMARK_SELECT);
     }
   }
@@ -1035,9 +1041,9 @@ int fetchMarkedNodes(HL_NodeList* nodelist)
       HL_ERROR1("Error occured when fetching node at index %d", i);
       goto fail;
     }
-    if (node->mark == NMARK_SELECT) {
+    if (getHL_NodeMark(node) == NMARK_SELECT) {
       if (!fillNodeWithData(file_id, node)) {
-        HL_ERROR1("Error occured when trying to fill node '%s'",node->name);
+        HL_ERROR1("Error occured when trying to fill node '%s'",HLNodePrivate_getName(node));
         goto fail;
       }
     }
@@ -1057,7 +1063,6 @@ fail:
 HL_Node* fetchNode(HL_NodeList* nodelist, const char* name)
 {
   hid_t file_id = -1;
-  hid_t gid = -1;
   HL_Node* result = NULL;
   HL_Node* foundnode = NULL;
   char* filename = NULL;
@@ -1082,20 +1087,14 @@ HL_Node* fetchNode(HL_NodeList* nodelist, const char* name)
     goto fail;
   }
 
-  if ((gid = H5Gopen(file_id, ".", H5P_DEFAULT)) < 0) {
-    HL_ERROR0("Could not open root group\n");
-    goto fail;
-  }
-
   if (!fillNodeWithData(file_id, foundnode)) {
-    HL_ERROR1("Error occured when trying to fill node '%s'", foundnode->name);
+    HL_ERROR1("Error occured when trying to fill node '%s'", name);
     goto fail;
   }
 
   result = foundnode;
 fail:
   HL_H5F_CLOSE(file_id);
-  HL_H5G_CLOSE(gid);
   HLHDF_FREE(filename);
   HL_DEBUG0("EXIT: fetchNode");
   return result;

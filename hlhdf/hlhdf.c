@@ -5,6 +5,7 @@
  * @date 2009-06-15
  */
 #include "hlhdf.h"
+#include "hlhdf_private.h"
 #include "hlhdf_debug.h"
 #include "hlhdf_defines_private.h"
 #include <string.h>
@@ -20,24 +21,56 @@ static int initialized = 0;
 /** Flag toggling the debugging */
 static int _debug_hdf;
 
-const char* HLHDF_CHAR    = "char";
-const char* HLHDF_SCHAR   = "schar";
-const char* HLHDF_UCHAR   = "uchar";
-const char* HLHDF_SHORT   = "short";
-const char* HLHDF_USHORT  = "ushort";
-const char* HLHDF_INT     = "int";
-const char* HLHDF_UINT    = "uint";
-const char* HLHDF_LONG    = "long";
-const char* HLHDF_ULONG   = "ulong";
-const char* HLHDF_LLONG   = "llong";
-const char* HLHDF_ULLONG  = "ullong";
-const char* HLHDF_FLOAT   = "float";
-const char* HLHDF_DOUBLE  = "double";
-const char* HLHDF_HSIZE   = "hsize";
-const char* HLHDF_HSSIZE  = "hssize";
-const char* HLHDF_HERR    = "herr";
-const char* HLHDF_HBOOL   = "hbool";
+static const char HLHDF_UNDEFINED_STR[]= "UNDEFINED"; /**< 'UNDEFINED' */
+static const char HLHDF_CHAR_STR[]     = "char";      /**< 'char' */
+static const char HLHDF_SCHAR_STR[]    = "schar";     /**< 'schar' */
+static const char HLHDF_UCHAR_STR[]    = "uchar";     /**< 'uchar' */
+static const char HLHDF_SHORT_STR[]    = "short";     /**< 'short' */
+static const char HLHDF_USHORT_STR[]   = "ushort";    /**< 'ushort' */
+static const char HLHDF_INT_STR[]      = "int";       /**< 'int' */
+static const char HLHDF_UINT_STR[]     = "uint";      /**< 'uint' */
+static const char HLHDF_LONG_STR[]     = "long";      /**< 'long' */
+static const char HLHDF_ULONG_STR[]    = "ulong";     /**< 'ulong' */
+static const char HLHDF_LLONG_STR[]    = "llong";     /**< 'llong' */
+static const char HLHDF_ULLONG_STR[]   = "ullong";    /**< 'ullong' */
+static const char HLHDF_FLOAT_STR[]    = "float";     /**< 'float' */
+static const char HLHDF_DOUBLE_STR[]   = "double";    /**< 'double' */
+static const char HLHDF_LDOUBLE_STR[]  = "ldouble";   /**< 'ldouble' */
+static const char HLHDF_HSIZE_STR[]    = "hsize";     /**< 'hsize' */
+static const char HLHDF_HSSIZE_STR[]   = "hssize";    /**< 'hssize' */
+static const char HLHDF_HERR_STR[]     = "herr";      /**< 'herr' */
+static const char HLHDF_HBOOL_STR[]    = "hbool";     /**< 'hbool' */
+static const char HLHDF_STRING_STR[]   = "string";    /**< 'string' */
+static const char HLHDF_COMPOUND_STR[] = "compound";  /**< 'compound' */
+static const char HLHDF_ARRAY_STR[]    = "array";     /**< 'array' */
 
+static const char* VALID_FORMAT_SPECIFIERS[] = {
+  HLHDF_UNDEFINED_STR,
+  HLHDF_CHAR_STR,
+  HLHDF_SCHAR_STR,
+  HLHDF_UCHAR_STR,
+  HLHDF_SHORT_STR,
+  HLHDF_USHORT_STR,
+  HLHDF_INT_STR,
+  HLHDF_UINT_STR,
+  HLHDF_LONG_STR,
+  HLHDF_ULONG_STR,
+  HLHDF_LLONG_STR,
+  HLHDF_ULLONG_STR,
+  HLHDF_FLOAT_STR,
+  HLHDF_DOUBLE_STR,
+  HLHDF_LDOUBLE_STR,
+  HLHDF_HSIZE_STR,
+  HLHDF_HSSIZE_STR,
+  HLHDF_HERR_STR,
+  HLHDF_HBOOL_STR,
+  HLHDF_STRING_STR,
+  HLHDF_COMPOUND_STR,
+  HLHDF_ARRAY_STR,
+  NULL,
+};
+
+/*@{ Interface functions */
 /************************************************
  * disableErrorReporting
  ***********************************************/
@@ -78,7 +111,7 @@ void initHlHdf()
 }
 
 /************************************************
- * debugHlhdf
+ * debugHlHdf
  ***********************************************/
 void debugHlHdf(int flag)
 {
@@ -98,6 +131,7 @@ void debugHlHdf(int flag)
     enableErrorReporting();
   }
 }
+
 /************************************************
  * isHdf5File
  ***********************************************/
@@ -110,6 +144,211 @@ int isHdf5File(const char* filename)
   else
     return FALSE;
 }
+/************************************************
+ * createHlHdfFileCreationProperty
+ ***********************************************/
+HL_FileCreationProperty* createHlHdfFileCreationProperty()
+{
+  HL_FileCreationProperty* retv = NULL;
+  hid_t theHid = -1;
+
+  HL_DEBUG0("ENTER: createHlHdfFileCreationProperty");
+
+  if ((retv
+      = (HL_FileCreationProperty*) malloc(sizeof(HL_FileCreationProperty)))
+      ==NULL) {
+    HL_ERROR0("Failure when allocating memory for HL_FileCreationProperty");
+    return NULL;
+  }
+
+  if ((theHid = H5Pcreate(H5P_FILE_CREATE)) < 0) {
+    HL_ERROR0("Failure when creating the property list");
+    free(retv);
+    return NULL;
+  }
+
+  /* Fetch default information */
+  if (H5Pget_version(theHid, &retv->version.super, &retv->version.freelist,
+                     &retv->version.stab, &retv->version.shhdr) < 0) {
+    HL_ERROR0("Failure while getting version for property");
+    goto fail;
+  }
+
+  if (H5Pget_userblock(theHid, &retv->userblock) < 0) {
+    HL_ERROR0("Failure while getting the userblock for property");
+    goto fail;
+  }
+
+  if (H5Pget_sizes(theHid, &retv->sizes.sizeof_addr, &retv->sizes.sizeof_size)
+      < 0) {
+    HL_ERROR0("Failure while getting the sizes for property");
+    goto fail;
+  }
+
+  if (H5Pget_sym_k(theHid, &retv->sym_k.ik, &retv->sym_k.lk) < 0) {
+    HL_ERROR0("Failure while getting the sym_k for property");
+    goto fail;
+  }
+
+  if (H5Pget_istore_k(theHid, &retv->istore_k) < 0) {
+    HL_ERROR0("Failure while getting the istore_k for property");
+    goto fail;
+  }
+
+  HL_H5P_CLOSE(theHid);
+  if ((theHid = H5Pcreate(H5P_FILE_ACCESS)) < 0) {
+    HL_ERROR0("Failure when creating the file access property list");
+    goto fail;
+  }
+  if (H5Pget_meta_block_size(theHid, &retv->meta_block_size) < 0) {
+    HL_ERROR0("Failure while getting the meta_block_size for property");
+    goto fail;
+  }
+  HL_H5P_CLOSE(theHid);
+
+  return retv;
+fail:
+  HL_H5P_CLOSE(theHid);
+  freeHL_fileCreationProperty(retv);
+  return NULL;
+}
+
+/************************************************
+ * freeHL_fileCreationProperty
+ ***********************************************/
+void freeHL_fileCreationProperty(HL_FileCreationProperty* prop)
+{
+  HL_DEBUG0("ENTER: freeHL_fileCreationProperty");
+  if (prop == NULL) {
+    return;
+  }
+  free(prop);
+}
+
+/**********************************************************
+ *Function: whatSizeIsHdfFormat
+ **********************************************************/
+int whatSizeIsHdfFormat(const char* format)
+{
+  hid_t tmpType;
+  int size = -1;
+  HL_DEBUG0("ENTER: whatSizeIsHdfFormat");
+  tmpType = HL_translateFormatStringToDatatype(format);
+  if (tmpType < 0) {
+    HL_ERROR1("There is no type called %s",format);
+    return -1;
+  }
+  size = H5Tget_size(tmpType);
+  H5Tclose(tmpType);
+  return size;
+}
+
+/**********************************************************
+ *Function: isFormatSupported
+ **********************************************************/
+int isFormatSupported(const char* format)
+{
+  hid_t tmpHid = -1;
+  int retv = 1;
+  HL_DEBUG0("ENTER: isFormatSupported");
+  if ((tmpHid = HL_translateFormatStringToDatatype(format)) < 0) {
+    retv = 0;
+  }
+  HL_H5T_CLOSE(tmpHid);
+  return retv;
+}
+
+HL_FormatSpecifier HL_getFormatSpecifier(const char* format)
+{
+  int i = 0;
+  if (format == NULL) {
+    HL_ERROR0("format NULL");
+    return HLHDF_UNDEFINED;
+  }
+
+  for ( i = HLHDF_UNDEFINED; i < HLHDF_END_OF_SPECIFIERS; i++) {
+    if (strcmp(format, VALID_FORMAT_SPECIFIERS[i]) == 0) {
+      return i;
+    }
+  }
+
+  return HLHDF_UNDEFINED;
+}
+
+const char* HL_getFormatSpecifierString(HL_FormatSpecifier specifier)
+{
+  if (specifier < HLHDF_UNDEFINED || specifier >= HLHDF_END_OF_SPECIFIERS) {
+    return NULL;
+  }
+  return VALID_FORMAT_SPECIFIERS[specifier];
+}
+/**********************************************************
+ *Function: newHL_Compression
+ **********************************************************/
+HL_Compression* newHL_Compression(HL_CompressionType aType)
+{
+  HL_Compression* retv = NULL;
+  HL_DEBUG0("ENTER: newHL_Compression");
+  if (!(retv = (HL_Compression*) malloc(sizeof(HL_Compression)))) {
+    HL_ERROR0("Failed to allocate memory for HL_Compression");
+    return NULL;
+  }
+  initHL_Compression(retv, aType);
+  return retv;
+}
+
+/**********************************************************
+ *Function: dupHL_Compression
+ **********************************************************/
+HL_Compression* dupHL_Compression(HL_Compression* inv)
+{
+  HL_Compression* retv = NULL;
+  HL_SPEWDEBUG0("ENTER: dupHL_Compression");
+  if (!inv) {
+    HL_SPEWDEBUG0("dupHL_Compression: compression object NULL");
+    goto fail;
+  }
+  if (!(retv = (HL_Compression*) malloc(sizeof(HL_Compression)))) {
+    HL_ERROR0("Failed to allocate memory for HL_Compression");
+    goto fail;
+  }
+  retv->type = inv->type;
+  retv->level = inv->level;
+  retv->szlib_mask = inv->szlib_mask;
+  retv->szlib_px_per_block = inv->szlib_px_per_block;
+fail:
+  HL_SPEWDEBUG0("EXIT: dupHL_Compression");
+  return retv;
+}
+
+/**********************************************************
+ *Function: initHL_Compression
+ **********************************************************/
+void initHL_Compression(HL_Compression* inv, HL_CompressionType aType)
+{
+  HL_DEBUG0("ENTER: initHL_Compression");
+  if (!inv) {
+    HL_ERROR0("Trying to initialize NULL");
+    return;
+  }
+  inv->type = aType;
+  inv->level = 6;
+  inv->szlib_mask = H5_SZIP_ALLOW_K13_OPTION_MASK | H5_SZIP_EC_OPTION_MASK;
+  inv->szlib_px_per_block = 16;
+}
+
+/**********************************************************
+ *Function: freeHL_Compression
+ **********************************************************/
+void freeHL_Compression(HL_Compression* inv)
+{
+  HL_SPEWDEBUG0("ENTER: freeHL_Compression");
+  HLHDF_FREE(inv);
+}
+
+/*@} End of Interface functions */
+
+/*@{ Private functions */
 
 /************************************************
  * openHlHdfFile
@@ -199,87 +438,6 @@ done:
   HL_H5P_CLOSE(fileaccesspropertyId);
   HL_DEBUG0("EXIT: createHlHdfFile");
   return fileId;
-}
-
-/************************************************
- * createHlHdfFileCreationProperty
- ***********************************************/
-HL_FileCreationProperty* createHlHdfFileCreationProperty()
-{
-  HL_FileCreationProperty* retv = NULL;
-  hid_t theHid = -1;
-
-  HL_DEBUG0("ENTER: createHlHdfFileCreationProperty");
-
-  if ((retv
-      = (HL_FileCreationProperty*) malloc(sizeof(HL_FileCreationProperty)))
-      ==NULL) {
-    HL_ERROR0("Failure when allocating memory for HL_FileCreationProperty");
-    return NULL;
-  }
-
-  if ((theHid = H5Pcreate(H5P_FILE_CREATE)) < 0) {
-    HL_ERROR0("Failure when creating the property list");
-    free(retv);
-    return NULL;
-  }
-
-  /* Fetch default information */
-  if (H5Pget_version(theHid, &retv->version.super, &retv->version.freelist,
-                     &retv->version.stab, &retv->version.shhdr) < 0) {
-    HL_ERROR0("Failure while getting version for property");
-    goto fail;
-  }
-
-  if (H5Pget_userblock(theHid, &retv->userblock) < 0) {
-    HL_ERROR0("Failure while getting the userblock for property");
-    goto fail;
-  }
-
-  if (H5Pget_sizes(theHid, &retv->sizes.sizeof_addr, &retv->sizes.sizeof_size)
-      < 0) {
-    HL_ERROR0("Failure while getting the sizes for property");
-    goto fail;
-  }
-
-  if (H5Pget_sym_k(theHid, &retv->sym_k.ik, &retv->sym_k.lk) < 0) {
-    HL_ERROR0("Failure while getting the sym_k for property");
-    goto fail;
-  }
-
-  if (H5Pget_istore_k(theHid, &retv->istore_k) < 0) {
-    HL_ERROR0("Failure while getting the istore_k for property");
-    goto fail;
-  }
-
-  HL_H5P_CLOSE(theHid);
-  if ((theHid = H5Pcreate(H5P_FILE_ACCESS)) < 0) {
-    HL_ERROR0("Failure when creating the file access property list");
-    goto fail;
-  }
-  if (H5Pget_meta_block_size(theHid, &retv->meta_block_size) < 0) {
-    HL_ERROR0("Failure while getting the meta_block_size for property");
-    goto fail;
-  }
-  HL_H5P_CLOSE(theHid);
-
-  return retv;
-fail:
-  HL_H5P_CLOSE(theHid);
-  freeHL_fileCreationProperty(retv);
-  return NULL;
-}
-
-/************************************************
- * freeHL_fileCreationProperty
- ***********************************************/
-void freeHL_fileCreationProperty(HL_FileCreationProperty* prop)
-{
-  HL_DEBUG0("ENTER: freeHL_fileCreationProperty");
-  if (prop == NULL) {
-    return;
-  }
-  free(prop);
 }
 
 /************************************************
@@ -472,62 +630,93 @@ done:
   return mtype;
 }
 
-/************************************************
- * translateCharToDatatype
- ***********************************************/
-hid_t translateCharToDatatype(const char* dataType)
+hid_t HL_translateFormatSpecifierToType(HL_FormatSpecifier specifier)
 {
   hid_t retv = -1;
-  HL_SPEWDEBUG0("ENTER: translateCharToDatatype");
-
-  if (!dataType) {
-    HL_ERROR0("No type name specified");
-    HL_SPEWDEBUG0("EXIT: translateCharToDatatype");
-    return retv;
+  if (specifier <= HLHDF_UNDEFINED || specifier == HLHDF_STRING ||
+      specifier == HLHDF_COMPOUND || specifier == HLHDF_ARRAY) {
+    HL_ERROR0("Can not translate format=%d into a hdf5 datatype");
+    return -1;
   }
-  if (strcmp(dataType, "char") == 0)
+  switch (specifier) {
+  case   HLHDF_CHAR:
     retv = H5Tcopy(H5T_NATIVE_CHAR);
-  else if (strcmp(dataType, "schar") == 0)
+    break;
+  case HLHDF_SCHAR:
     retv = H5Tcopy(H5T_NATIVE_SCHAR);
-  else if (strcmp(dataType, "uchar") == 0)
+    break;
+  case HLHDF_UCHAR:
     retv = H5Tcopy(H5T_NATIVE_UCHAR);
-  else if (strcmp(dataType, "short") == 0)
+    break;
+  case HLHDF_SHORT:
     retv = H5Tcopy(H5T_NATIVE_SHORT);
-  else if (strcmp(dataType, "ushort") == 0)
+    break;
+  case HLHDF_USHORT:
     retv = H5Tcopy(H5T_NATIVE_USHORT);
-  else if (strcmp(dataType, "int") == 0)
+    break;
+  case HLHDF_INT:
     retv = H5Tcopy(H5T_NATIVE_INT);
-  else if (strcmp(dataType, "uint") == 0)
+    break;
+  case HLHDF_UINT:
     retv = H5Tcopy(H5T_NATIVE_UINT);
-  else if (strcmp(dataType, "long") == 0)
+    break;
+  case HLHDF_LONG:
     retv = H5Tcopy(H5T_NATIVE_LONG);
-  else if (strcmp(dataType, "ulong") == 0)
+    break;
+  case HLHDF_ULONG:
     retv = H5Tcopy(H5T_NATIVE_ULONG);
-  else if (strcmp(dataType, "llong") == 0)
+    break;
+  case HLHDF_LLONG:
     retv = H5Tcopy(H5T_NATIVE_LLONG);
-  else if (strcmp(dataType, "ullong") == 0)
+    break;
+  case HLHDF_ULLONG:
     retv = H5Tcopy(H5T_NATIVE_ULLONG);
-  else if (strcmp(dataType, "float") == 0)
+    break;
+  case HLHDF_FLOAT:
     retv = H5Tcopy(H5T_NATIVE_FLOAT);
-  else if (strcmp(dataType, "double") == 0)
+    break;
+  case HLHDF_DOUBLE:
     retv = H5Tcopy(H5T_NATIVE_DOUBLE);
-  else if (strcmp(dataType, "ldouble") == 0)
+    break;
+  case HLHDF_LDOUBLE:
     retv = H5Tcopy(H5T_NATIVE_LDOUBLE);
-  else if (strcmp(dataType, "hsize") == 0)
+    break;
+  case HLHDF_HSIZE:
     retv = H5Tcopy(H5T_NATIVE_HSIZE);
-  else if (strcmp(dataType, "hssize") == 0)
+    break;
+  case HLHDF_HSSIZE:
     retv = H5Tcopy(H5T_NATIVE_HSSIZE);
-  else if (strcmp(dataType, "herr") == 0)
+    break;
+  case HLHDF_HERR:
     retv = H5Tcopy(H5T_NATIVE_HERR);
-  else if (strcmp(dataType, "hbool") == 0)
+    break;
+  case HLHDF_HBOOL:
     retv = H5Tcopy(H5T_NATIVE_HBOOL);
-
-  if (retv == -1) {
-    HL_ERROR1("There is no type called %s",dataType);
+    break;
+  case HLHDF_END_OF_SPECIFIERS:
+  default:
+    break;
   }
-
-  HL_SPEWDEBUG0("EXIT: translateCharToDatatype");
+  if (retv == -1) {
+    HL_ERROR1("Could not determine hdf5 datatype from %d",specifier);
+  }
   return retv;
+}
+
+/************************************************
+ * HL_translateFormatStringToDatatype
+ ***********************************************/
+hid_t HL_translateFormatStringToDatatype(const char* dataType)
+{
+  HL_FormatSpecifier specifier = HLHDF_UNDEFINED;
+
+  if (dataType == NULL) {
+    HL_ERROR0("Atempting to translate NULL into a HDF5 datatype.");
+    return -1;
+  }
+  specifier = HL_getFormatSpecifier(dataType);
+
+  return HL_translateFormatSpecifierToType(specifier);
 }
 
 /************************************************
@@ -636,64 +825,70 @@ char* getTypeNameString(hid_t type)
 }
 
 /************************************************
- * getFormatNameString
+ * HL_getFormatSpecifierFromType
  ***********************************************/
-char* getFormatNameString(hid_t type)
+HL_FormatSpecifier HL_getFormatSpecifierFromType(hid_t type)
 {
-  char* retv = NULL;
-
   HL_SPEWDEBUG0("ENTER: getFormatNameString");
 
   if (H5Tget_class(type) == H5T_STRING) {
-    retv = strdup("string");
-    return retv;
+    return HLHDF_STRING;
   }
 
   if (H5Tequal(type, H5T_NATIVE_SCHAR))
-    retv = strdup("schar");
+    return HLHDF_SCHAR;
   else if (H5Tequal(type, H5T_NATIVE_UCHAR))
-    retv = strdup("uchar");
+    return HLHDF_UCHAR;
   else if (H5Tequal(type, H5T_NATIVE_CHAR))
-    retv = strdup("char");
+    return HLHDF_CHAR;
   else if (H5Tequal(type, H5T_NATIVE_SHORT))
-    retv = strdup("short");
+    return HLHDF_SHORT;
   else if (H5Tequal(type, H5T_NATIVE_USHORT))
-    retv = strdup("ushort");
+    return HLHDF_USHORT;
   else if (H5Tequal(type, H5T_NATIVE_INT))
-    retv = strdup("int");
+    return HLHDF_INT;
   else if (H5Tequal(type, H5T_NATIVE_UINT))
-    retv = strdup("uint");
+    return HLHDF_UINT;
   else if (H5Tequal(type, H5T_NATIVE_LONG))
-    retv = strdup("long");
+    return HLHDF_LONG;
   else if (H5Tequal(type, H5T_NATIVE_ULONG))
-    retv = strdup("ulong");
+    return HLHDF_ULONG;
   else if (H5Tequal(type, H5T_NATIVE_LLONG))
-    retv = strdup("llong");
+    return HLHDF_LLONG;
   else if (H5Tequal(type, H5T_NATIVE_ULLONG))
-    retv = strdup("ullong");
+    return HLHDF_ULLONG;
   else if (H5Tequal(type, H5T_NATIVE_FLOAT))
-    retv = strdup("float");
+    return HLHDF_FLOAT;
   else if (H5Tequal(type, H5T_NATIVE_DOUBLE))
-    retv = strdup("double");
+    return HLHDF_DOUBLE;
   else if (H5Tequal(type, H5T_NATIVE_LDOUBLE))
-    retv = strdup("ldouble");
+    return HLHDF_LDOUBLE;
   else if (H5Tequal(type, H5T_NATIVE_HSIZE))
-    retv = strdup("hsize");
+    return HLHDF_HSIZE;
   else if (H5Tequal(type, H5T_NATIVE_HSSIZE))
-    retv = strdup("hssize");
+    return HLHDF_HSSIZE;
   else if (H5Tequal(type, H5T_NATIVE_HERR))
-    retv = strdup("herr");
+    return HLHDF_HERR;
   else if (H5Tequal(type, H5T_NATIVE_HBOOL))
-    retv = strdup("hbool");
+    return HLHDF_HBOOL;
   else if (H5Tget_class(type) == H5T_COMPOUND)
-    retv = strdup("compound");
+    return HLHDF_COMPOUND;
   else if (H5Tget_class(type) == H5T_ARRAY)
-    retv = strdup("array");
+    return HLHDF_ARRAY;
   else {
     HL_INFO0("Not possible to translate from given type to string");
-
   }
-  return retv;
+  return HLHDF_UNDEFINED;
+}
+
+/************************************************
+ * getFormatNameString
+ ***********************************************/
+const char* getFormatNameString(hid_t type)
+{
+  HL_SPEWDEBUG0("ENTER: getFormatNameString");
+  HL_FormatSpecifier specifier = HL_getFormatSpecifierFromType(type);
+  return HL_getFormatSpecifierString(specifier);
 }
 
 /************************************************
@@ -766,103 +961,6 @@ char* getStringCtypeName(hid_t type)
   return retv;
 }
 
-/**********************************************************
- *Function:	whatSizeIsHdfFormat
- **********************************************************/
-int whatSizeIsHdfFormat(const char* format)
-{
-  hid_t tmpType;
-  int size = -1;
-  HL_DEBUG0("ENTER: whatSizeIsHdfFormat");
-  tmpType = translateCharToDatatype(format);
-  if (tmpType < 0) {
-    HL_ERROR1("There is no type called %s",format);
-    return -1;
-  }
-  size = H5Tget_size(tmpType);
-  H5Tclose(tmpType);
-  return size;
-}
-
-/**********************************************************
- *Function:	isFormatSupported
- **********************************************************/
-int isFormatSupported(const char* format)
-{
-  hid_t tmpHid = -1;
-  int retv = 1;
-  HL_DEBUG0("ENTER: isFormatSupported");
-  if ((tmpHid = translateCharToDatatype(format)) < 0) {
-    retv = 0;
-  }
-  HL_H5T_CLOSE(tmpHid);
-  return retv;
-}
-
-/**********************************************************
- *Function:	newHL_Compression
- **********************************************************/
-HL_Compression* newHL_Compression(HL_CompressionType aType)
-{
-  HL_Compression* retv = NULL;
-  HL_DEBUG0("ENTER: newHL_Compression");
-  if (!(retv = (HL_Compression*) malloc(sizeof(HL_Compression)))) {
-    HL_ERROR0("Failed to allocate memory for HL_Compression");
-    return NULL;
-  }
-  initHL_Compression(retv, aType);
-  return retv;
-}
-
-/**********************************************************
- *Function:	dupHL_Compression
- **********************************************************/
-HL_Compression* dupHL_Compression(HL_Compression* inv)
-{
-  HL_Compression* retv = NULL;
-  HL_SPEWDEBUG0("ENTER: dupHL_Compression");
-  if (!inv) {
-    HL_SPEWDEBUG0("dupHL_Compression: compression object NULL");
-    goto fail;
-  }
-  if (!(retv = (HL_Compression*) malloc(sizeof(HL_Compression)))) {
-    HL_ERROR0("Failed to allocate memory for HL_Compression");
-    goto fail;
-  }
-  retv->type = inv->type;
-  retv->level = inv->level;
-  retv->szlib_mask = inv->szlib_mask;
-  retv->szlib_px_per_block = inv->szlib_px_per_block;
-fail:
-  HL_SPEWDEBUG0("EXIT: dupHL_Compression");
-  return retv;
-}
-
-/**********************************************************
- *Function:	initHL_Compression
- **********************************************************/
-void initHL_Compression(HL_Compression* inv, HL_CompressionType aType)
-{
-  HL_DEBUG0("ENTER: initHL_Compression");
-  if (!inv) {
-    HL_ERROR0("Trying to initialize NULL");
-    return;
-  }
-  inv->type = aType;
-  inv->level = 6;
-  inv->szlib_mask = H5_SZIP_ALLOW_K13_OPTION_MASK | H5_SZIP_EC_OPTION_MASK;
-  inv->szlib_px_per_block = 16;
-}
-
-/**********************************************************
- *Function:	freeHL_Compression
- **********************************************************/
-void freeHL_Compression(HL_Compression* inv)
-{
-  HL_SPEWDEBUG0("ENTER: freeHL_Compression");
-  HLHDF_FREE(inv);
-}
-
 int extractParentChildName(HL_Node* node, char** parent, char** child)
 {
   char* tmpStr = NULL;
@@ -878,13 +976,13 @@ int extractParentChildName(HL_Node* node, char** parent, char** child)
 
   *parent = NULL;
   *child = NULL;
-  if ((tmpStr = strdup(node->name)) == NULL) {
+  if ((tmpStr = getHL_NodeName(node)) == NULL) {
     HL_ERROR0("Could not allocate memory for node name");
     goto fail;
   }
 
   if ((tmpPtr = strrchr(tmpStr, '/')) == NULL) {
-    HL_ERROR1("Could not extract '/' from node name %s", node->name);
+    HL_ERROR1("Could not extract '/' from node name %s", tmpStr);
     goto fail;
   }
 
@@ -905,3 +1003,56 @@ fail:
   HLHDF_FREE(tmpStr);
   return status;
 }
+
+int openGroupOrDataset(hid_t file_id, const char* name, hid_t* lid, HL_Type* type)
+{
+  int status = 0;
+
+  if (name == NULL || lid == NULL || type == NULL) {
+    HL_ERROR0("Inparameters NULL");
+    goto fail;
+  }
+  *lid = -1;
+  *type = UNDEFINED_ID;
+  if (strcmp(name, "") != 0) {
+    H5O_info_t objectInfo;
+    herr_t infoStatus = -1;
+    disableErrorReporting(); /*Bypass the error reporting, if failed to open a dataset/or group*/
+    infoStatus = H5Oget_info_by_name(file_id, name, &objectInfo, H5P_DEFAULT);
+    enableErrorReporting();
+    if (infoStatus >= 0) {
+      if (objectInfo.type == H5O_TYPE_GROUP) {
+        *type = GROUP_ID;
+      } else if (objectInfo.type == H5O_TYPE_DATASET) {
+        *type = DATASET_ID;
+      } else {
+        infoStatus = -1;
+        *type = UNDEFINED_ID;
+      }
+    }
+    if (infoStatus < 0) {
+      HL_ERROR0("name needs to be a dataset or group.");
+      goto fail;
+    }
+    if ((*lid = H5Oopen(file_id, name, H5P_DEFAULT))<0) {
+      HL_ERROR1("Node '%s' could not be opened", name);
+      goto fail;
+    }
+  } else {
+    if ((*lid = H5Gopen(file_id, "/", H5P_DEFAULT)) < 0) {
+      HL_ERROR0("Could not open root group");
+      goto fail;
+    }
+    *type = GROUP_ID;
+  }
+  status = 1;
+fail:
+  if (status == 0) {
+    HL_H5O_CLOSE(*lid);
+    *type = UNDEFINED_ID;
+  }
+  return status;
+}
+
+/*@} End of Private functions */
+

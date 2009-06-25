@@ -88,8 +88,8 @@ int main(int argc, char** argv)
       fprintf(stderr, "Error occured when fetching node at index %d", i);
       goto fail;
     }
-    printf("%-40s is ", node->name);
-    switch (node->type) {
+    printf("%-40s is ", getHL_NodeName(node));
+    switch (getHL_NodeType(node)) {
     case ATTRIBUTE_ID:
       printf("an attribute");
       break;
@@ -101,6 +101,9 @@ int main(int argc, char** argv)
       break;
     case GROUP_ID:
       printf("a group");
+      break;
+    case REFERENCE_ID:
+      printf("a reference");
       break;
     default:
       printf("of an unreckognized type");
