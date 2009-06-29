@@ -40,20 +40,20 @@
  * Disables error reporting.
  * @ingroup hlhdf_c_apis
  */
-void disableErrorReporting(void);
+void HL_disableErrorReporting(void);
 
 /**
  * Enables error reporting
  * @ingroup hlhdf_c_apis
  */
-void enableErrorReporting(void);
+void HL_enableErrorReporting(void);
 
 /**
  * Initializes the HLHDF handler functions.
  * <b>This always needs to be done before doing anything else when using HLHDF.</b>
  * @ingroup hlhdf_c_apis
  */
-void initHlHdf(void);
+void HL_init(void);
 
 /**
  * Toggles the debug mode for HLHDF. Possible values of flag are:
@@ -65,7 +65,7 @@ void initHlHdf(void);
  * @ingroup hlhdf_c_apis
  * @param[in] flag the level of debugging
  */
-void debugHlHdf(int flag);
+void HL_setDebugMode(int flag);
 
 /**
  * Verifies if the provided filename is a valid HDF5 file or not.
@@ -73,22 +73,22 @@ void debugHlHdf(int flag);
  * @param[in] filename the full path of the file to check
  * @return TRUE if file is an HDF5 file, otherwise FALSE
  */
-int isHdf5File(const char* filename);
+int HL_isHDF5File(const char* filename);
 
 /**
  * Creates a file property instance that can be passed on to createHlHdfFile when
  * creating a HDF5 file.
  * @ingroup hlhdf_c_apis
- * @return the allocated file property instance, NULL on failure. See @ref freeHL_fileCreationProperty for deallocation.
+ * @return the allocated file property instance, NULL on failure. See @ref HLFileCreationProperty_free for deallocation.
  */
-HL_FileCreationProperty* createHlHdfFileCreationProperty(void);
+HL_FileCreationProperty* HLFileCreationProperty_new(void);
 
 /**
  * Deallocates the HL_FileCreationProperty instance.
  * @ingroup hlhdf_c_apis
  * @param[in] prop The property to be deallocated
  */
-void freeHL_fileCreationProperty(HL_FileCreationProperty* prop);
+void HLFileCreationProperty_free(HL_FileCreationProperty* prop);
 
 /**
  * Calculates the size in bytes of the provided @ref ValidFormatSpecifiers "format specifiers".
@@ -97,7 +97,7 @@ void freeHL_fileCreationProperty(HL_FileCreationProperty* prop);
  * @param[in] format The @ref ValidFormatSpecifiers "format specifier".
  * @return the size in bytes or -1 on failure.
  */
-int whatSizeIsHdfFormat(const char* format);
+int HL_sizeOfFormat(const char* format);
 
 /**
  * Verifies if the format name is supported by HLHDF.
@@ -107,7 +107,7 @@ int whatSizeIsHdfFormat(const char* format);
  * @param[in] format the format name string
  * @return TRUE if it is supported, otherwise FALSE.
  */
-int isFormatSupported(const char* format);
+int HL_isFormatSupported(const char* format);
 
 /**
  * Returns the format specifier for the provided format string.
@@ -129,7 +129,7 @@ const char* HL_getFormatSpecifierString(HL_FormatSpecifier specifier);
  * @param[in] type the compression type to use
  * @return the created instance, NULL on failure.
  */
-HL_Compression* newHL_Compression(HL_CompressionType type);
+HL_Compression* HLCompression_new(HL_CompressionType type);
 
 /**
  * Creates a copy of the provided HL_Compression instance.
@@ -137,7 +137,7 @@ HL_Compression* newHL_Compression(HL_CompressionType type);
  * @param[in] inv the instance to be cloned
  * @return the cloned instance or NULL if parameter was NULL or memory not could be allocated.
  */
-HL_Compression* dupHL_Compression(HL_Compression* inv);
+HL_Compression* HLCompression_clone(HL_Compression* inv);
 
 /**
  * Initializes a HL_Compressiosn instance.
@@ -145,13 +145,13 @@ HL_Compression* dupHL_Compression(HL_Compression* inv);
  * @param[in] inv The compression object to be initialized
  * @param[in] type the type of compression the object should be initialized with
  */
-void initHL_Compression(HL_Compression* inv,HL_CompressionType type);
+void HLCompression_init(HL_Compression* inv,HL_CompressionType type);
 
 /**
  * Deallocates the HL_Compression instance.
  * @ingroup hlhdf_c_apis
  * @param inv The instance that should be deallocated
  */
-void freeHL_Compression(HL_Compression* inv);
+void HLCompression_free(HL_Compression* inv);
 
 #endif

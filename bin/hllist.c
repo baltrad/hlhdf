@@ -38,8 +38,8 @@ int main(int argc, char** argv)
 
   HL_NodeList* nodelist = NULL;
 
-  initHlHdf();
-  debugHlHdf(0);
+  HL_init();
+  HL_setDebugMode(0);
 
   ProcessName = strdup(argv[0]);
 
@@ -53,7 +53,7 @@ int main(int argc, char** argv)
       break;
     case 'd':
       hlenc_debug = 1;
-      debugHlHdf(2);
+      HL_setDebugMode(2);
       break;
     case 'v':
       PrintVersion();
@@ -72,24 +72,24 @@ int main(int argc, char** argv)
     exit(1);
   }
 
-  if (!(nodelist = readHL_NodeList(argv[optind]))) {
+  if (!(nodelist = HLNodeList_read(argv[optind]))) {
     fprintf(stderr, "Failed to read HDF5 file '%s'\n", argv[optind]);
     goto fail;
   }
 
-  if ((nNodes =  getHL_NodeListNumberOfNodes(nodelist)) < 0) {
+  if ((nNodes =  HLNodeList_getNumberOfNodes(nodelist)) < 0) {
     fprintf(stderr, "Failed to get number of nodes\n");
     goto fail;
   }
 
   for (i = 0; i < nNodes; i++) {
     HL_Node* node = NULL;
-    if ((node = getHL_NodeListNodeByIndex(nodelist, i)) == NULL) {
+    if ((node = HLNodeList_getNodeByIndex(nodelist, i)) == NULL) {
       fprintf(stderr, "Error occured when fetching node at index %d", i);
       goto fail;
     }
-    printf("%-40s is ", getHL_NodeName(node));
-    switch (getHL_NodeType(node)) {
+    printf("%-40s is ", HLNode_getName(node));
+    switch (HLNode_getType(node)) {
     case ATTRIBUTE_ID:
       printf("an attribute");
       break;
@@ -112,12 +112,12 @@ int main(int argc, char** argv)
     printf("\n");
   }
 
-  freeHL_NodeList(nodelist);
+  HLNodeList_free(nodelist);
 
   exit(0);
   return 0;
 fail:
-  freeHL_NodeList(nodelist);
+  HLNodeList_free(nodelist);
   exit(1);
   return 1;
 }

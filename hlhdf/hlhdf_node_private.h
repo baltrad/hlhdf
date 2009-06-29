@@ -35,13 +35,6 @@ void HLNodePrivate_setRawdata(HL_Node* node, size_t datasize, unsigned char* dat
 int HLNodePrivate_setTypeIdAndDeriveFormat(HL_Node* node, hid_t typeId);
 
 /**
- * Returns the internal name pointer in the HL_Node. <b>DO NOT FREE</b>.
- * @param[in] node the node
- * @return the internal pointer to the name.
- */
-char* HLNodePrivate_getName(HL_Node* node);
-
-/**
  * Sets the HDF identifier.
  * @param[in] node the node
  * @param[in] hdfid the hdf id. (<b>The responsibility is taken over so do not delete</b>)

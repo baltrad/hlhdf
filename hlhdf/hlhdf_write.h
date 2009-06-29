@@ -16,7 +16,7 @@
  * @param[in] compr the wanted compression type and level
  * @return TRUE on success otherwise failure.
  */
-int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property, HL_Compression* compr);
+int HLNodeList_write(HL_NodeList* nodelist, HL_FileCreationProperty* property, HL_Compression* compr);
 
 /**
  * Updates a HDF5 file from a nodelist.
@@ -25,6 +25,6 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property, H
  * @param[in] compr the wanted compression type and level
  * @return TRUE on success otherwise failure.
  */
-int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compr);
+int HLNodeList_update(HL_NodeList* nodelist, HL_Compression* compr);
 
 #endif

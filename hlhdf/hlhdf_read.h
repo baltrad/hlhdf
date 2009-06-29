@@ -17,7 +17,7 @@
  * @param[in] fromPath the path from where the file should be read.
  * @return the read data structure on success, otherwise NULL.
  */
-HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath);
+HL_NodeList* HLNodeList_readFrom(const char* filename, const char* fromPath);
 
 /**
  * Reads an HDF5 file with name filename from the root group ("/") and downwards.
@@ -27,7 +27,7 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath);
  * @param[in] filename the name of the HDF5 file
  * @return the read data structure on success, otherwise NULL.
  */
-HL_NodeList* readHL_NodeList(const char* filename);
+HL_NodeList* HLNodeList_read(const char* filename);
 
 /**
  * Selects the node named 'name' from which to fetch data.
@@ -36,7 +36,7 @@ HL_NodeList* readHL_NodeList(const char* filename);
  * @param[in] name the fully qualified name of the node that should be selected.
  * @return: 1 on success, otherwise 0
  */
-int selectNode(HL_NodeList* nodelist, const char* name);
+int HLNodeList_selectNode(HL_NodeList* nodelist, const char* name);
 
 /**
  * Marks all nodes in the nodelist for retrival.
@@ -44,7 +44,7 @@ int selectNode(HL_NodeList* nodelist, const char* name);
  * @param[in] nodelist the node list
  * @return 1 on success, otherwise 0
  */
-int selectAllNodes(HL_NodeList* nodelist);
+int HLNodeList_selectAllNodes(HL_NodeList* nodelist);
 
 /**
  * Selects all metadata nodes in the nodelist to be fetched, ie. dataset attributes but no dataset arrays.
@@ -53,7 +53,7 @@ int selectAllNodes(HL_NodeList* nodelist);
  * @param[in] nodelist the node list
  * @return 1 on success, otherwise 0
  */
-int selectMetadataNodes(HL_NodeList* nodelist);
+int HLNodeList_selectMetadataNodes(HL_NodeList* nodelist);
 
 /**
  * De-selects the node named 'name' to be retrived when fetching data from the nodelist file.
@@ -62,7 +62,7 @@ int selectMetadataNodes(HL_NodeList* nodelist);
  * @param[in] name the name that should be deselected
  * @return 1 on success, otherwise 0.
  */
-int deselectNode(HL_NodeList* nodelist, const char* name);
+int HLNodeList_deselectNode(HL_NodeList* nodelist, const char* name);
 
 /**
  * Fills all nodes (marked as select) with data.
@@ -70,15 +70,15 @@ int deselectNode(HL_NodeList* nodelist, const char* name);
  * @param[in] nodelist the node list
  * @return 1 on success, otherwise 0
  */
-int fetchMarkedNodes(HL_NodeList* nodelist);
+int HLNodeList_fetchMarkedNodes(HL_NodeList* nodelist);
 
 /**
- * Behaves as a combination of selectNode()/fetch()/getNode().
+ * Behaves as a combination of HLNodeList_selectNode()/fetch()/getNode().
  * @ingroup hlhdf_c_apis
  * @param[in] nodelist the node list
  * @param[in] name the name of the node that should be fetched.
  * @return the found node or NULL on failure.
  */
-HL_Node* fetchNode(HL_NodeList* nodelist, const char* name);
+HL_Node* HLNodeList_fetchNode(HL_NodeList* nodelist, const char* name);
 
 #endif

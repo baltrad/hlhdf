@@ -131,7 +131,7 @@ static void _dealloc(PyhlNodelist* pyhl_object)
   if (!pyhl_object)
     return;
 
-  freeHL_NodeList(pyhl_object->nodelist);
+  HLNodeList_free(pyhl_object->nodelist);
 
   PyObject_Del(pyhl_object);
 }
@@ -146,7 +146,7 @@ static void _dealloc_pyhlnode(PyhlNode* pyhl_node)
   if (!pyhl_node)
     return;
 
-  freeHL_Node(pyhl_node->node);
+  HLNode_free(pyhl_node->node);
 
   PyObject_Del(pyhl_node);
 }
@@ -159,7 +159,7 @@ static void _dealloc_pyhlfilecreationproperty(PyhlFileCreationProperty* val)
 {
   if (!val)
     return;
-  freeHL_fileCreationProperty(val->props);
+  HLFileCreationProperty_free(val->props);
   PyObject_Del(val);
 }
 
@@ -171,7 +171,7 @@ static void _dealloc_pyhlcompression(PyhlCompression* val)
 {
   if (!val)
     return;
-  freeHL_Compression(val->compr);
+  HLCompression_free(val->compr);
   PyObject_Del(val);
 }
 
@@ -188,7 +188,7 @@ static PyObject* _pyhl_new_nodelist(PyObject* self, PyObject* args)
   if (!retv)
     return NULL;
 
-  if (!(retv->nodelist = newHL_NodeList())) {
+  if (!(retv->nodelist = HLNodeList_new())) {
     setException(PyExc_MemoryError,"Failed to create HL NodeList\n");
     _dealloc(retv);
     retv = NULL;
@@ -244,19 +244,19 @@ static PyObject* _pyhl_new_node(PyObject* self, PyObject* args)
 
   switch (type) {
   case ATTRIBUTE_ID:
-    retv->node = newHL_Attribute(nodename);
+    retv->node = HLNode_newAttribute(nodename);
     break;
   case GROUP_ID:
-    retv->node = newHL_Group(nodename);
+    retv->node = HLNode_newGroup(nodename);
     break;
   case DATASET_ID:
-    retv->node = newHL_Dataset(nodename);
+    retv->node = HLNode_newDataset(nodename);
     break;
   case TYPE_ID:
-    retv->node = newHL_Datatype(nodename);
+    retv->node = HLNode_newDatatype(nodename);
     break;
   case REFERENCE_ID:
-    retv->node = newHL_Reference(nodename);
+    retv->node = HLNode_newReference(nodename);
     break;
   default:
     retv->node = NULL;
@@ -270,7 +270,7 @@ static PyObject* _pyhl_new_node(PyObject* self, PyObject* args)
   }
 
   if (compr != NULL && compr->compr != NULL) {
-    setHL_NodeCompression(retv->node, dupHL_Compression(compr->compr));
+    HLNode_setCompression(retv->node, HLCompression_clone(compr->compr));
   }
 
   return (PyObject*) retv;
@@ -282,7 +282,7 @@ static PyObject* _pyhl_new_filecreationproperty(PyObject* self, PyObject* args)
   retv = PyObject_NEW(PyhlFileCreationProperty,&PyhlFileCreationProperty_Type);
   if (!retv)
     return NULL;
-  if (!(retv->props = createHlHdfFileCreationProperty())) {
+  if (!(retv->props = HLFileCreationProperty_new())) {
     setException(PyExc_MemoryError,"Failed to create FileCreationProperty\n");
     _dealloc_pyhlfilecreationproperty(retv);
     retv = NULL;
@@ -300,7 +300,7 @@ static PyObject* _pyhl_new_compression(PyObject* self, PyObject* args)
   retv = PyObject_NEW(PyhlCompression,&PyhlCompression_Type);
   if (!retv)
     return NULL;
-  if (!(retv->compr = newHL_Compression(type))) {
+  if (!(retv->compr = HLCompression_new(type))) {
     setException(PyExc_MemoryError,"Failed to create HL_Compression instance\n");
     _dealloc_pyhlcompression(retv);
     retv = NULL;
@@ -319,9 +319,9 @@ static PyObject* _pyhl_read_nodelist(PyObject* self, PyObject* args)
     return NULL;
 
   if (!frompath) {
-    nodelist = readHL_NodeList(filename);
+    nodelist = HLNodeList_read(filename);
   } else {
-    nodelist = readHL_NodeListFrom(filename, frompath);
+    nodelist = HLNodeList_readFrom(filename, frompath);
   }
 
   if (!nodelist) {
@@ -340,11 +340,11 @@ static PyObject* _pyhl_read_nodelist(PyObject* self, PyObject* args)
   }
 
   /*Change the nodelist*/
-  freeHL_NodeList(retv->nodelist);
+  HLNodeList_free(retv->nodelist);
   retv->nodelist = nodelist;
   return (PyObject*) retv;
 fail:
-  freeHL_NodeList(nodelist);
+  HLNodeList_free(nodelist);
   if (retv)
     _dealloc(retv);
   return NULL;
@@ -358,7 +358,7 @@ static PyObject* _pyhl_is_file_hdf5(PyObject* self, PyObject* args)
   if (!(PyArg_ParseTuple(args, "s", &filename)))
     return NULL;
 
-  val = isHdf5File(filename);
+  val = HL_isHDF5File(filename);
 
   return PyInt_FromLong((int) val);
 }
@@ -409,7 +409,7 @@ static PyObject* _pyhl_add_node(PyhlNodelist* self, PyObject* args)
   pyhlNode = (PyhlNode*) inp;
   aNode = pyhlNode->node;
 
-  if (!addHL_Node(self->nodelist, aNode)) {
+  if (!HLNodeList_addNode(self->nodelist, aNode)) {
     setException(PyExc_IOError,"Could not add node to nodelist");
     return NULL;
   }
@@ -464,28 +464,28 @@ static PyObject* _pyhl_write(PyhlNodelist* self, PyObject* args)
     }
   }
 
-  if (!setHL_NodeListFileName(self->nodelist,filename)) {
+  if (!HLNodeList_setFileName(self->nodelist,filename)) {
     setException(PyExc_IOError, "Could not set filename for nodelist");
     return NULL;
   }
 
   if (doCompress != -1) {
-    theCompression = newHL_Compression(CT_ZLIB);
+    theCompression = HLCompression_new(CT_ZLIB);
     theCompression->level = doCompress;
   }
 
-  if (!writeHL_NodeList(self->nodelist,
+  if (!HLNodeList_write(self->nodelist,
                         (props != NULL) ? ((PyhlFileCreationProperty*) props)->props : NULL,
                         theCompression)) {
     setException(PyExc_IOError,"Could not write hdf file");
     if (theCompression) {
-      freeHL_Compression(theCompression);
+      HLCompression_free(theCompression);
     }
     return NULL;
   }
 
   if (theCompression) {
-    freeHL_Compression(theCompression);
+    HLCompression_free(theCompression);
   }
 
   Py_INCREF(Py_None);
@@ -499,9 +499,9 @@ static PyObject* _pyhl_update(PyhlNodelist* self, PyObject* args)
 
   if (!PyArg_ParseTuple(args, "|i", &doCompress))
     return NULL;
-  initHL_Compression(&compression, CT_ZLIB);
+  HLCompression_init(&compression, CT_ZLIB);
   compression.level = doCompress;
-  if (!updateHL_NodeList(self->nodelist, &compression)) {
+  if (!HLNodeList_update(self->nodelist, &compression)) {
     setException(PyExc_IOError,"Could not update file");
     return NULL;
   }
@@ -522,18 +522,18 @@ static PyObject* _pyhl_get_node_names(PyhlNodelist* self, PyObject* args)
     return NULL;
   }
 
-  if ((nNodes = getHL_NodeListNumberOfNodes(self->nodelist)) < 0) {
+  if ((nNodes = HLNodeList_getNumberOfNodes(self->nodelist)) < 0) {
     setException(PyExc_IOError, "Could not read number of nodes");
     goto fail;
   }
 
   for (i = 0; i < nNodes; i++) {
-    HL_Node* node = getHL_NodeListNodeByIndex(self->nodelist, i);
+    HL_Node* node = HLNodeList_getNodeByIndex(self->nodelist, i);
     if (node == NULL) {
       setException(PyExc_IOError, "Could not fetch node");
       goto fail;
     }
-    switch (getHL_NodeType(node)) {
+    switch (HLNode_getType(node)) {
     case ATTRIBUTE_ID:
       pyo = PyInt_FromLong(ATTRIBUTE_ID);
       break;
@@ -551,11 +551,11 @@ static PyObject* _pyhl_get_node_names(PyhlNodelist* self, PyObject* args)
       break;
     default:
       sprintf(errbuf, "Unknown type for node '%s': '%d'",
-              HLNodePrivate_getName(node), getHL_NodeType(node));
+              HLNode_getName(node), HLNode_getType(node));
       setException(PyExc_TypeError,errbuf);
       goto fail;
     }
-    if (PyDict_SetItemString(retv, HLNodePrivate_getName(node), pyo) == -1) {
+    if (PyDict_SetItemString(retv, HLNode_getName(node), pyo) == -1) {
       setException(PyExc_AttributeError,"Failed to set dictionary item");
       goto fail;
     }
@@ -576,14 +576,14 @@ fail:
 
 static PyObject* _pyhl_select_all(PyhlNodelist* self, PyObject* args)
 {
-  selectAllNodes(self->nodelist);
+  HLNodeList_selectAllNodes(self->nodelist);
   Py_INCREF(Py_None);
   return Py_None;
 }
 
 static PyObject* _pyhl_select_metadata(PyhlNodelist* self, PyObject* args)
 {
-  selectMetadataNodes(self->nodelist);
+  HLNodeList_selectMetadataNodes(self->nodelist);
   Py_INCREF(Py_None);
   return Py_None;
 }
@@ -595,7 +595,7 @@ static PyObject* _pyhl_select_node(PyhlNodelist* self, PyObject* args)
 
   if (!PyArg_ParseTuple(args, "s", &nodename))
     return NULL;
-  if (!selectNode(self->nodelist, nodename)) {
+  if (!HLNodeList_selectNode(self->nodelist, nodename)) {
     sprintf(errbuf, "Could not select node '%s'", nodename);
     setException(PyExc_AttributeError,errbuf);
     goto fail;
@@ -613,7 +613,7 @@ static PyObject* _pyhl_deselect_node(PyhlNodelist* self, PyObject* args)
 
   if (!PyArg_ParseTuple(args, "s", &nodename))
     return NULL;
-  if (!deselectNode(self->nodelist, nodename)) {
+  if (!HLNodeList_deselectNode(self->nodelist, nodename)) {
     sprintf(errbuf, "Could not select node '%s'", nodename);
     setException(PyExc_AttributeError,errbuf);
     goto fail;
@@ -626,7 +626,7 @@ fail:
 
 static PyObject* _pyhl_fetch(PyhlNodelist* self, PyObject* args)
 {
-  if (!fetchMarkedNodes(self->nodelist)) {
+  if (!HLNodeList_fetchMarkedNodes(self->nodelist)) {
     setException(PyExc_IOError,"Could not fetch selected nodes");
     goto fail;
   }
@@ -647,13 +647,13 @@ static PyObject* _pyhl_fetch_node(PyhlNodelist* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "s", &nodename))
     return NULL;
 
-  if (!(node = fetchNode(self->nodelist, nodename))) {
+  if (!(node = HLNodeList_fetchNode(self->nodelist, nodename))) {
     sprintf(errbuf, "Could not fetch node '%s'", nodename);
     setException(PyExc_IOError,errbuf);
     goto fail;
   }
 
-  if (!(myArgs = Py_BuildValue("(is)", getHL_NodeType(node), HLNodePrivate_getName(node)))) {
+  if (!(myArgs = Py_BuildValue("(is)", HLNode_getType(node), HLNode_getName(node)))) {
     setException(PyExc_AttributeError,"Could not create argument tuple for allocating node");
     goto fail;
   }
@@ -663,9 +663,9 @@ static PyObject* _pyhl_fetch_node(PyhlNodelist* self, PyObject* args)
     goto fail;
   }
 
-  freeHL_Node(retv->node);
+  HLNode_free(retv->node);
 
-  retv->node = copyHL_Node(node);
+  retv->node = HLNode_copy(node);
 
   Py_XDECREF(myArgs);
   return (PyObject*)retv;
@@ -686,13 +686,13 @@ static PyObject* _pyhl_get_node(PyhlNodelist* self, PyObject* args)
   if (!PyArg_ParseTuple(args, "s", &nodename))
     return NULL;
 
-  if (!(node = getHL_Node(self->nodelist, nodename))) {
+  if (!(node = HLNodeList_getNodeByName(self->nodelist, nodename))) {
     sprintf(errbuf, "Could not get node '%s'", nodename);
     setException(PyExc_IOError,errbuf);
     goto fail;
   }
 
-  if (!(myArgs = Py_BuildValue("(is)", getHL_NodeType(node), HLNodePrivate_getName(node)))) {
+  if (!(myArgs = Py_BuildValue("(is)", HLNode_getType(node), HLNode_getName(node)))) {
     setException(PyExc_AttributeError,"Could not create argument tuple for allocating node");
     goto fail;
   }
@@ -702,9 +702,9 @@ static PyObject* _pyhl_get_node(PyhlNodelist* self, PyObject* args)
     goto fail;
   }
 
-  freeHL_Node(retv->node);
+  HLNode_free(retv->node);
 
-  retv->node = copyHL_Node(node);
+  retv->node = HLNode_copy(node);
 
   Py_XDECREF(myArgs);
   return (PyObject*)retv;
@@ -749,19 +749,19 @@ static PyObject* _pyhl_node_set_scalar_value(PyhlNode* self, PyObject* args)
     case H5T_INTEGER: {
       if (typeSize <= sizeof(char)) {
         char mData = (char) PyInt_AsLong(data);
-        chkVal = setHL_NodeScalarValue(self->node, sizeof(mData),
+        chkVal = HLNode_setScalarValue(self->node, sizeof(mData),
                                        (unsigned char*) &mData, hltypename, -1);
       } else if (typeSize <= sizeof(short)) {
         short mData = (char) PyInt_AsLong(data);
-        chkVal = setHL_NodeScalarValue(self->node, sizeof(mData),
+        chkVal = HLNode_setScalarValue(self->node, sizeof(mData),
                                        (unsigned char*) &mData, hltypename, -1);
       } else if (typeSize <= sizeof(int)) {
         int mData = (int) PyInt_AsLong(data);
-        chkVal = setHL_NodeScalarValue(self->node, sizeof(mData),
+        chkVal = HLNode_setScalarValue(self->node, sizeof(mData),
                                        (unsigned char*) &mData, hltypename, -1);
       } else if (typeSize <= sizeof(long)) {
         long mData = (long) PyInt_AsLong(data);
-        chkVal = setHL_NodeScalarValue(self->node, sizeof(mData),
+        chkVal = HLNode_setScalarValue(self->node, sizeof(mData),
                                        (unsigned char*) &mData, hltypename, -1);
       } else {
         long long mData = (long long) PyLong_AsLongLong(data);
@@ -769,7 +769,7 @@ static PyObject* _pyhl_node_set_scalar_value(PyhlNode* self, PyObject* args)
           setException(PyExc_AttributeError,"Could not translate to long long, probably not supported");
           goto fail;
         }
-        chkVal = setHL_NodeScalarValue(self->node, sizeof(mData),
+        chkVal = HLNode_setScalarValue(self->node, sizeof(mData),
                                        (unsigned char*) &mData, hltypename, -1);
       }
       break;
@@ -777,11 +777,11 @@ static PyObject* _pyhl_node_set_scalar_value(PyhlNode* self, PyObject* args)
     case H5T_FLOAT: {
       if (typeSize <= sizeof(float)) {
         float mData = (float) PyFloat_AsDouble(data);
-        chkVal = setHL_NodeScalarValue(self->node, sizeof(mData),
+        chkVal = HLNode_setScalarValue(self->node, sizeof(mData),
                                        (unsigned char*) &mData, hltypename, -1);
       } else if (typeSize <= sizeof(double)) {
         double mData = (double) PyFloat_AsDouble(data);
-        chkVal = setHL_NodeScalarValue(self->node, sizeof(mData),
+        chkVal = HLNode_setScalarValue(self->node, sizeof(mData),
                                        (unsigned char*) &mData, hltypename, -1);
       } else {
         fprintf(stderr, "Whoaa, greater float than double not supported\n");
@@ -805,14 +805,14 @@ static PyObject* _pyhl_node_set_scalar_value(PyhlNode* self, PyObject* args)
     }
   } else if (strcmp(hltypename, "string") == 0) {
     char* mData = PyString_AsString(data);
-    if (!mData || !setHL_NodeScalarValue(self->node, strlen(mData) + 1,
+    if (!mData || !HLNode_setScalarValue(self->node, strlen(mData) + 1,
                                          (unsigned char*) mData, hltypename, -1)) {
       setException(PyExc_ValueError,"Could not set scalar string");
       goto fail;
     }
   } else if (strcmp(hltypename, "compound") == 0) {
     char* mData = PyString_AsString(data);
-    if (!mData || !setHL_NodeScalarValue(self->node, itemSize, (unsigned char*) mData,
+    if (!mData || !HLNode_setScalarValue(self->node, itemSize, (unsigned char*) mData,
                                          hltypename, lhid)) {
       setException(PyExc_ValueError,"Could not set scalar compound value");
       goto fail;
@@ -859,7 +859,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
     goto fail;
   }
 
-  if (PyArray_Check(data) && isFormatSupported(hltypename)) {
+  if (PyArray_Check(data) && HL_isFormatSupported(hltypename)) {
     /*Ahh plain array*/
     if (PyObject_Length(pydims) != ((PyArrayObject*) data)->nd) {
       setException(PyExc_ValueError,"Rank of Array != no of dims");
@@ -879,7 +879,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
         goto fail;
       }
     }
-    if((tmpSize = whatSizeIsHdfFormat(hltypename))<0) {
+    if((tmpSize = HL_sizeOfFormat(hltypename))<0) {
       setException(PyExc_ValueError,"Could not determine size");
       goto fail;
     }
@@ -887,12 +887,12 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       setException(PyExc_ValueError,"Type sizes are different between format and array");
       goto fail;
     }
-    if(!setHL_NodeArrayValue(self->node,tmpSize,ndim,dims,(unsigned char*)((PyArrayObject*)data)->data,
+    if(!HLNode_setArrayValue(self->node,tmpSize,ndim,dims,(unsigned char*)((PyArrayObject*)data)->data,
             hltypename,-1)) {
       setException(PyExc_AttributeError,"Could not set array data");
       goto fail;
     }
-  } else if(PyList_Check(data) && (strcmp(hltypename,"string")==0 || isFormatSupported(hltypename))) {
+  } else if(PyList_Check(data) && (strcmp(hltypename,"string")==0 || HL_isFormatSupported(hltypename))) {
     /* Okie, list of something */
     int maxstrlen=0;
     char* tmpData=NULL;
@@ -940,7 +940,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       }
       H5Tset_size(strtype, itemSize);
       dims[0]=n;
-      if(!(setHL_NodeArrayValue(self->node,itemSize,1,dims,(unsigned char*)tmpData,hltypename,strtype))) {
+      if(!(HLNode_setArrayValue(self->node,itemSize,1,dims,(unsigned char*)tmpData,hltypename,strtype))) {
         setException(PyExc_AttributeError,"Could not set array data");
         H5Tclose(strtype);
         HLHDF_FREE(tmpData);
@@ -951,7 +951,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       float* floatptr=NULL;
       int* intptr=NULL;
       long* longptr=NULL;
-      if((tmpSize = whatSizeIsHdfFormat(hltypename))<0) {
+      if((tmpSize = HL_sizeOfFormat(hltypename))<0) {
         setException(PyExc_ValueError,"Could not determine size");
         goto fail;
       }
@@ -999,7 +999,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
         pyo=NULL;
       }
       dims[0]=n;
-      if(!(setHL_NodeArrayValue(self->node,tmpSize,1,dims,(unsigned char*)tmpData,hltypename,-1))) {
+      if(!(HLNode_setArrayValue(self->node,tmpSize,1,dims,(unsigned char*)tmpData,hltypename,-1))) {
         setException(PyExc_AttributeError,"Could not set array data");
         HLHDF_FREE(tmpData);
         goto fail;
@@ -1032,7 +1032,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       setException(PyExc_AttributeError,"There is some inconsistency between data size and calculated datasize");
       goto fail;
     }
-    if(!setHL_NodeArrayValue(self->node,itemSize,ndim,dims,(unsigned char*)tmpData,hltypename,lhid)) {
+    if(!HLNode_setArrayValue(self->node,itemSize,ndim,dims,(unsigned char*)tmpData,hltypename,lhid)) {
       setException(PyExc_AttributeError,"Could not set array data");
       goto fail;
     }
@@ -1058,11 +1058,11 @@ static PyObject* _pyhl_node_commit(PyhlNode* self, PyObject* args)
   hid_t dType;
   if (!PyArg_ParseTuple(args, "i", &dType))
     return NULL;
-  if (getHL_NodeType(self->node) != TYPE_ID) {
+  if (HLNode_getType(self->node) != TYPE_ID) {
     setException(PyExc_AttributeError,"Trying to commit a node which not is a type node");
     return NULL;
   }
-  commitHL_Datatype(self->node, dType);
+  HLNode_commitType(self->node, dType);
   Py_INCREF(Py_None);
   return Py_None;
 }
@@ -1070,12 +1070,12 @@ static PyObject* _pyhl_node_commit(PyhlNode* self, PyObject* args)
 
 static PyObject* _pyhl_node_name(PyhlNode* self, PyObject* args)
 {
-  return PyString_FromString(HLNodePrivate_getName(self->node));
+  return PyString_FromString(HLNode_getName(self->node));
 }
 
 static PyObject* _pyhl_node_type(PyhlNode* self, PyObject* args)
 {
-  return PyInt_FromLong(getHL_NodeType(self->node));
+  return PyInt_FromLong(HLNode_getType(self->node));
 }
 
 static PyObject* _pyhl_node_dims(PyhlNode* self, PyObject* args)
@@ -1087,8 +1087,8 @@ static PyObject* _pyhl_node_dims(PyhlNode* self, PyObject* args)
     return NULL;
   }
 
-  for (i = 0; i < getHL_NodeRank(self->node); i++) {
-    if (!(pyo = PyInt_FromLong(getHL_NodeDimension(self->node, i)))) {
+  for (i = 0; i < HLNode_getRank(self->node); i++) {
+    if (!(pyo = PyInt_FromLong(HLNode_getDimension(self->node, i)))) {
       setException(PyExc_ValueError,"Could not create py integer");
       goto fail;
     }
@@ -1124,7 +1124,7 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
 
   if (HLNodePrivate_getTypeId(self->node) >= 0) {
     tmpHid = H5Tcopy(HLNodePrivate_getTypeId(self->node));
-  } else if (isFormatSupported(HLNode_getFormatName(self->node))) {
+  } else if (HL_isFormatSupported(HLNode_getFormatName(self->node))) {
     tmpHid = HL_translateFormatStringToDatatype(HLNode_getFormatName(self->node));
   } else {
     setException(PyExc_AttributeError,"Strange type, can't handle");
@@ -1133,28 +1133,28 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
 
   typeSize = H5Tget_size(tmpHid);
 
-  if (getHL_NodeRank(self->node) == 0) { /*Scalar*/
+  if (HLNode_getRank(self->node) == 0) { /*Scalar*/
     switch (H5Tget_class(tmpHid)) {
     case H5T_INTEGER: {
       if (typeSize <= sizeof(char)) {
         char v;
-        memcpy(&v, getHL_NodeData(self->node), typeSize);
+        memcpy(&v, HLNode_getData(self->node), typeSize);
         retv = PyInt_FromLong((long) v);
       } else if (typeSize <= sizeof(short)) {
         short v;
-        memcpy(&v, getHL_NodeData(self->node), typeSize);
+        memcpy(&v, HLNode_getData(self->node), typeSize);
         retv = PyInt_FromLong((long) v);
       } else if (typeSize <= sizeof(int)) {
         int v;
-        memcpy(&v, getHL_NodeData(self->node), typeSize);
+        memcpy(&v, HLNode_getData(self->node), typeSize);
         retv = PyInt_FromLong((long) v);
       } else if (typeSize <= sizeof(long)) {
         long v;
-        memcpy(&v, getHL_NodeData(self->node), typeSize);
+        memcpy(&v, HLNode_getData(self->node), typeSize);
         retv = PyInt_FromLong((long) v);
       } else {
         long long v;
-        memcpy(&v, getHL_NodeData(self->node), typeSize);
+        memcpy(&v, HLNode_getData(self->node), typeSize);
         retv = PyLong_FromLongLong(v);
       }
       break;
@@ -1162,11 +1162,11 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
     case H5T_FLOAT: {
       if (typeSize <= sizeof(float)) {
         float v;
-        memcpy(&v, getHL_NodeData(self->node), typeSize);
+        memcpy(&v, HLNode_getData(self->node), typeSize);
         retv = PyFloat_FromDouble((double) v);
       } else if (typeSize <= sizeof(double)) {
         double v;
-        memcpy(&v, getHL_NodeData(self->node), typeSize);
+        memcpy(&v, HLNode_getData(self->node), typeSize);
         retv = PyFloat_FromDouble(v);
       } else {
         fprintf(stderr, "Whoaa, greater float than double not supported\n");
@@ -1174,11 +1174,11 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
       break;
     }
     case H5T_COMPOUND: {
-      retv = PyString_FromStringAndSize((char*)getHL_NodeData(self->node), typeSize);
+      retv = PyString_FromStringAndSize((char*)HLNode_getData(self->node), typeSize);
       break;
     }
     case H5T_STRING: {
-      retv = PyString_FromStringAndSize((char*)getHL_NodeData(self->node), typeSize - 1);
+      retv = PyString_FromStringAndSize((char*)HLNode_getData(self->node), typeSize - 1);
       break;
     }
     default: {
@@ -1188,7 +1188,7 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
     }
     }
   } else { /*Simple*/
-    if (!(dims = HLHDF_MALLOC(sizeof(int) * getHL_NodeRank(self->node)))) {
+    if (!(dims = HLHDF_MALLOC(sizeof(int) * HLNode_getRank(self->node)))) {
       setException(PyExc_MemoryError,"Could not allocate dims");
       goto fail;
     }
@@ -1202,38 +1202,38 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
         setException(PyExc_TypeError,errbuf);
         goto fail;
       }
-      for (i = 0; i < getHL_NodeRank(self->node); i++)
-        dims[i] = (int) getHL_NodeDimension(self->node, i);
+      for (i = 0; i < HLNode_getRank(self->node); i++)
+        dims[i] = (int) HLNode_getDimension(self->node, i);
 
       /* Replaced PyArray_FromDimsAndData with this */
-      retv = PyArray_FromDims(getHL_NodeRank(self->node), dims, iformat);
+      retv = PyArray_FromDims(HLNode_getRank(self->node), dims, iformat);
       if (!retv) {
         setException(PyExc_MemoryError,"Could not create array");
         goto fail;
       }
-      nbytes = (int)getHL_NodeNumberOfPoints(self->node);
+      nbytes = (int)HLNode_getNumberOfPoints(self->node);
       nbytes *= ((PyArrayObject*) retv)->descr->elsize;
 
-      memcpy(((PyArrayObject*) retv)->data, (unsigned char*) getHL_NodeData(self->node),
+      memcpy(((PyArrayObject*) retv)->data, (unsigned char*) HLNode_getData(self->node),
              nbytes);
       break;
     }
     case H5T_COMPOUND: {
-      npts = (size_t)getHL_NodeNumberOfPoints(self->node);
+      npts = (size_t)HLNode_getNumberOfPoints(self->node);
       npts *= typeSize;
-      retv = PyString_FromStringAndSize((char*) getHL_NodeData(self->node), npts);
+      retv = PyString_FromStringAndSize((char*) HLNode_getData(self->node), npts);
       break;
     }
     case H5T_STRING: {
-      if (getHL_NodeRank(self->node) != 1) {
+      if (HLNode_getRank(self->node) != 1) {
         /* Don't know how to represent a multi-dim array of strings */
-        npts = (size_t)getHL_NodeNumberOfPoints(self->node);
+        npts = (size_t)HLNode_getNumberOfPoints(self->node);
         npts *= typeSize;
-        retv = PyString_FromStringAndSize((char*) getHL_NodeData(self->node), npts - 1);
+        retv = PyString_FromStringAndSize((char*) HLNode_getData(self->node), npts - 1);
       } else {
-        const unsigned char* data = getHL_NodeData(self->node);
+        const unsigned char* data = HLNode_getData(self->node);
         retv = PyList_New(0);
-        for (i = 0; retv && i < getHL_NodeDimension(self->node, 0); i++) {
+        for (i = 0; retv && i < HLNode_getDimension(self->node, 0); i++) {
           PyObject* pyo =
               PyString_FromStringAndSize((char*) (&data[i * typeSize]), typeSize - 1);
           if (!pyo) {
@@ -1277,44 +1277,44 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
   int i;
   size_t npts;
 
-  if (getHL_NodeRawdata(self->node) == NULL) {
+  if (HLNode_getRawdata(self->node) == NULL) {
     setException(PyExc_AttributeError,"Rawdata has not been read for this node");
     return NULL;
   }
 
   if (HLNodePrivate_getTypeId(self->node) >= 0) {
     tmpHid = H5Tcopy(HLNodePrivate_getTypeId(self->node));
-  } else if (isFormatSupported(HLNode_getFormatName(self->node))) {
+  } else if (HL_isFormatSupported(HLNode_getFormatName(self->node))) {
     tmpHid = HL_translateFormatStringToDatatype(HLNode_getFormatName(self->node));
   } else {
     setException(PyExc_AttributeError,"Strange type, can't handle");
     return NULL;
   }
 
-  typeSize = getHL_NodeRawdataSize(self->node); /* Using raw type */
+  typeSize = HLNode_getRawdataSize(self->node); /* Using raw type */
 
-  if (getHL_NodeRank(self->node) == 0) { /*Scalar*/
+  if (HLNode_getRank(self->node) == 0) { /*Scalar*/
     switch (H5Tget_class(tmpHid)) {
     case H5T_INTEGER: {
       if (typeSize <= sizeof(char)) {
         char v;
-        memcpy(&v, getHL_NodeRawdata(self->node), typeSize);
+        memcpy(&v, HLNode_getRawdata(self->node), typeSize);
         retv = PyInt_FromLong((long) v);
       } else if (typeSize <= sizeof(short)) {
         short v;
-        memcpy(&v, getHL_NodeRawdata(self->node), typeSize);
+        memcpy(&v, HLNode_getRawdata(self->node), typeSize);
         retv = PyInt_FromLong((long) v);
       } else if (typeSize <= sizeof(int)) {
         int v;
-        memcpy(&v, getHL_NodeRawdata(self->node), typeSize);
+        memcpy(&v, HLNode_getRawdata(self->node), typeSize);
         retv = PyInt_FromLong((long) v);
       } else if (typeSize <= sizeof(long)) {
         long v;
-        memcpy(&v, getHL_NodeRawdata(self->node), typeSize);
+        memcpy(&v, HLNode_getRawdata(self->node), typeSize);
         retv = PyInt_FromLong((long) v);
       } else {
         long long v;
-        memcpy(&v, getHL_NodeRawdata(self->node), typeSize);
+        memcpy(&v, HLNode_getRawdata(self->node), typeSize);
         retv = PyLong_FromLongLong(v);
       }
       break;
@@ -1322,11 +1322,11 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
     case H5T_FLOAT: {
       if (typeSize <= sizeof(float)) {
         float v;
-        memcpy(&v, getHL_NodeRawdata(self->node), typeSize);
+        memcpy(&v, HLNode_getRawdata(self->node), typeSize);
         retv = PyFloat_FromDouble((double) v);
       } else if (typeSize <= sizeof(double)) {
         double v;
-        memcpy(&v, getHL_NodeRawdata(self->node), typeSize);
+        memcpy(&v, HLNode_getRawdata(self->node), typeSize);
         retv = PyFloat_FromDouble(v);
       } else {
         fprintf(stderr, "Whoaa, greater float than double not supported\n");
@@ -1334,11 +1334,11 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
       break;
     }
     case H5T_COMPOUND: {
-      retv = PyString_FromStringAndSize((char*) getHL_NodeRawdata(self->node), typeSize);
+      retv = PyString_FromStringAndSize((char*) HLNode_getRawdata(self->node), typeSize);
       break;
     }
     case H5T_STRING: {
-      retv = PyString_FromStringAndSize((char*) getHL_NodeRawdata(self->node), typeSize - 1);
+      retv = PyString_FromStringAndSize((char*) HLNode_getRawdata(self->node), typeSize - 1);
       break;
     }
     default: {
@@ -1348,7 +1348,7 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
     }
     }
   } else { /*Simple*/
-    if (!(dims = HLHDF_MALLOC(sizeof(int) * getHL_NodeRank(self->node)))) {
+    if (!(dims = HLHDF_MALLOC(sizeof(int) * HLNode_getRank(self->node)))) {
       setException(PyExc_MemoryError,"Could not allocate dims");
       goto fail;
     }
@@ -1362,39 +1362,39 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
         setException(PyExc_TypeError,errbuf);
         goto fail;
       }
-      for (i = 0; i < getHL_NodeRank(self->node); i++)
-        dims[i] = (int) getHL_NodeDimension(self->node,i);
+      for (i = 0; i < HLNode_getRank(self->node); i++)
+        dims[i] = (int) HLNode_getDimension(self->node,i);
 
       /* Replaced PyArray_FromDimsAndData with this */
-      retv = PyArray_FromDims(getHL_NodeRank(self->node), dims, iformat);
+      retv = PyArray_FromDims(HLNode_getRank(self->node), dims, iformat);
       if (!retv) {
         setException(PyExc_MemoryError,"Could not create array");
         goto fail;
       }
-      nbytes = (int)getHL_NodeNumberOfPoints(self->node);
+      nbytes = (int)HLNode_getNumberOfPoints(self->node);
       nbytes *= ((PyArrayObject*) retv)->descr->elsize;
       memcpy(((PyArrayObject*) retv)->data,
-             getHL_NodeRawdata(self->node), nbytes);
+             HLNode_getRawdata(self->node), nbytes);
       break;
     }
     case H5T_COMPOUND: {
-      npts = (size_t)getHL_NodeNumberOfPoints(self->node);;
+      npts = (size_t)HLNode_getNumberOfPoints(self->node);;
       npts *= typeSize;
-      retv = PyString_FromStringAndSize((char*) getHL_NodeRawdata(self->node), npts);
+      retv = PyString_FromStringAndSize((char*) HLNode_getRawdata(self->node), npts);
       break;
     }
     case H5T_STRING: {
-      if (getHL_NodeRank(self->node) != 1) {
+      if (HLNode_getRank(self->node) != 1) {
         /* Don't know how to represent a multi-dim array of strings */
         npts = 1;
-        for (i = 0; i < getHL_NodeRank(self->node); i++)
-          npts *= getHL_NodeDimension(self->node,i);
+        for (i = 0; i < HLNode_getRank(self->node); i++)
+          npts *= HLNode_getDimension(self->node,i);
         npts *= typeSize;
-        retv = PyString_FromStringAndSize((char*) getHL_NodeRawdata(self->node), npts - 1);
+        retv = PyString_FromStringAndSize((char*) HLNode_getRawdata(self->node), npts - 1);
       } else {
-        const unsigned char* data = getHL_NodeRawdata(self->node);
+        const unsigned char* data = HLNode_getRawdata(self->node);
         retv = PyList_New(0);
-        for (i = 0; retv && i < getHL_NodeDimension(self->node, 0); i++) {
+        for (i = 0; retv && i < HLNode_getDimension(self->node, 0); i++) {
           PyObject* pyo =
               PyString_FromStringAndSize((char*) (&data[i * typeSize]), typeSize - 1);
           if (!pyo) {
@@ -1517,7 +1517,7 @@ static PyObject* _pyhl_node_get_compound_data(PyhlNode* self, PyObject* args)
 
   if (HLNodePrivate_getTypeId(self->node) >= 0) {
     tmpHid = H5Tcopy(HLNodePrivate_getTypeId(self->node));
-  } else if (isFormatSupported(HLNode_getFormatName(self->node))) {
+  } else if (HL_isFormatSupported(HLNode_getFormatName(self->node))) {
     tmpHid = HL_translateFormatStringToDatatype(HLNode_getFormatName(self->node));
   } else {
     setException(PyExc_AttributeError,"Strange type, can't handle");
@@ -1529,8 +1529,8 @@ static PyObject* _pyhl_node_get_compound_data(PyhlNode* self, PyObject* args)
     goto fail;
   }
 
-  if (getHL_NodeRank(self->node) == 0 || (getHL_NodeRank(self->node) == 1 && getHL_NodeDimension(self->node,0) == 1)) { /*Scalar*/
-    if (!getHL_NodeCompoundDescription(self->node)) {
+  if (HLNode_getRank(self->node) == 0 || (HLNode_getRank(self->node) == 1 && HLNode_getDimension(self->node,0) == 1)) { /*Scalar*/
+    if (!HLNode_getCompoundDescription(self->node)) {
       setException(PyExc_AttributeError,"Node does not have a compound description");
       goto fail;
     }
@@ -1538,8 +1538,8 @@ static PyObject* _pyhl_node_get_compound_data(PyhlNode* self, PyObject* args)
       setException(PyExc_MemoryError,"Could not allocate dicionary\n");
       goto fail;
     }
-    data = getHL_NodeData(self->node);
-    descr = getHL_NodeCompoundDescription(self->node);
+    data = HLNode_getData(self->node);
+    descr = HLNode_getCompoundDescription(self->node);
     for (i = 0; i < descr->nAttrs; i++) {
       pyo = NULL;
       if (descr->attrs[i]->ndims == 0 || (descr->attrs[i]->ndims == 1 && descr->attrs[i]->dims[0] == 1)) {
@@ -1597,11 +1597,11 @@ static PyObject* _pyhl_node_get_compound_type(PyhlNode* self, PyObject* args)
   }
 
   if (H5Tcommitted(HLNodePrivate_getTypeId(self->node)) > 0) {
-    if (getHL_NodeCompoundDescription(self->node) == NULL) {
+    if (HLNode_getCompoundDescription(self->node) == NULL) {
       setException(PyExc_AttributeError,"Node does not have a compound description");
       goto fail;
     }
-    retv = PyString_FromString(getHL_NodeCompoundDescription(self->node)->hltypename);
+    retv = PyString_FromString(HLNode_getCompoundDescription(self->node)->hltypename);
   } else {
     Py_INCREF(Py_None);
     retv = Py_None; // So that we can return retv
@@ -1649,14 +1649,14 @@ Function: selectMetadata()
 Returns:
   N/A.
 
-Function: selectNode(name)
+Function: HLNodeList_selectNode(name)
   Marks the specified node for retrival when executing fetch
 Parameters:
   name - the node that should be marked for retrival
 Returns:
   N/A.
 
-Function: deselectNode(name)
+Function: HLNodeList_deselectNode(name)
   Unmarks the specified node so that it is not read when executing fetch.
 Parameters:
   name - the node that should be deselected
@@ -1668,7 +1668,7 @@ Function: fetch()
 Returns:
   N/A.
 
-Function: fetchNode()
+Function: HLNodeList_fetchNode()
   Reads the data for the specified node and returns it.
 Returns:
   The read node.
@@ -2323,7 +2323,7 @@ void init_pyhl(void)
 
   import_array(); /*To make sure I get access to Numeric*/
   /*Always have to do this*/
-  initHlHdf();
+  HL_init();
   /*And this I just do to be able to get debugging info from hdf*/
-  debugHlHdf(2);
+  HL_setDebugMode(2);
 }

@@ -98,9 +98,9 @@ static hid_t createRaveInfoType(void)
 static void _dealloc_type(RaveInfoType* rinfo)
 {
    if(rinfo->rave_info_hid>=0) {
-      disableErrorReporting();
+      HL_disableErrorReporting();
       H5Tclose(rinfo->rave_info_hid);
-      enableErrorReporting();
+      HL_enableErrorReporting();
    }
    PyObject_Del(rinfo);
 }
@@ -358,7 +358,7 @@ void init_rave_info_type(void)
 
    import_array(); /*To make sure I get access to Numeric*/
    /*Always have to do this*/
-   initHlHdf();
+   HL_init();
    /*And this I just do to be able to get debugging info from hdf*/
-   debugHlHdf(2);
+   HL_setDebugMode(2);
 }

@@ -75,7 +75,7 @@ static const char* VALID_FORMAT_SPECIFIERS[] = {
 /************************************************
  * disableErrorReporting
  ***********************************************/
-void disableErrorReporting()
+void HL_disableErrorReporting()
 {
   /*Disable error reporting*/
   if (errorReportingOn == 1) {
@@ -88,7 +88,7 @@ void disableErrorReporting()
 /************************************************
  * enableErrorReporting
  ***********************************************/
-void enableErrorReporting()
+void HL_enableErrorReporting()
 {
   if (errorReportingOn == 0) {
     H5Eset_auto2(H5E_DEFAULT, errorFunction, edata);
@@ -107,7 +107,7 @@ static void hlhdf_dump_memory_information(void)
 /************************************************
  * initHlHdf
  ***********************************************/
-void initHlHdf()
+void HL_init()
 {
   if (initialized == 0) {
     initialized = 1;
@@ -115,7 +115,7 @@ void initHlHdf()
     H5Eset_auto2(H5E_DEFAULT, HL_hdf5_debug_function, NULL); /* Force logging to always goto HLHDFs handler */
     HL_InitializeDebugger();
     HL_enableHdf5ErrorReporting();
-    disableErrorReporting();
+    HL_disableErrorReporting();
 #ifdef HLHDF_MEMORY_DEBUG
     if (atexit(hlhdf_dump_memory_information) != 0) {
       fprintf(stderr, "Could not set atexit function");
@@ -127,29 +127,29 @@ void initHlHdf()
 /************************************************
  * debugHlHdf
  ***********************************************/
-void debugHlHdf(int flag)
+void HL_setDebugMode(int flag)
 {
   if (flag == 0) {
     /*Don't debug anything*/
     _debug_hdf = 0;
-    disableErrorReporting();
+    HL_disableErrorReporting();
   } else if (flag == 1) {
     /*Only debug HLHDF stuff*/
     _debug_hdf = 1;
     HL_setDebugLevel(HLHDF_DEBUG);
-    disableErrorReporting();
+    HL_disableErrorReporting();
   } else {
     /*Debug everything*/
     _debug_hdf = 1;
     HL_setDebugLevel(HLHDF_DEBUG);
-    enableErrorReporting();
+    HL_enableErrorReporting();
   }
 }
 
 /************************************************
  * isHdf5File
  ***********************************************/
-int isHdf5File(const char* filename)
+int HL_isHDF5File(const char* filename)
 {
   htri_t checkValue = H5Fis_hdf5(filename);
   HL_DEBUG0("isHdf5File");
@@ -161,7 +161,7 @@ int isHdf5File(const char* filename)
 /************************************************
  * createHlHdfFileCreationProperty
  ***********************************************/
-HL_FileCreationProperty* createHlHdfFileCreationProperty()
+HL_FileCreationProperty* HLFileCreationProperty_new()
 {
   HL_FileCreationProperty* retv = NULL;
   hid_t theHid = -1;
@@ -221,14 +221,14 @@ HL_FileCreationProperty* createHlHdfFileCreationProperty()
   return retv;
 fail:
   HL_H5P_CLOSE(theHid);
-  freeHL_fileCreationProperty(retv);
+  HLFileCreationProperty_free(retv);
   return NULL;
 }
 
 /************************************************
  * freeHL_fileCreationProperty
  ***********************************************/
-void freeHL_fileCreationProperty(HL_FileCreationProperty* prop)
+void HLFileCreationProperty_free(HL_FileCreationProperty* prop)
 {
   HL_DEBUG0("ENTER: freeHL_fileCreationProperty");
   if (prop == NULL) {
@@ -240,7 +240,7 @@ void freeHL_fileCreationProperty(HL_FileCreationProperty* prop)
 /**********************************************************
  *Function: whatSizeIsHdfFormat
  **********************************************************/
-int whatSizeIsHdfFormat(const char* format)
+int HL_sizeOfFormat(const char* format)
 {
   hid_t tmpType;
   int size = -1;
@@ -258,7 +258,7 @@ int whatSizeIsHdfFormat(const char* format)
 /**********************************************************
  *Function: isFormatSupported
  **********************************************************/
-int isFormatSupported(const char* format)
+int HL_isFormatSupported(const char* format)
 {
   hid_t tmpHid = -1;
   int retv = 1;
@@ -297,7 +297,7 @@ const char* HL_getFormatSpecifierString(HL_FormatSpecifier specifier)
 /**********************************************************
  *Function: newHL_Compression
  **********************************************************/
-HL_Compression* newHL_Compression(HL_CompressionType aType)
+HL_Compression* HLCompression_new(HL_CompressionType aType)
 {
   HL_Compression* retv = NULL;
   HL_DEBUG0("ENTER: newHL_Compression");
@@ -305,14 +305,14 @@ HL_Compression* newHL_Compression(HL_CompressionType aType)
     HL_ERROR0("Failed to allocate memory for HL_Compression");
     return NULL;
   }
-  initHL_Compression(retv, aType);
+  HLCompression_init(retv, aType);
   return retv;
 }
 
 /**********************************************************
  *Function: dupHL_Compression
  **********************************************************/
-HL_Compression* dupHL_Compression(HL_Compression* inv)
+HL_Compression* HLCompression_clone(HL_Compression* inv)
 {
   HL_Compression* retv = NULL;
   HL_SPEWDEBUG0("ENTER: dupHL_Compression");
@@ -336,7 +336,7 @@ fail:
 /**********************************************************
  *Function: initHL_Compression
  **********************************************************/
-void initHL_Compression(HL_Compression* inv, HL_CompressionType aType)
+void HLCompression_init(HL_Compression* inv, HL_CompressionType aType)
 {
   HL_DEBUG0("ENTER: initHL_Compression");
   if (!inv) {
@@ -352,7 +352,7 @@ void initHL_Compression(HL_Compression* inv, HL_CompressionType aType)
 /**********************************************************
  *Function: freeHL_Compression
  **********************************************************/
-void freeHL_Compression(HL_Compression* inv)
+void HLCompression_free(HL_Compression* inv)
 {
   HL_SPEWDEBUG0("ENTER: freeHL_Compression");
   HLHDF_FREE(inv);
@@ -988,7 +988,10 @@ int extractParentChildName(HL_Node* node, char** parent, char** child)
 
   *parent = NULL;
   *child = NULL;
-  if ((tmpStr = getHL_NodeName(node)) == NULL) {
+  if (HLNode_getName(node) != NULL) {
+    tmpStr = HLHDF_STRDUP(HLNode_getName(node));
+  }
+  if (tmpStr == NULL) {
     HL_ERROR0("Could not allocate memory for node name");
     goto fail;
   }
@@ -1029,9 +1032,9 @@ int openGroupOrDataset(hid_t file_id, const char* name, hid_t* lid, HL_Type* typ
   if (strcmp(name, "") != 0) {
     H5O_info_t objectInfo;
     herr_t infoStatus = -1;
-    disableErrorReporting(); /*Bypass the error reporting, if failed to open a dataset/or group*/
+    HL_disableErrorReporting(); /*Bypass the error reporting, if failed to open a dataset/or group*/
     infoStatus = H5Oget_info_by_name(file_id, name, &objectInfo, H5P_DEFAULT);
-    enableErrorReporting();
+    HL_enableErrorReporting();
     if (infoStatus >= 0) {
       if (objectInfo.type == H5O_TYPE_GROUP) {
         *type = GROUP_ID;

@@ -392,7 +392,7 @@ static int fillAttributeNode(hid_t file_id, HL_Node* node)
       descr->objno[1] = statbuf.objno[1];
     }
 
-    setHL_NodeCompoundDescription(node, descr);
+    HLNode_setCompoundDescription(node, descr);
   }
 
   if ((f_space = H5Aget_space(obj)) >= 0) {
@@ -404,7 +404,7 @@ static int fillAttributeNode(hid_t file_id, HL_Node* node)
       HL_ERROR0("Could not read space dimensions");
       goto fail;
     } else {
-      if (!setHL_NodeDimensions(node, ndims, all_dims)) {
+      if (!HLNode_setDimensions(node, ndims, all_dims)) {
         HL_ERROR0("Failed to set node dimensions");
         HLHDF_FREE(all_dims);
         goto fail;
@@ -434,7 +434,7 @@ static int fillAttributeNode(hid_t file_id, HL_Node* node)
     HL_ERROR0("Failed to set type and format on node");
     goto fail;
   }
-  setHL_NodeMark(node, NMARK_ORIGINAL);
+  HLNode_setMark(node, NMARK_ORIGINAL);
 
   result = 1;
 fail:
@@ -491,8 +491,8 @@ static int fillReferenceNode(hid_t file_id, HL_Node* node)
 
   HLNodePrivate_setData(node, strlen(refername)+1, (unsigned char*)HLHDF_STRDUP(refername));
   HLNodePrivate_setRawdata(node, strlen(refername)+1, (unsigned char*)HLHDF_STRDUP(refername));
-  setHL_NodeDimensions(node, 0, NULL);
-  setHL_NodeMark(node, NMARK_ORIGINAL);
+  HLNode_setDimensions(node, 0, NULL);
+  HLNode_setMark(node, NMARK_ORIGINAL);
 
   strtype = H5Tcopy(H5T_C_S1);
   H5Tset_size(strtype, strlen(refername)+1);
@@ -527,7 +527,7 @@ static int fillDatasetNode(hid_t file_id, HL_Node* node)
 
   HL_DEBUG0("ENTER: fillDatasetNode");
 
-  if ((obj = H5Dopen(file_id, HLNodePrivate_getName(node), H5P_DEFAULT)) < 0) {
+  if ((obj = H5Dopen(file_id, HLNode_getName(node), H5P_DEFAULT)) < 0) {
     goto fail;
   }
 
@@ -547,7 +547,7 @@ static int fillDatasetNode(hid_t file_id, HL_Node* node)
       HL_ERROR0("Could not read space dimensions");
       goto fail;
     } else {
-      if (!setHL_NodeDimensions(node, ndims, all_dims)) {
+      if (!HLNode_setDimensions(node, ndims, all_dims)) {
         HL_ERROR0("Failed to set node dimensions");
         HLHDF_FREE(all_dims);
         goto fail;
@@ -571,7 +571,7 @@ static int fillDatasetNode(hid_t file_id, HL_Node* node)
         descr->objno[1] = statbuf.objno[1];
       }
 
-      setHL_NodeCompoundDescription(node, descr);
+      HLNode_setCompoundDescription(node, descr);
     }
 
     if (H5Sis_simple(f_space) >= 0) { /*Only allow simple dataspace, nothing else supported by HDF5 anyway */
@@ -605,7 +605,7 @@ static int fillDatasetNode(hid_t file_id, HL_Node* node)
   }
 
   /* Mark the node as original */
-  setHL_NodeMark(node, NMARK_ORIGINAL);
+  HLNode_setMark(node, NMARK_ORIGINAL);
 
   status = 1;
 fail:
@@ -623,11 +623,11 @@ static int fillGroupNode(hid_t file_id, HL_Node* node)
 {
   hid_t obj;
 
-  if ((obj = H5Gopen(file_id, HLNodePrivate_getName(node), H5P_DEFAULT)) < 0) {
+  if ((obj = H5Gopen(file_id, HLNode_getName(node), H5P_DEFAULT)) < 0) {
     return 0;
   }
 
-  setHL_NodeMark(node, NMARK_ORIGINAL);
+  HLNode_setMark(node, NMARK_ORIGINAL);
 
   HL_H5G_CLOSE(obj);
   return 1;
@@ -642,8 +642,8 @@ static int fillTypeNode(hid_t file_id, HL_Node* node)
   HL_CompoundTypeDescription* typelist = NULL;
   H5G_stat_t statbuf;
 
-  if ((obj = H5Topen(file_id, HLNodePrivate_getName(node), H5P_DEFAULT)) < 0) {
-    HL_ERROR1("Failed to open %s ", HLNodePrivate_getName(node));
+  if ((obj = H5Topen(file_id, HLNode_getName(node), H5P_DEFAULT)) < 0) {
+    HL_ERROR1("Failed to open %s ", HLNode_getName(node));
     return 0;
   }
   H5Gget_objinfo(obj, ".", TRUE, &statbuf);
@@ -652,14 +652,14 @@ static int fillTypeNode(hid_t file_id, HL_Node* node)
     HL_ERROR0("Failed to create datatype nodelist");
     goto fail;
   }
-  strcpy(typelist->hltypename, HLNodePrivate_getName(node));
+  strcpy(typelist->hltypename, HLNode_getName(node));
   typelist->objno[0] = statbuf.objno[0];
   typelist->objno[1] = statbuf.objno[1];
 
-  setHL_NodeCompoundDescription(node, typelist);
+  HLNode_setCompoundDescription(node, typelist);
   typelist = NULL; /* Ownership transfered. */
 
-  setHL_NodeMark(node, NMARK_ORIGINAL);
+  HLNode_setMark(node, NMARK_ORIGINAL);
 
   HLNodePrivate_setHdfID(node, obj);
 
@@ -678,7 +678,7 @@ fail:
 static int fillNodeWithData(hid_t file_id, HL_Node* node)
 {
   HL_SPEWDEBUG0("ENTER: fillNodeWithData");
-  switch (getHL_NodeType(node)) {
+  switch (HLNode_getType(node)) {
   case ATTRIBUTE_ID:
     return fillAttributeNode(file_id, node);
   case DATASET_ID:
@@ -690,7 +690,7 @@ static int fillNodeWithData(hid_t file_id, HL_Node* node)
   case REFERENCE_ID:
     return fillReferenceNode(file_id, node);
   default:
-    HL_ERROR1("Can't handle other nodetypes but '%d'",HLNodePrivate_getName(node));
+    HL_ERROR1("Can't handle other nodetypes but '%d'",HLNode_getName(node));
     break;
   }
   return 0;
@@ -784,9 +784,9 @@ static herr_t hlhdf_node_attribute_visitor(hid_t location_id, const char *name, 
   }
 
   if (H5Tget_class(typeid) == H5T_REFERENCE) {
-    addHL_Node(vsp->nodelist, newHL_Reference(path));
+    HLNodeList_addNode(vsp->nodelist, HLNode_newReference(path));
   } else {
-    addHL_Node(vsp->nodelist, newHL_Attribute(path));
+    HLNodeList_addNode(vsp->nodelist, HLNode_newAttribute(path));
   }
 
   status = 0;
@@ -822,7 +822,7 @@ static herr_t hlhdf_node_visitor(hid_t g_id, const char *name, const H5O_info_t 
   switch (info->type) {
   case H5O_TYPE_GROUP: {
     hsize_t n=0;
-    addHL_Node(vsp->nodelist, newHL_Group(vs.path));
+    HLNodeList_addNode(vsp->nodelist, HLNode_newGroup(vs.path));
     if (H5Aiterate_by_name(g_id, name, H5_INDEX_NAME, H5_ITER_INC, &n, hlhdf_node_attribute_visitor, &vs, H5P_DEFAULT) < 0) {
       HL_ERROR1("Failed to iterate over %s", vs.path);
       goto fail;
@@ -831,7 +831,7 @@ static herr_t hlhdf_node_visitor(hid_t g_id, const char *name, const H5O_info_t 
   }
   case H5O_TYPE_DATASET: {
     hsize_t n=0;
-    addHL_Node(vsp->nodelist, newHL_Dataset(vs.path));
+    HLNodeList_addNode(vsp->nodelist, HLNode_newDataset(vs.path));
     if (H5Aiterate_by_name(g_id,  name, H5_INDEX_NAME, H5_ITER_INC, &n, hlhdf_node_attribute_visitor, &vs, H5P_DEFAULT) < 0) {
       HL_ERROR1("Failed to iterate over %s", vs.path);
       goto fail;
@@ -839,7 +839,7 @@ static herr_t hlhdf_node_visitor(hid_t g_id, const char *name, const H5O_info_t 
     break;
   }
   case H5O_TYPE_NAMED_DATATYPE: {
-    addHL_Node(vsp->nodelist, newHL_Datatype(vs.path));
+    HLNodeList_addNode(vsp->nodelist, HLNode_newDatatype(vs.path));
     break;
   }
   default: {
@@ -856,7 +856,7 @@ fail:
 /*@} End of Private functions */
 
 /*@{ Interface functions */
-HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
+HL_NodeList* HLNodeList_readFrom(const char* filename, const char* fromPath)
 {
   hid_t file_id = -1, gid = -1;
   HL_NodeList* retv = NULL;
@@ -880,11 +880,11 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
     goto fail;
   }
 
-  if (!(retv = newHL_NodeList())) {
+  if (!(retv = HLNodeList_new())) {
     HL_ERROR0("Could not allocate NodeList\n");
     goto fail;
   }
-  setHL_NodeListFileName(retv, filename);
+  HLNodeList_setFileName(retv, filename);
 
   vs.path = (char*)fromPath;
   vs.nodelist = retv;
@@ -894,7 +894,7 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
     goto fail;
   }
 
-  markHL_NodeListNodes(retv, NMARK_ORIGINAL);
+  HLNodeList_markNodes(retv, NMARK_ORIGINAL);
 
   HL_H5F_CLOSE(file_id);
   HL_H5G_CLOSE(gid);
@@ -904,7 +904,7 @@ HL_NodeList* readHL_NodeListFrom(const char* filename, const char* fromPath)
 fail:
   HL_H5F_CLOSE(file_id);
   HL_H5G_CLOSE(gid);
-  freeHL_NodeList(retv);
+  HLNodeList_free(retv);
   HL_DEBUG0("EXIT: readHL_NodeListFrom with Error");
   return NULL;
 }
@@ -912,12 +912,12 @@ fail:
 /* ---------------------------------------
  * READ_HL_NODE_LIST
  * --------------------------------------- */
-HL_NodeList* readHL_NodeList(const char* filename)
+HL_NodeList* HLNodeList_read(const char* filename)
 {
   HL_NodeList* retv = NULL;
   HL_DEBUG0("ENTER: readHL_NodeList");
 
-  retv = readHL_NodeListFrom(filename, ".");
+  retv = HLNodeList_readFrom(filename, ".");
 
   HL_DEBUG0("EXIT: readHL_NodeList");
   return retv;
@@ -926,7 +926,7 @@ HL_NodeList* readHL_NodeList(const char* filename)
 /* ---------------------------------------
  * SELECT_NODE
  * --------------------------------------- */
-int selectNode(HL_NodeList* nodelist, const char* name)
+int HLNodeList_selectNode(HL_NodeList* nodelist, const char* name)
 {
   HL_Node* node = NULL;
 
@@ -936,8 +936,8 @@ int selectNode(HL_NodeList* nodelist, const char* name)
     return 0;
   }
 
-  if ((node = getHL_Node(nodelist, name)) != NULL) {
-    setHL_NodeMark(node, NMARK_SELECT);
+  if ((node = HLNodeList_getNodeByName(nodelist, name)) != NULL) {
+    HLNode_setMark(node, NMARK_SELECT);
     return 1;
   }
 
@@ -948,9 +948,9 @@ int selectNode(HL_NodeList* nodelist, const char* name)
 /* ---------------------------------------
  * SELECT_ALL_NODES
  * --------------------------------------- */
-int selectAllNodes(HL_NodeList* nodelist)
+int HLNodeList_selectAllNodes(HL_NodeList* nodelist)
 {
-  markHL_NodeListNodes(nodelist, NMARK_SELECT);
+  HLNodeList_markNodes(nodelist, NMARK_SELECT);
 
   return 1;
 }
@@ -959,16 +959,16 @@ int selectAllNodes(HL_NodeList* nodelist)
  * SELECT_METADATA_NODES
  * VOLATILE: Do not attempt to access dataset arrays after calling this.
  * --------------------------------------- */
-int selectMetadataNodes(HL_NodeList* nodelist)
+int HLNodeList_selectMetadataNodes(HL_NodeList* nodelist)
 {
   int i = 0;
   int nNodes = -1;
   HL_DEBUG0("ENTER: selectMetadataNodes");
-  nNodes = getHL_NodeListNumberOfNodes(nodelist);
+  nNodes = HLNodeList_getNumberOfNodes(nodelist);
   for (i = 0; i < nNodes; i++) {
-    HL_Node* node = getHL_NodeListNodeByIndex(nodelist, i);
-    if (getHL_NodeType(node) != DATASET_ID && getHL_NodeDataType(node) != HL_ARRAY) {
-      setHL_NodeMark(node, NMARK_SELECT);
+    HL_Node* node = HLNodeList_getNodeByIndex(nodelist, i);
+    if (HLNode_getType(node) != DATASET_ID && HLNode_getDataType(node) != HL_ARRAY) {
+      HLNode_setMark(node, NMARK_SELECT);
     }
   }
 
@@ -978,7 +978,7 @@ int selectMetadataNodes(HL_NodeList* nodelist)
 /* ---------------------------------------
  * DE-SELECT_NODE
  * --------------------------------------- */
-int deselectNode(HL_NodeList* nodelist, const char* name)
+int HLNodeList_deselectNode(HL_NodeList* nodelist, const char* name)
 {
   HL_Node* node = NULL;
 
@@ -988,9 +988,9 @@ int deselectNode(HL_NodeList* nodelist, const char* name)
     return 0;
   }
 
-  node = getHL_Node(nodelist, name);
+  node = HLNodeList_getNodeByName(nodelist, name);
   if (node != NULL) {
-    setHL_NodeMark(node, NMARK_ORIGINAL);
+    HLNode_setMark(node, NMARK_ORIGINAL);
     return 1;
   }
 
@@ -1001,7 +1001,7 @@ int deselectNode(HL_NodeList* nodelist, const char* name)
 /* ---------------------------------------
  * FETCH_MARKED_NODES
  * --------------------------------------- */
-int fetchMarkedNodes(HL_NodeList* nodelist)
+int HLNodeList_fetchMarkedNodes(HL_NodeList* nodelist)
 {
   int i;
   hid_t file_id = -1;
@@ -1016,7 +1016,7 @@ int fetchMarkedNodes(HL_NodeList* nodelist)
     goto fail;
   }
 
-  if ((filename = getHL_NodeListFileName(nodelist)) == NULL) {
+  if ((filename = HLNodeList_getFileName(nodelist)) == NULL) {
     HL_ERROR0("Could not get filename from nodelist");
     goto fail;
   }
@@ -1031,20 +1031,20 @@ int fetchMarkedNodes(HL_NodeList* nodelist)
     goto fail;
   }
 
-  if ((nNodes =  getHL_NodeListNumberOfNodes(nodelist)) < 0) {
+  if ((nNodes =  HLNodeList_getNumberOfNodes(nodelist)) < 0) {
     HL_ERROR0("Failed to get number of nodes");
     goto fail;
   }
 
   for (i = 0; i < nNodes; i++) {
     HL_Node* node = NULL;
-    if ((node = getHL_NodeListNodeByIndex(nodelist, i)) == NULL) {
+    if ((node = HLNodeList_getNodeByIndex(nodelist, i)) == NULL) {
       HL_ERROR1("Error occured when fetching node at index %d", i);
       goto fail;
     }
-    if (getHL_NodeMark(node) == NMARK_SELECT) {
+    if (HLNode_getMark(node) == NMARK_SELECT) {
       if (!fillNodeWithData(file_id, node)) {
-        HL_ERROR1("Error occured when trying to fill node '%s'",HLNodePrivate_getName(node));
+        HL_ERROR1("Error occured when trying to fill node '%s'",HLNode_getName(node));
         goto fail;
       }
     }
@@ -1061,7 +1061,7 @@ fail:
 /* ---------------------------------------
  * FETCH_NODE
  * --------------------------------------- */
-HL_Node* fetchNode(HL_NodeList* nodelist, const char* name)
+HL_Node* HLNodeList_fetchNode(HL_NodeList* nodelist, const char* name)
 {
   hid_t file_id = -1;
   HL_Node* result = NULL;
@@ -1073,12 +1073,12 @@ HL_Node* fetchNode(HL_NodeList* nodelist, const char* name)
     HL_ERROR0("Inparameters NULL");
     goto fail;
   }
-  if ((filename = getHL_NodeListFileName(nodelist)) == NULL) {
+  if ((filename = HLNodeList_getFileName(nodelist)) == NULL) {
     HL_ERROR0("Could not get filename from nodelist");
     goto fail;
   }
 
-  if ((foundnode = getHL_Node(nodelist, name))==NULL) {
+  if ((foundnode = HLNodeList_getNodeByName(nodelist, name))==NULL) {
     HL_ERROR1("No node: '%s' found", name);
     goto fail;
   }

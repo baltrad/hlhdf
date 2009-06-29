@@ -63,8 +63,8 @@ int main(int argc, char** argv)
    char info_filename[512];
    char data_filename[512];
 
-   initHlHdf();
-   debugHlHdf(0);
+   HL_init();
+   HL_setDebugMode(0);
 
    ProcessName = strdup(argv[0]);
 
@@ -78,7 +78,7 @@ int main(int argc, char** argv)
 	 break;
       case 'd':
 	 hldec_debug=1;
-	 debugHlHdf(2);
+	 HL_setDebugMode(2);
 	 break;
       case 'v':
 	 PrintVersion();
@@ -108,27 +108,27 @@ int main(int argc, char** argv)
       exit(1);
    }
 
-   if(!(nodelist = readHL_NodeList(inputfile))) {
+   if(!(nodelist = HLNodeList_read(inputfile))) {
       fprintf(stderr,"Failed to open HDF file.\n");
       goto fail;
    }
 
-   if(!selectNode(nodelist,fieldname)) {
+   if(!HLNodeList_selectNode(nodelist,fieldname)) {
       fprintf(stderr,"Failed to select field '%s' from file '%s'\n",fieldname,inputfile);
       goto fail;
    }
 
-   if(!fetchMarkedNodes(nodelist)) {
+   if(!HLNodeList_fetchMarkedNodes(nodelist)) {
       fprintf(stderr,"Failed to fetch data\n");
       goto fail;
    }
 
-   if(!(node=getHL_Node(nodelist,fieldname))) {
+   if(!(node=HLNodeList_getNodeByName(nodelist,fieldname))) {
       fprintf(stderr,"Failed to get node '%s' from inputfile\n",fieldname);
       goto fail;
    }
 
-   if(getHL_NodeType(node) != DATASET_ID && getHL_NodeType(node) != ATTRIBUTE_ID) {
+   if(HLNode_getType(node) != DATASET_ID && HLNode_getType(node) != ATTRIBUTE_ID) {
       fprintf(stderr,"Specified field was not a dataset or attribute.\n");
       goto fail;
    }
@@ -145,20 +145,20 @@ int main(int argc, char** argv)
       goto fail;
    }
 
-   if(getHL_NodeType(node)==DATASET_ID) {
+   if(HLNode_getType(node)==DATASET_ID) {
       fprintf(info_fp,"DATATYPE: DATASET\n");
 
    } else {
       fprintf(info_fp,"DATATYPE: ATTRIBUTE\n");
    }
-   fprintf(info_fp,"FIELDNAME: %s\n",getHL_NodeName(node));
-   fprintf(info_fp,"DATASIZE: %d\n",(int)getHL_NodeDataSize(node));
+   fprintf(info_fp,"FIELDNAME: %s\n",HLNode_getName(node));
+   fprintf(info_fp,"DATASIZE: %d\n",(int)HLNode_getDataSize(node));
    fprintf(info_fp,"DATAFORMAT: %s\n",HLNode_getFormatName(node));
-   if(getHL_NodeRank(node)>0) {
+   if(HLNode_getRank(node)>0) {
       fprintf(info_fp,"DIMS: [");
-      for(i = 0; i < getHL_NodeRank(node); i++) {
-	 fprintf(info_fp,"%d",(int)getHL_NodeDimension(node, i));
-	 if(i < getHL_NodeRank(node) - 1)
+      for(i = 0; i < HLNode_getRank(node); i++) {
+	 fprintf(info_fp,"%d",(int)HLNode_getDimension(node, i));
+	 if(i < HLNode_getRank(node) - 1)
 	    fprintf(info_fp,",");
       }
       fprintf(info_fp,"]\n");
@@ -166,16 +166,16 @@ int main(int argc, char** argv)
       fprintf(info_fp,"DIMS: [0]\n");
    }
 
-   npts=(size_t)getHL_NodeNumberOfPoints(node);
+   npts=(size_t)HLNode_getNumberOfPoints(node);
 
-   if(fwrite(getHL_NodeData(node), getHL_NodeDataSize(node), npts, data_fp) != npts) {
+   if(fwrite(HLNode_getData(node), HLNode_getDataSize(node), npts, data_fp) != npts) {
       fprintf(stderr,"Failed to write datafield\n");
       goto fail;
    }
 
    if(info_fp) fclose(info_fp);
    if(data_fp) fclose(data_fp);
-   freeHL_NodeList(nodelist);
+   HLNodeList_free(nodelist);
    free(inputfile);
    free(outputprefix);
    free(fieldname);
@@ -185,7 +185,7 @@ int main(int argc, char** argv)
  fail:
    if(info_fp) fclose(info_fp);
    if(data_fp) fclose(data_fp);
-   freeHL_NodeList(nodelist);
+   HLNodeList_free(nodelist);
    free(inputfile);
    free(outputprefix);
    free(fieldname);

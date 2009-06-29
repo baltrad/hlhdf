@@ -263,22 +263,22 @@ static int doWriteHdf5Attribute(hid_t rootGrp, HL_Node* parentNode, char* parent
     tmpLocId = HLNodePrivate_getHdfID(parentNode);
   }
 
-  if (getHL_NodeRank(childNode) == 0) {
+  if (HLNode_getRank(childNode) == 0) {
     if (writeScalarDataAttribute(tmpLocId,
                                  HLNodePrivate_getTypeId(childNode),
                                  childName,
-                                 getHL_NodeData(childNode)) < 0) {
-      HL_ERROR1("Failed to write scalar data attribute '%s'",HLNodePrivate_getName(childNode));
+                                 HLNode_getData(childNode)) < 0) {
+      HL_ERROR1("Failed to write scalar data attribute '%s'",HLNode_getName(childNode));
       return 0;
     }
   } else {
     if (writeSimpleDataAttribute(tmpLocId,
                                  HLNodePrivate_getTypeId(childNode),
                                  childName,
-                                 getHL_NodeRank(childNode),
+                                 HLNode_getRank(childNode),
                                  HLNodePrivate_getDims(childNode),
-                                 getHL_NodeData(childNode)) < 0) {
-      HL_ERROR1("Failed to write simple data attribute '%s'",HLNodePrivate_getName(childNode));
+                                 HLNode_getData(childNode)) < 0) {
+      HL_ERROR1("Failed to write simple data attribute '%s'",HLNode_getName(childNode));
       return 0;
     }
   }
@@ -314,7 +314,7 @@ static int doWriteHdf5Group(hid_t rootGrp, HL_Node* parentNode, char* parentName
   }
 
   if (hdfid < 0) {
-    HL_ERROR1("Failed to create group %s",HLNodePrivate_getName(childNode));
+    HL_ERROR1("Failed to create group %s",HLNode_getName(childNode));
     return 0;
   }
   HLNodePrivate_setHdfID(childNode, hdfid);
@@ -352,12 +352,12 @@ static int doWriteHdf5Dataset(hid_t rootGrp, HL_Node* parentNode, char* parentNa
   hdfid = createSimpleDataset(tmpLocId,
                               HLNodePrivate_getTypeId(childNode),
                               childName,
-                              getHL_NodeRank(childNode),
+                              HLNode_getRank(childNode),
                               HLNodePrivate_getDims(childNode),
-                              getHL_NodeData(childNode),
+                              HLNode_getData(childNode),
                               compression);
   if (hdfid < 0) {
-    HL_ERROR1("Failed to create dataset %s",HLNodePrivate_getName(childNode));
+    HL_ERROR1("Failed to create dataset %s",HLNode_getName(childNode));
     return 0;
   }
   HLNodePrivate_setHdfID(childNode, hdfid);
@@ -384,11 +384,11 @@ static int doWriteHdf5Datatype(hid_t loc_id, HL_Node* parentNode, char* parentNa
     return 0;
   }
 
-  if ((commitType(loc_id, HLNodePrivate_getName(childNode), HLNodePrivate_getHdfID(childNode))) < 0)
+  if ((commitType(loc_id, HLNode_getName(childNode), HLNodePrivate_getHdfID(childNode))) < 0)
     return 0;
 
   if (H5Tcommitted(HLNodePrivate_getHdfID(childNode)) <= 0) {
-    HL_ERROR1("Failed to commit datatype'%s'",HLNodePrivate_getName(childNode));
+    HL_ERROR1("Failed to commit datatype'%s'",HLNode_getName(childNode));
   }
 
   return 1;
@@ -419,9 +419,9 @@ static int doWriteHdf5Reference(hid_t rootGrp, hid_t file_id, HL_Node* parentNod
   } else {
     tmpLocId = HLNodePrivate_getHdfID(parentNode);
   }
-  if (createReference(tmpLocId, file_id, childName, (char*) getHL_NodeData(childNode)) < 0) {
+  if (createReference(tmpLocId, file_id, childName, (char*) HLNode_getData(childNode)) < 0) {
     HL_ERROR3("Failed to create reference from '%s/%s' to '%s'",
-        parentName,childName, (char*)getHL_NodeData(childNode));
+        parentName,childName, (char*)HLNode_getData(childNode));
     return 0;
   }
   return 1;
@@ -455,30 +455,30 @@ static int doAppendHdf5Attribute(hid_t file_id, HL_Node* parentNode, char* paren
     goto fail;
   }
 
-  if (getHL_NodeRank(childNode) == 0) {
+  if (HLNode_getRank(childNode) == 0) {
     if (writeScalarDataAttribute(loc_id,
                                  HLNodePrivate_getTypeId(childNode),
                                  childName,
-                                 getHL_NodeData(childNode)) < 0) {
+                                 HLNode_getData(childNode)) < 0) {
       HL_ERROR1("Failed to write scalar data attribute '%s'\n",
-                HLNodePrivate_getName(childNode));
+                HLNode_getName(childNode));
       goto fail;
     }
   } else {
     if (writeSimpleDataAttribute(loc_id,
                                  HLNodePrivate_getTypeId(childNode),
                                  childName,
-                                 getHL_NodeRank(childNode),
+                                 HLNode_getRank(childNode),
                                  HLNodePrivate_getDims(childNode),
-                                 getHL_NodeData(childNode)) < 0) {
+                                 HLNode_getData(childNode)) < 0) {
       HL_ERROR1("Failed to write simple data attribute '%s'\n",
-                HLNodePrivate_getName(childNode));
+                HLNode_getName(childNode));
       goto fail;
     }
   }
   status = 1;
 
-  setHL_NodeMark(childNode, NMARK_ORIGINAL);
+  HLNode_setMark(childNode, NMARK_ORIGINAL);
 
 fail:
   HL_H5O_CLOSE(loc_id);
@@ -522,11 +522,11 @@ static int doAppendHdf5Group(hid_t file_id, HL_Node* parentNode, char* parentNam
   }
 
   if ((new_id = H5Gcreate(loc_id, childName, H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT)) < 0) {
-    HL_ERROR1("Failed to create new group %s\n", HLNodePrivate_getName(childNode));
+    HL_ERROR1("Failed to create new group %s\n", HLNode_getName(childNode));
     goto fail;
   }
   status = 1;
-  setHL_NodeMark(childNode, NMARK_ORIGINAL);
+  HLNode_setMark(childNode, NMARK_ORIGINAL);
 fail:
   HL_H5G_CLOSE(loc_id);
   HL_H5G_CLOSE(new_id);
@@ -572,16 +572,16 @@ static int doAppendHdf5Dataset(hid_t file_id, HL_Node* parentNode, char* parentN
   new_id = createSimpleDataset(loc_id,
                                HLNodePrivate_getTypeId(childNode),
                                childName,
-                               getHL_NodeRank(childNode),
+                               HLNode_getRank(childNode),
                                HLNodePrivate_getDims(childNode),
-                               getHL_NodeData(childNode),
+                               HLNode_getData(childNode),
                                compression);
   if (new_id < 0) {
-    HL_ERROR1("Failed to create dataset %s\n", HLNodePrivate_getName(childNode));
+    HL_ERROR1("Failed to create dataset %s\n", HLNode_getName(childNode));
     goto fail;
   }
 
-  setHL_NodeMark(childNode, NMARK_ORIGINAL);
+  HLNode_setMark(childNode, NMARK_ORIGINAL);
   status = 1;
 fail:
   HL_H5G_CLOSE(loc_id);
@@ -613,9 +613,9 @@ static int doAppendHdf5Reference(hid_t rootGrp, hid_t file_id, HL_Node* parentNo
   } else {
     tmpLocId = HLNodePrivate_getHdfID(parentNode);
   }
-  if (createReference(tmpLocId, file_id, childName, (char*) getHL_NodeData(childNode)) < 0) {
+  if (createReference(tmpLocId, file_id, childName, (char*) HLNode_getData(childNode)) < 0) {
     HL_ERROR3("Failed to create reference from '%s/%s' to '%s'",
-        parentName, childName, (char*)getHL_NodeData(childNode));
+        parentName, childName, (char*)HLNode_getData(childNode));
     return 0;
   }
   return 1;
@@ -624,7 +624,7 @@ static int doAppendHdf5Reference(hid_t rootGrp, hid_t file_id, HL_Node* parentNo
 /*@} End of Private functions */
 
 /*@{ Interface functions */
-int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
+int HLNodeList_write(HL_NodeList* nodelist, HL_FileCreationProperty* property,
   HL_Compression* compression)
 {
   int i;
@@ -644,7 +644,7 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
     goto fail;
   }
 
-  if ((filename = getHL_NodeListFileName(nodelist)) == NULL) {
+  if ((filename = HLNodeList_getFileName(nodelist)) == NULL) {
     HL_ERROR0("Could not get filename from nodelist");
     goto fail;
   }
@@ -659,13 +659,13 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
     goto fail;
   }
 
-  if ((nNodes = getHL_NodeListNumberOfNodes(nodelist)) < 0) {
+  if ((nNodes = HLNodeList_getNumberOfNodes(nodelist)) < 0) {
     HL_ERROR0("Failed to get number of nodes");
     goto fail;
   }
 
   for (i = 0; i < nNodes; i++) {
-    HL_Node* node = getHL_NodeListNodeByIndex(nodelist, i);
+    HL_Node* node = HLNodeList_getNodeByIndex(nodelist, i);
     if (node == NULL) {
       HL_ERROR1("Failed to get node at index %d", i);
       goto fail;
@@ -677,11 +677,11 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
       goto fail;
     }
     if ((strcmp(parentName, "") != 0) &&
-        !(parentNode = getHL_Node(nodelist, parentName))) {
+        !(parentNode = HLNodeList_getNodeByName(nodelist, parentName))) {
       HL_ERROR1("Failed to locate parent node '%s'",parentName);
       goto fail;
     }
-    switch (getHL_NodeType(node)) {
+    switch (HLNode_getType(node)) {
     case ATTRIBUTE_ID: {
       if (!doWriteHdf5Attribute(gid, parentNode, parentName,
                                 node, childName)) {
@@ -705,7 +705,7 @@ int writeHL_NodeList(HL_NodeList* nodelist, HL_FileCreationProperty* property,
       } else {
         if (!doWriteHdf5Dataset(gid, parentNode, parentName,
                                 node, childName,
-                                getHL_NodeCompression(node))) {
+                                HLNode_getCompression(node))) {
           goto fail;
         }
       }
@@ -742,7 +742,7 @@ fail:
   return status;
 }
 
-int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
+int HLNodeList_update(HL_NodeList* nodelist, HL_Compression* compression)
 {
   int i;
   HL_Node* parentNode = NULL;
@@ -761,7 +761,7 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
     goto fail;
   }
 
-  if ((filename = getHL_NodeListFileName(nodelist)) == NULL) {
+  if ((filename = HLNodeList_getFileName(nodelist)) == NULL) {
     HL_ERROR0("Could not get filename from nodelist");
     goto fail;
   }
@@ -776,18 +776,18 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
     goto fail;
   }
 
-  if ((nNodes = getHL_NodeListNumberOfNodes(nodelist)) < 0) {
+  if ((nNodes = HLNodeList_getNumberOfNodes(nodelist)) < 0) {
     HL_ERROR0("Failed to get number of nodes");
     goto fail;
   }
 
   for (i = 0; i < nNodes; i++) {
-    HL_Node* node = getHL_NodeListNodeByIndex(nodelist, i);
+    HL_Node* node = HLNodeList_getNodeByIndex(nodelist, i);
     if (node == NULL) {
       HL_ERROR1("Failed to get node at index %d", i);
       goto fail;
     }
-    if (getHL_NodeMark(node) == NMARK_CREATED) {
+    if (HLNode_getMark(node) == NMARK_CREATED) {
       HLHDF_FREE(parentName);
       HLHDF_FREE(childName);
       if (!extractParentChildName(node, &parentName, &childName)) {
@@ -795,11 +795,11 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
         goto fail;
       }
       if ((strcmp(parentName, "") != 0) &&
-           !(parentNode = getHL_Node(nodelist, parentName))) {
+           !(parentNode = HLNodeList_getNodeByName(nodelist, parentName))) {
         HL_ERROR1("Failed to locate parent node '%s'\n", parentName);
         goto fail;
       }
-      switch (getHL_NodeType(node)) {
+      switch (HLNode_getType(node)) {
       case ATTRIBUTE_ID: {
         if (!doAppendHdf5Attribute(file_id, parentNode, parentName,
                                    node, childName)) {
@@ -823,7 +823,7 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
         } else {
           if (!doAppendHdf5Dataset(file_id, parentNode, parentName,
                                    node, childName,
-                                   getHL_NodeCompression(node))) {
+                                   HLNode_getCompression(node))) {
             goto fail;
           }
         }
@@ -842,7 +842,7 @@ int updateHL_NodeList(HL_NodeList* nodelist, HL_Compression* compression)
         break;
       }
       default: {
-        HL_ERROR1("Unsupported node type for update '%d'\n", getHL_NodeType(node));
+        HL_ERROR1("Unsupported node type for update '%d'\n", HLNode_getType(node));
         goto fail;
         break;
       }

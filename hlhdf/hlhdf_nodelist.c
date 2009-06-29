@@ -27,7 +27,7 @@ struct  _HL_NodeList {
 /*@{ End of Structs */
 
 /*@{ Interface functions */
-HL_NodeList* newHL_NodeList(void)
+HL_NodeList* HLNodeList_new(void)
 {
   HL_NodeList* retv = NULL;
   int i;
@@ -51,7 +51,7 @@ HL_NodeList* newHL_NodeList(void)
   return retv;
 }
 
-void freeHL_NodeList(HL_NodeList* nodelist)
+void HLNodeList_free(HL_NodeList* nodelist)
 {
   int i;
   HL_SPEWDEBUG0("ENTER: freeHL_NodeList");
@@ -60,7 +60,7 @@ void freeHL_NodeList(HL_NodeList* nodelist)
 
   if (nodelist->nodes) {
     for (i = 0; i < nodelist->nNodes; i++) {
-      freeHL_Node(nodelist->nodes[i]);
+      HLNode_free(nodelist->nodes[i]);
     }
     HLHDF_FREE(nodelist->nodes);
   }
@@ -68,7 +68,7 @@ void freeHL_NodeList(HL_NodeList* nodelist)
   HLHDF_FREE(nodelist);
 }
 
-int setHL_NodeListFileName(HL_NodeList* nodelist, const char* filename)
+int HLNodeList_setFileName(HL_NodeList* nodelist, const char* filename)
 {
   int status = 0;
   char* newfilename = NULL;
@@ -91,7 +91,7 @@ fail:
   return status;
 }
 
-char* getHL_NodeListFileName(HL_NodeList* nodelist)
+char* HLNodeList_getFileName(HL_NodeList* nodelist)
 {
   char* retv = NULL;
 
@@ -109,7 +109,7 @@ char* getHL_NodeListFileName(HL_NodeList* nodelist)
   return retv;
 }
 
-int getHL_NodeListNumberOfNodes(HL_NodeList* nodelist)
+int HLNodeList_getNumberOfNodes(HL_NodeList* nodelist)
 {
   if (nodelist == NULL) {
     HL_ERROR0("Inparameters NULL");
@@ -118,7 +118,7 @@ int getHL_NodeListNumberOfNodes(HL_NodeList* nodelist)
   return nodelist->nNodes;
 }
 
-HL_Node* getHL_NodeListNodeByIndex(HL_NodeList* nodelist, int index)
+HL_Node* HLNodeList_getNodeByIndex(HL_NodeList* nodelist, int index)
 {
   if (nodelist == NULL) {
     HL_ERROR0("Inparameters NULL");
@@ -130,12 +130,12 @@ HL_Node* getHL_NodeListNodeByIndex(HL_NodeList* nodelist, int index)
   return nodelist->nodes[index];
 }
 
-void markHL_NodeListNodes(HL_NodeList* nodelist, const HL_NodeMark mark)
+void HLNodeList_markNodes(HL_NodeList* nodelist, const HL_NodeMark mark)
 {
   int i = 0;
   if (nodelist != NULL) {
     for (i = 0; i < nodelist->nNodes; i++) {
-      setHL_NodeMark(nodelist->nodes[i], mark);
+      HLNode_setMark(nodelist->nodes[i], mark);
     }
   }
 }
@@ -144,7 +144,7 @@ void markHL_NodeListNodes(HL_NodeList* nodelist, const HL_NodeMark mark)
  * If 1 is returned, then responsibility has been taken, otherwise
  * the caller has to free both nodelist and node by him self
  */
-int addHL_Node(HL_NodeList* nodelist, HL_Node* node)
+int HLNodeList_addNode(HL_NodeList* nodelist, HL_Node* node)
 {
   int newallocsize;
   int i;
@@ -159,14 +159,16 @@ int addHL_Node(HL_NodeList* nodelist, HL_Node* node)
     HL_ERROR0("Inparameters NULL");
     return 0;
   }
-  type = getHL_NodeType(node);
-  tmpStr = getHL_NodeName(node);
+  type = HLNode_getType(node);
+  if (HLNode_getName(node)) {
+    tmpStr = HLHDF_STRDUP(HLNode_getName(node));
+  }
   if (tmpStr == NULL) {
     HL_ERROR0("Failed to get node name");
     goto fail;
   }
 
-  if (getHL_Node(nodelist, tmpStr) != NULL) {
+  if (HLNodeList_getNodeByName(nodelist, tmpStr) != NULL) {
     HL_ERROR1("Node %s already exists", tmpStr);
     goto fail;
   }
@@ -177,9 +179,9 @@ int addHL_Node(HL_NodeList* nodelist, HL_Node* node)
   } else {
     tmpPtr[0] = '\0';
     if (strcmp(tmpStr, "") != 0) {
-      HL_Node* node = getHL_Node(nodelist, tmpStr);
+      HL_Node* node = HLNodeList_getNodeByName(nodelist, tmpStr);
       if (node != NULL) {
-        HL_Type nType = getHL_NodeType(node);
+        HL_Type nType = HLNode_getType(node);
 
         if ((nType == GROUP_ID) ||
             (nType == DATASET_ID && (type == ATTRIBUTE_ID || type == REFERENCE_ID))) {
@@ -218,7 +220,7 @@ fail:
   return status;
 }
 
-HL_Node* getHL_Node(HL_NodeList* nodelist, const char* nodeName)
+HL_Node* HLNodeList_getNodeByName(HL_NodeList* nodelist, const char* nodeName)
 {
   int i;
   HL_SPEWDEBUG0("ENTER: getNode");
@@ -228,7 +230,7 @@ HL_Node* getHL_Node(HL_NodeList* nodelist, const char* nodeName)
   }
 
   for (i = 0; i < nodelist->nNodes; i++) {
-    if (equalsHL_NodeName(nodelist->nodes[i], nodeName)) {
+    if (HLNode_nameEquals(nodelist->nodes[i], nodeName)) {
       return nodelist->nodes[i];
     }
   }
@@ -238,15 +240,15 @@ HL_Node* getHL_Node(HL_NodeList* nodelist, const char* nodeName)
   return NULL;
 }
 
-HL_CompoundTypeDescription* findHL_CompoundTypeDescription(
+HL_CompoundTypeDescription* HLNodeList_findCompoundDescription(
   HL_NodeList* nodelist, unsigned long objno0, unsigned long objno1)
 {
   int i;
   HL_CompoundTypeDescription* retv = NULL;
   HL_SPEWDEBUG0("ENTER: findHL_CompoundTypeDescription");
   for (i = 0; i < nodelist->nNodes; i++) {
-    if (getHL_NodeType(nodelist->nodes[i]) == TYPE_ID) {
-      HL_CompoundTypeDescription* descr = getHL_NodeCompoundDescription(nodelist->nodes[i]);
+    if (HLNode_getType(nodelist->nodes[i]) == TYPE_ID) {
+      HL_CompoundTypeDescription* descr = HLNode_getCompoundDescription(nodelist->nodes[i]);
       if (descr != NULL) {
         if (objno0 == descr->objno[0] && objno1 == descr->objno[1]) {
           retv = descr;

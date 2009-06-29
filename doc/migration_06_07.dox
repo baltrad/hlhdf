@@ -1,10 +1,12 @@
-/** \page migration_06_07 Migration Guide from 0.6 to 0.7
+/** \page migration_06_07 Migration Guide from 0.6 to 0.7+
 We have had quite a few deprecated functions that has been hanging around for a while. Now, when
 HDF5 1.8.x was released and they altered some functions we have taken the opportunity to do a
-major restructure of HL-HDF. Most of the deprecated functions has been removed and other functions
-has been moved around or renamed to keep a consistent naming in HL-HDF. If, for some reason you find
-that you are missing a nessecary function and can not use the functions that are published, please
-let us know and we will attempt to implement a corresponding function.
+major restructure of HL-HDF. Most of the deprecated functions has been removed and we have changed the
+naming convention for most of the functions to keep a consistent naming.
+If, for some reason you find that you are missing a nessecary function and can not use the functions 
+that are published, please let us know and we will attempt to implement a corresponding function.
+
+
 
 \section mig0607_header_files Header files
 Firstly, we only require that you are including one file to get access to most of the functionality.
@@ -28,37 +30,60 @@ Some functions really do not have any meaning that we support since they easilly
 by using the HDF5 apis instead. Other functions might only have been renamed to keep a consistent
 naming scheme or might be superfluent.
 
-\li doWriteHdf5Xxxx functions has been removed, they should not be accessed manually. It is up to writeHL_NodeList
-\li createHlHdfFile signature has been changed. See \ref createHlHdfFile
-\li addNode has been renamed to \ref addHL_Node.
-\li getNode has been renamed to \ref getHL_Node.
-\li updateNodeList has been renamed to \ref updateHL_NodeList.
-\li writeNodeList has been removed, use \ref writeHL_NodeList instead. Same behaviour can be achieved by writing
+\li doWriteHdf5Xxxx functions has been removed, they should not be accessed manually. It is up to HLNodeList_write
+\li createHlHdfFile signature has been removed
+\li addNode has been renamed to \ref HLNodeList_addNode
+\li getNode has been renamed to \ref HLNodeList_getNodeByName
+\li updateNodeList has been renamed to \ref HLNodeList_update
+\li writeNodeList has been removed, use \ref HLNodeList_write instead. Same behaviour can be achieved by writing
 \verbatim
 HL_Compression compr;
 initHL_Compression(&compr, CT_ZLIB);
 compr.level = doCompress;
 writeHL_NodeList(nodelist, NULL, &compr);
 \endverbatim
+
 \li Macro ALIGN has been renamed to \ref HLHDF_ALIGN
 \li closeDataset has been removed, use H5Dclose instead
 \li closeGroup has been removed, use H5Gclose instead
 \li addCompoundTypeAttribute has been renamed to \ref addHL_CompoundTypeAttribute
 \li copyCompoundTypeDescription has been renamed to \ref copyHL_CompoundTypeDescription
-\li setScalarValue has been renamed to \ref setHL_NodeScalarValue
+\li setScalarValue has been renamed to \ref HLNode_setScalarValue
+\li setArrayValue has been renamed to \ref HLNode_setArrayValue
 \li scanNodeList has been removed
 \li scanCompoundTypeDescription has been removed
-\li commitDatatype has been renamed to \ref commitHL_Datatype (and deprecated)
-\li findCompoundTypeDescription has been renamed to \ref findHL_CompoundTypeDescription
+\li commitDatatype has been renamed to \ref HLNode_commitType (and deprecated)
+\li findCompoundTypeDescription has been renamed to \ref HLNodeList_findCompoundDescription
 \li createGroup has been removed. Same behaviour can be achieved by using H5G apis.
 \li setTypeSize has been removed, use H5Tset_size instead.
-\li createStringType has been removed, use H5T apis instead.
-\li closeHlHdfFile has been removed, use H5Fclose instead.
+\li createStringType has been removed, use H5T apis instead, same behaviour can be achieved by writing
 \verbatim
 type = H5Tcopy(H5T_C_S1);
 H5Tset_size(type,length);
 \endverbatim
-  
-  
- 
+\li closeHlHdfFile has been removed, use H5Fclose instead.
+
+\section mig0607_upgrade_script Upgrade script
+We have added a very simple upgrade script that will help you with the renaming of the .c and .h files.
+It is called &lt;HLHDF src&gt;/tools/upgrade_0_7plus.sh and there is also a perl script called
+&lt;HLHDF src&gt;/tools/rename_functions.pl.
+
+To use upgrade_0_7plus.sh script, go to the root directory of your source code and execute:
+\verbatim
+%> <HLHDF src>/tools/upgrade_0_7plus.sh
+\endverbatim
+This will locate all .h and .c files in this directory and downwards in the directory structure and
+rename the old HLHDF functions into the new naming convention.
+
+If you want to play it safe, it is also possible to use the perl script instead and perform the
+name conversion manually.
+\verbatim
+%> perl <HLHDF src>/tools/rename_functions.pl <the file name to be translated>
+\endverbatim
+This command will perform the translation and print the translated file to stdout.
+
+<b> NOTE!!! We do not take any reponsibility for any damage that these scripts might cause since it is
+a very basic renaming code. Before running this script make sure that you have got a copy of the
+source code that you are planning to migrate. </b>
+
 */

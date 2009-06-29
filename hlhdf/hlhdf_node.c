@@ -44,11 +44,11 @@ static HL_Node* newHL_NodeWithType(const char* name, HL_Type type)
 {
   HL_Node* retv = NULL;
   HL_SPEWDEBUG0("ENTER: newHL_NodeWithType");
-  if (!(retv = newHL_Node(name))) {
+  if (!(retv = HLNode_new(name))) {
     HL_ERROR0("Failed to allocate HL_Node item");
     goto fail;
   }
-  setHL_NodeType(retv, type);
+  retv->type = type;
 fail:
   HL_SPEWDEBUG0("EXIT: newHL_NodeWithType");
   return retv;
@@ -108,12 +108,6 @@ fail:
   return 0;
 }
 
-char* HLNodePrivate_getName(HL_Node* node)
-{
-  HL_ASSERT((node != NULL), "node was NULL");
-  return node->name;
-}
-
 void HLNodePrivate_setHdfID(HL_Node* node, hid_t hdfid)
 {
   HL_ASSERT((node != NULL), "HLNodePrivate_setHdfID called with node == NULL");
@@ -162,7 +156,7 @@ hid_t HLNodePrivate_getTypeId(HL_Node* node)
 /*@} End of Private functions */
 
 /*@{ Interface functions */
-HL_Node* newHL_Node(const char* name)
+HL_Node* HLNode_new(const char* name)
 {
   HL_Node* retv = NULL;
   HL_SPEWDEBUG0("ENTER: newHL_Node");
@@ -193,23 +187,23 @@ HL_Node* newHL_Node(const char* name)
 
   if (retv->name == NULL) {
     HL_ERROR0("Could not allocate memory when creating node");
-    freeHL_Node(retv);
+    HLNode_free(retv);
     retv = NULL;
   }
 fail:
   return retv;
 }
 
-void freeHL_Node(HL_Node* node)
+void HLNode_free(HL_Node* node)
 {
   HL_SPEWDEBUG0("ENTER: freeHL_Node");
   if (!node)
     return;
 
   if (node->typeId >= 0) {
-    disableErrorReporting();
+    HL_disableErrorReporting();
     H5Tclose(node->typeId);
-    enableErrorReporting();
+    HL_enableErrorReporting();
   }
 
   HLNodePrivate_setHdfID(node, -1);
@@ -219,36 +213,36 @@ void freeHL_Node(HL_Node* node)
   HLHDF_FREE(node->data);
   HLHDF_FREE(node->rawdata);
   freeHL_CompoundTypeDescription(node->compoundDescription);
-  freeHL_Compression(node->compression);
+  HLCompression_free(node->compression);
   HLHDF_FREE(node);
 }
 
-HL_Node* newHL_Group(const char* name)
+HL_Node* HLNode_newGroup(const char* name)
 {
   return newHL_NodeWithType(name, GROUP_ID);
 }
 
-HL_Node* newHL_Attribute(const char* name)
+HL_Node* HLNode_newAttribute(const char* name)
 {
   return newHL_NodeWithType(name, ATTRIBUTE_ID);
 }
 
-HL_Node* newHL_Dataset(const char* name)
+HL_Node* HLNode_newDataset(const char* name)
 {
   return newHL_NodeWithType(name, DATASET_ID);
 }
 
-HL_Node* newHL_Datatype(const char* name)
+HL_Node* HLNode_newDatatype(const char* name)
 {
   return newHL_NodeWithType(name, TYPE_ID);
 }
 
-HL_Node* newHL_Reference(const char* name)
+HL_Node* HLNode_newReference(const char* name)
 {
   return newHL_NodeWithType(name, REFERENCE_ID);
 }
 
-HL_Node* copyHL_Node(HL_Node* node)
+HL_Node* HLNode_copy(HL_Node* node)
 {
   hsize_t npts;
   HL_Node* retv = NULL;
@@ -256,20 +250,20 @@ HL_Node* copyHL_Node(HL_Node* node)
   if (!node)
     return NULL;
 
-  retv = newHL_Node(node->name);
+  retv = HLNode_new(node->name);
   if (retv == NULL) {
     goto fail;
   }
-  if (!setHL_NodeDimensions(retv, node->ndims, node->dims)) {
+  if (!HLNode_setDimensions(retv, node->ndims, node->dims)) {
     goto fail;
   }
   retv->type = node->type;
   retv->dSize = node->dSize;
   retv->rdSize = node->rdSize;
-  if(!setHL_NodeDimensions(retv, node->ndims, node->dims)) {
+  if(!HLNode_setDimensions(retv, node->ndims, node->dims)) {
     goto fail;
   }
-  npts = getHL_NodeNumberOfPoints(retv);
+  npts = HLNode_getNumberOfPoints(retv);
 
   retv->data = (unsigned char*)HLHDF_MALLOC(npts*retv->dSize);
   memcpy(retv->data,node->data,npts*retv->dSize);
@@ -297,7 +291,7 @@ fail:
   return retv;
 }
 
-int setHL_NodeScalarValue(HL_Node* node, size_t sz, unsigned char* value,
+int HLNode_setScalarValue(HL_Node* node, size_t sz, unsigned char* value,
   const char* fmt, hid_t typid)
 {
   unsigned char* data = NULL;
@@ -356,7 +350,7 @@ fail:
   return status;
 }
 
-int setHL_NodeArrayValue(HL_Node* node, size_t sz, int ndims, hsize_t* dims,
+int HLNode_setArrayValue(HL_Node* node, size_t sz, int ndims, hsize_t* dims,
   unsigned char* value, const char* fmt, hid_t typid)
 {
   int i;
@@ -405,7 +399,7 @@ int setHL_NodeArrayValue(HL_Node* node, size_t sz, int ndims, hsize_t* dims,
     }
   }
 
-  if (!setHL_NodeDimensions(node, ndims, dims)) {
+  if (!HLNode_setDimensions(node, ndims, dims)) {
     HL_ERROR0("Failed to set dimensions");
     goto fail;
   }
@@ -431,44 +425,37 @@ fail:
   return status;
 }
 
-char* getHL_NodeName(HL_Node* node)
+const char* HLNode_getName(HL_Node* node)
 {
-  char* result = NULL;
-
   HL_ASSERT((node != NULL), "equalsHL_NodeName called with node == NULL");
-
-  result = HLHDF_STRDUP(node->name);
-  if (result == NULL) {
-    HL_ERROR0("Failed to allocate memory");
-  }
-  return result;
+  return node->name;
 }
 
-const unsigned char* getHL_NodeData(HL_Node* node)
+unsigned char* HLNode_getData(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeData called with node == NULL");
-  return (const unsigned char*)node->data;
+  return node->data;
 }
 
-size_t getHL_NodeDataSize(HL_Node* node)
+size_t HLNode_getDataSize(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeDataSize called with node == NULL");
   return node->dSize;
 }
 
-const unsigned char* getHL_NodeRawdata(HL_Node* node)
+unsigned char* HLNode_getRawdata(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeData called with node == NULL");
-  return (const unsigned char*)node->rawdata;
+  return node->rawdata;
 }
 
-size_t getHL_NodeRawdataSize(HL_Node* node)
+size_t HLNode_getRawdataSize(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeRawdataSize called with node == NULL");
   return node->rdSize;
 }
 
-int equalsHL_NodeName(HL_Node* node, const char* name)
+int HLNode_nameEquals(HL_Node* node, const char* name)
 {
   HL_ASSERT((node != NULL), "equalsHL_NodeName called with node == NULL");
 
@@ -479,25 +466,19 @@ int equalsHL_NodeName(HL_Node* node, const char* name)
   return (strcmp(node->name, name) == 0 ? 1 : 0);
 }
 
-void setHL_NodeMark(HL_Node* node, const HL_NodeMark mark)
+void HLNode_setMark(HL_Node* node, const HL_NodeMark mark)
 {
   HL_ASSERT((node != NULL), "setHL_NodeMark called with node == NULL");
   node->mark = mark;
 }
 
-HL_NodeMark getHL_NodeMark(HL_Node* node)
+HL_NodeMark HLNode_getMark(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeMark called with node == NULL");
   return node->mark;
 }
 
-void setHL_NodeType(HL_Node* node, const HL_Type type)
-{
-  HL_ASSERT((node != NULL), "setHL_NodeType called with node == NULL");
-  node->type = type;
-}
-
-HL_Type getHL_NodeType(HL_Node* node)
+HL_Type HLNode_getType(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeType called with node == NULL");
   return node->type;
@@ -515,20 +496,20 @@ HL_FormatSpecifier HLNode_getFormat(HL_Node* node)
   return node->format;
 }
 
-void setHL_NodeDataType(HL_Node* node, HL_DataType datatype)
+void HLNode_setDataType(HL_Node* node, HL_DataType datatype)
 {
   HL_ASSERT((node != NULL), "setHL_NodeDataType called with node == NULL");
   node->dataType = datatype;
 }
 
-HL_DataType getHL_NodeDataType(HL_Node* node)
+HL_DataType HLNode_getDataType(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeDataType called with node == NULL");
   return node->dataType;
 }
 
 
-int setHL_NodeDimensions(HL_Node* node, int ndims, hsize_t* dims)
+int HLNode_setDimensions(HL_Node* node, int ndims, hsize_t* dims)
 {
   hsize_t* tmpdims = NULL;
   HL_ASSERT((node != NULL), "setHL_NodeDimensions called with node == NULL");
@@ -554,7 +535,7 @@ fail:
   return status;
 }
 
-void getHL_NodeDimensions(HL_Node* node, int* ndims, hsize_t** dims)
+void HLNode_getDimensions(HL_Node* node, int* ndims, hsize_t** dims)
 {
   HL_ASSERT((node != NULL), "setHL_NodeDimensions called with node == NULL");
 
@@ -575,13 +556,13 @@ void getHL_NodeDimensions(HL_Node* node, int* ndims, hsize_t** dims)
   }
 }
 
-int getHL_NodeRank(HL_Node* node)
+int HLNode_getRank(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeRank called with node == NULL");
   return node->ndims;
 }
 
-hsize_t getHL_NodeDimension(HL_Node* node, int index)
+hsize_t HLNode_getDimension(HL_Node* node, int index)
 {
   HL_ASSERT((node != NULL), "getHL_NodeRank called with node == NULL");
   if (index < 0 || index >= node->ndims || node->dims == NULL) {
@@ -590,7 +571,7 @@ hsize_t getHL_NodeDimension(HL_Node* node, int index)
   return node->dims[index];
 }
 
-hsize_t getHL_NodeNumberOfPoints(HL_Node* node)
+hsize_t HLNode_getNumberOfPoints(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeRank called with node == NULL");
   if (node->ndims == 0) {
@@ -607,33 +588,33 @@ hsize_t getHL_NodeNumberOfPoints(HL_Node* node)
   return 0;
 }
 
-void setHL_NodeCompoundDescription(HL_Node* node, HL_CompoundTypeDescription* descr)
+void HLNode_setCompoundDescription(HL_Node* node, HL_CompoundTypeDescription* descr)
 {
   HL_ASSERT((node != NULL), "setHL_NodeCompoundDescription called with node == NULL");
   freeHL_CompoundTypeDescription(node->compoundDescription);
   node->compoundDescription = descr;
 }
 
-HL_CompoundTypeDescription* getHL_NodeCompoundDescription(HL_Node* node)
+HL_CompoundTypeDescription* HLNode_getCompoundDescription(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeCompoundDescription called with node == NULL");
   return node->compoundDescription;
 }
 
-HL_Compression* getHL_NodeCompression(HL_Node* node)
+HL_Compression* HLNode_getCompression(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "getHL_NodeCompression called with node == NULL");
   return node->compression;
 }
 
-void setHL_NodeCompression(HL_Node* node, HL_Compression* compression)
+void HLNode_setCompression(HL_Node* node, HL_Compression* compression)
 {
   HL_ASSERT((node != NULL), "setHL_NodeCompression called with node == NULL");
-  freeHL_Compression(node->compression);
+  HLCompression_free(node->compression);
   node->compression = compression;
 }
 
-int commitHL_Datatype(HL_Node* node, hid_t testStruct_hid)
+int HLNode_commitType(HL_Node* node, hid_t testStruct_hid)
 {
   HL_ASSERT((node != NULL), "commitHL_Datatype called with node == NULL");
   HL_SPEWDEBUG0("ENTER: commitDatatype");

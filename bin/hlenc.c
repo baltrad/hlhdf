@@ -86,8 +86,8 @@ int main(int argc, char** argv)
   strcpy(dimsString, "");
   dataSize = 0;
 
-  initHlHdf();
-  debugHlHdf(0);
+  HL_init();
+  HL_setDebugMode(0);
 
   ProcessName = strdup(argv[0]);
 
@@ -101,7 +101,7 @@ int main(int argc, char** argv)
       break;
     case 'd':
       hlenc_debug = 1;
-      debugHlHdf(2);
+      HL_setDebugMode(2);
       break;
     case 'v':
       PrintVersion();
@@ -135,7 +135,7 @@ int main(int argc, char** argv)
     exit(1);
   }
 
-  if (!(nodelist = newHL_NodeList())) {
+  if (!(nodelist = HLNodeList_new())) {
     fprintf(stderr, "Failed to allocate nodelist\n");
     goto fail;
   }
@@ -227,9 +227,9 @@ int main(int argc, char** argv)
   }
 
   if (strcmp(dataType, "ATTRIBUTE") == 0) {
-    node = newHL_Attribute(fieldName);
+    node = HLNode_newAttribute(fieldName);
   } else {
-    node = newHL_Dataset(fieldName);
+    node = HLNode_newDataset(fieldName);
   }
   if (!node) {
     fprintf(stderr, "Failed to allocate %s node for %s\n", dataType, fieldName);
@@ -293,33 +293,33 @@ int main(int argc, char** argv)
 
   if (dims[0] == 0) {
     /*Add, should write a scalar value*/
-    if (!setHL_NodeScalarValue(node,dataSize,(unsigned char*)datafield,dataFormat,-1)) {
+    if (!HLNode_setScalarValue(node,dataSize,(unsigned char*)datafield,dataFormat,-1)) {
       fprintf(stderr, "Failed to set scalar value\n");
       goto fail;
     }
   } else {
     /*Ahh, probably a simple value*/
-    if (!setHL_NodeArrayValue(node,dataSize,ndims,dims,(unsigned char*)datafield,dataFormat,-1)) {
+    if (!HLNode_setArrayValue(node,dataSize,ndims,dims,(unsigned char*)datafield,dataFormat,-1)) {
       fprintf(stderr, "Failed to set array value\n");
       goto fail;
     }
   }
 
-  if (!addHL_Node(nodelist, node)) {
-    fprintf(stderr, "Failed to add node (%s) to nodelist\n", getHL_NodeName(node));
+  if (!HLNodeList_addNode(nodelist, node)) {
+    fprintf(stderr, "Failed to add node (%s) to nodelist\n", HLNode_getName(node));
     goto fail;
   }
   node = NULL; /*nodelist has got the responsibility now*/
 
-  if (!setHL_NodeListFileName(nodelist,outputfile)) {
+  if (!HLNodeList_setFileName(nodelist,outputfile)) {
     fprintf(stderr, "Failed to set the output filename %s\n", outputfile);
     goto fail;
   }
 
-  initHL_Compression(&compression, CT_ZLIB);
+  HLCompression_init(&compression, CT_ZLIB);
   compression.level = compressLevel;
 
-  if (!writeHL_NodeList(nodelist, NULL, &compression)) {
+  if (!HLNodeList_write(nodelist, NULL, &compression)) {
     fprintf(stderr, "Failed to write nodelist\n");
     goto fail;
   }
@@ -331,8 +331,8 @@ int main(int argc, char** argv)
     free(inputprefix);
   if (outputfile)
     free(outputfile);
-  freeHL_NodeList(nodelist);
-  freeHL_Node(node);
+  HLNodeList_free(nodelist);
+  HLNode_free(node);
   if (info_fp)
     fclose(info_fp);
   if (data_fp)
@@ -349,8 +349,8 @@ fail:
     free(inputprefix);
   if (outputfile)
     free(outputfile);
-  freeHL_NodeList(nodelist);
-  freeHL_Node(node);
+  HLNodeList_free(nodelist);
+  HLNode_free(node);
   if (info_fp)
     fclose(info_fp);
   if (data_fp)
