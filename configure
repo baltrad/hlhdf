@@ -1267,11 +1267,16 @@ if test -n "$ac_init_help"; then
 
   cat <<\_ACEOF
 
+Optional Features:
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-debug-memory     Turns on the hlhdf memory debugging. This should usually not be activated.
+
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
- --with-python=(yes|no)     Compile for python
- --with-fortran=yes|no Configure with fortran
+  --with-python=(yes|no)     Compile for python
+  --with-fortran=yes|no Configure with fortran
   --with-numpy=INC     Use the numpy include file
   --with-zlib=INC,LIB     Use the GNU zlib compression
   --with-hdf5=INC,LIB       Use the HDF5 library
@@ -7572,6 +7577,15 @@ fi
 
 PYDEFS="$PYDEFS $BYTE_ORDER"
 
+debugmemory=no
+# Check whether --enable-debug-memory was given.
+if test "${enable_debug_memory+set}" = set; then
+  enableval=$enable_debug_memory; debugmemory=$enableval
+fi
+
+if [ "x$debugmemory" = "xyes" ]; then
+  PYOPT="$PYOPT -DHLHDF_MEMORY_DEBUG"
+fi
 
 { echo "$as_me:$LINENO: checking system version" >&5
 echo $ECHO_N "checking system version... $ECHO_C" >&6; }
@@ -7760,7 +7774,6 @@ echo "${ECHO_T}No" >&6; }
 esac
 
 
-#AC_SUBST(PYCC)
 
 
 

@@ -5,6 +5,7 @@
  * @date 2009-06-11
  */
 #include "hlhdf.h"
+#include "hlhdf_alloc.h"
 #include "hlhdf_private.h"
 #include "hlhdf_defines_private.h"
 #include "hlhdf_node_private.h"
@@ -170,13 +171,13 @@ HL_Node* newHL_Node(const char* name)
     goto fail;
   }
 
-  if (!(retv = (HL_Node*) malloc(sizeof(HL_Node)))) {
+  if (!(retv = (HL_Node*) HLHDF_MALLOC(sizeof(HL_Node)))) {
     HL_ERROR0("Failed to allocate HL_Node");
     goto fail;
   }
   retv->type = UNDEFINED_ID;
   retv->format = HLHDF_UNDEFINED;
-  retv->name = strdup(name);
+  retv->name = HLHDF_STRDUP(name);
   retv->ndims = 0;
   retv->dims = NULL;
   retv->data = NULL;
@@ -270,11 +271,11 @@ HL_Node* copyHL_Node(HL_Node* node)
   }
   npts = getHL_NodeNumberOfPoints(retv);
 
-  retv->data = (unsigned char*)malloc(npts*retv->dSize);
+  retv->data = (unsigned char*)HLHDF_MALLOC(npts*retv->dSize);
   memcpy(retv->data,node->data,npts*retv->dSize);
 
   if(node->rawdata!=NULL) {
-    retv->rawdata = (unsigned char*)malloc(npts*retv->rdSize);
+    retv->rawdata = (unsigned char*)HLHDF_MALLOC(npts*retv->rdSize);
     memcpy(retv->rawdata,node->rawdata,npts*retv->rdSize);
   } else {
     retv->rdSize = 0;
@@ -313,7 +314,7 @@ int setHL_NodeScalarValue(HL_Node* node, size_t sz, unsigned char* value,
     goto fail;
   }
 
-  if ((data = (unsigned char*) malloc(sz))==NULL) {
+  if ((data = (unsigned char*) HLHDF_MALLOC(sz))==NULL) {
     HL_ERROR0("Failed to allocate memory");
     goto fail;
   }
@@ -381,7 +382,7 @@ int setHL_NodeArrayValue(HL_Node* node, size_t sz, int ndims, hsize_t* dims,
     npts *= dims[i];
   }
 
-  if ((data = (unsigned char*) malloc(npts * sz)) == NULL) {
+  if ((data = (unsigned char*) HLHDF_MALLOC(npts * sz)) == NULL) {
     HL_ERROR0("Failed to allocate memory when setting value");
     goto fail;
   }
@@ -436,7 +437,7 @@ char* getHL_NodeName(HL_Node* node)
 
   HL_ASSERT((node != NULL), "equalsHL_NodeName called with node == NULL");
 
-  result = strdup(node->name);
+  result = HLHDF_STRDUP(node->name);
   if (result == NULL) {
     HL_ERROR0("Failed to allocate memory");
   }
@@ -534,7 +535,7 @@ int setHL_NodeDimensions(HL_Node* node, int ndims, hsize_t* dims)
   int status = 0;
 
   if (ndims > 0 && dims != NULL) {
-    tmpdims = (hsize_t*)malloc(sizeof(hsize_t)*ndims);
+    tmpdims = (hsize_t*)HLHDF_MALLOC(sizeof(hsize_t)*ndims);
     if (tmpdims != NULL) {
       memcpy(tmpdims, dims, sizeof(hsize_t)*ndims);
     } else {
@@ -561,7 +562,7 @@ void getHL_NodeDimensions(HL_Node* node, int* ndims, hsize_t** dims)
     *ndims = 0;
     *dims = NULL;
     if (node->ndims > 0 && node->dims != NULL) {
-      *dims = (hsize_t*)malloc(sizeof(hsize_t)*node->ndims);
+      *dims = (hsize_t*)HLHDF_MALLOC(sizeof(hsize_t)*node->ndims);
       if (*dims != NULL) {
         memcpy(*dims, node->dims, sizeof(hsize_t)*node->ndims);
         *ndims = node->ndims;

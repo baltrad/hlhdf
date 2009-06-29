@@ -31,7 +31,8 @@ permission.
 \li Added a test suite that can be run after compilation. (Currently requires that HLHDF has been built with python support).
 \li Added some new functions / ways to work with HLHDF to simplify some use-cases. MORE INFO TO COME HERE...
 \li Since _pyhl was compiled with a libhlhdf.a, it did not share error and debug functions with other python modules. So, _pyhl is now compiled with libhlhdf.so.
-\li HL_NodeList members are now hidden, use HL_NodeList functions instead.
+\li HL_NodeList and HL_Node members are now hidden, use HL_NodeList and HL_Node functions instead.
+\li Added possibility to turn on HLHDF memory debugging (with --enable-debug-memory) to get memory usage statistics and warnings.
 
 \section toc "Table of contents"
 \li \ref thew5_of_hlhdf

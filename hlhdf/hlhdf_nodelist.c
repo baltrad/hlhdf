@@ -5,6 +5,7 @@
  * @date 2009-06-24
  */
 #include "hlhdf.h"
+#include "hlhdf_alloc.h"
 #include "hlhdf_defines_private.h"
 #include "hlhdf_debug.h"
 #include "hlhdf_node.h"
@@ -31,15 +32,15 @@ HL_NodeList* newHL_NodeList(void)
   HL_NodeList* retv = NULL;
   int i;
   HL_SPEWDEBUG0("ENTER: newHL_NodeList");
-  if (!(retv = (HL_NodeList*) malloc(sizeof(HL_NodeList)))) {
+  if (!(retv = (HL_NodeList*) HLHDF_MALLOC(sizeof(HL_NodeList)))) {
     HL_ERROR0("Failed to allocate memory for NODE");
     return NULL;
   }
   retv->filename = NULL;
 
-  if (!(retv->nodes = (HL_Node**) malloc(sizeof(HL_Node*) * DEFAULT_SIZE_NODELIST))) {
+  if (!(retv->nodes = (HL_Node**) HLHDF_MALLOC(sizeof(HL_Node*) * DEFAULT_SIZE_NODELIST))) {
     HL_ERROR0("Failed to allocate memory for HL_NodeList");
-    free(retv);
+    HLHDF_FREE(retv);
     return NULL;
   }
   for (i = 0; i < DEFAULT_SIZE_NODELIST; i++) {
@@ -76,7 +77,7 @@ int setHL_NodeListFileName(HL_NodeList* nodelist, const char* filename)
     HL_ERROR0("Inparameters NULL");
     goto fail;
   }
-  if ((newfilename = strdup(filename)) == NULL) {
+  if ((newfilename = HLHDF_STRDUP(filename)) == NULL) {
     HL_ERROR1("Failed to allocate memory for file %s", filename);
     goto fail;
   }
@@ -100,7 +101,7 @@ char* getHL_NodeListFileName(HL_NodeList* nodelist)
   }
 
   if (nodelist->filename != NULL) {
-    if ((retv = strdup(nodelist->filename)) == NULL) {
+    if ((retv = HLHDF_STRDUP(nodelist->filename)) == NULL) {
       HL_ERROR1("Failed to allocate memory for filename: %s", nodelist->filename);
     }
   }
@@ -199,7 +200,7 @@ int addHL_Node(HL_NodeList* nodelist, HL_Node* node)
     nodelist->nodes[nodelist->nNodes++] = node;
   } else {
     newallocsize = nodelist->nAllocNodes + DEFAULT_SIZE_NODELIST;
-    if (!(nodelist->nodes = realloc(nodelist->nodes, sizeof(HL_Node*) * newallocsize))) {
+    if (!(nodelist->nodes = HLHDF_REALLOC(nodelist->nodes, sizeof(HL_Node*) * newallocsize))) {
       HL_ERROR0("Serious memory error occured when reallocating Node list");
       goto fail;
     }

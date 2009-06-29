@@ -5,6 +5,7 @@
  * @date 2009-06-11
  */
 #include "hlhdf.h"
+#include "hlhdf_alloc.h"
 #include "hlhdf_defines_private.h"
 #include "hlhdf_debug.h"
 #include <string.h>
@@ -24,7 +25,7 @@ HL_CompoundTypeAttribute* newHL_CompoundTypeAttribute(char* attrname,
     HL_ERROR0("Impossible to have an attribute without a format in a compound type");
     goto fail;
   }
-  if (!(retv = (HL_CompoundTypeAttribute*) malloc(sizeof(HL_CompoundTypeAttribute)))) {
+  if (!(retv = (HL_CompoundTypeAttribute*) HLHDF_MALLOC(sizeof(HL_CompoundTypeAttribute)))) {
     HL_ERROR0("Failed to allocate CompoundTypeAttribute description");
     goto fail;
   }
@@ -47,15 +48,15 @@ HL_CompoundTypeDescription* newHL_CompoundTypeDescription()
    HL_CompoundTypeDescription* retv=NULL;
    int i;
    HL_DEBUG0("ENTER: newHL_CompoundTypeDescription");
-   if(!(retv=(HL_CompoundTypeDescription*)malloc(sizeof(HL_CompoundTypeDescription)))) {
+   if(!(retv=(HL_CompoundTypeDescription*)HLHDF_MALLOC(sizeof(HL_CompoundTypeDescription)))) {
       HL_ERROR0("Failed to allocate memory for CompoundTypeDescription");
       return NULL;
    }
    strcpy(retv->hltypename,"");
    retv->size=0;
-   if(!(retv->attrs = (HL_CompoundTypeAttribute **)malloc(sizeof(HL_CompoundTypeDescription*)*DEFAULT_SIZE_NODELIST))) {
+   if(!(retv->attrs = (HL_CompoundTypeAttribute **)HLHDF_MALLOC(sizeof(HL_CompoundTypeAttribute*)*DEFAULT_SIZE_NODELIST))) {
       HL_ERROR0("Failed to allocate memory for CompoundTypeDescription list");
-      free(retv);
+      HLHDF_FREE(retv);
       return NULL;
    }
    for(i=0;i<DEFAULT_SIZE_NODELIST;i++) {
@@ -72,7 +73,7 @@ void freeHL_CompoundTypeAttribute(HL_CompoundTypeAttribute* attr)
 {
    HL_SPEWDEBUG0("ENTER: freeHL_CompoundTypeAttribute");
    if(attr) {
-     free(attr);
+     HLHDF_FREE(attr);
    }
    HL_SPEWDEBUG0("EXIT: freeHL_CompoundTypeAttribute");
 }
@@ -90,9 +91,9 @@ void freeHL_CompoundTypeDescription(HL_CompoundTypeDescription* typelist)
       if (typelist->attrs[i])
         freeHL_CompoundTypeAttribute(typelist->attrs[i]);
     }
-    free(typelist->attrs);
+    HLHDF_FREE(typelist->attrs);
   }
-  free(typelist);
+  HLHDF_FREE(typelist);
 
   HL_SPEWDEBUG0("EXIT: freeHL_CompoundTypeDescription");
 }
@@ -114,7 +115,7 @@ int addHL_CompoundTypeAttribute(HL_CompoundTypeDescription* typelist,
    }
 
    newallocsize = typelist->nAllocAttrs + DEFAULT_SIZE_NODELIST;
-   if(!(typelist->attrs = realloc(typelist->attrs,
+   if(!(typelist->attrs = HLHDF_REALLOC(typelist->attrs,
           sizeof(HL_CompoundTypeAttribute*)*newallocsize))) {
       HL_ERROR0("Serious memory error occured when reallocating compound attr list");
       return 0;
@@ -128,44 +129,48 @@ int addHL_CompoundTypeAttribute(HL_CompoundTypeDescription* typelist,
    return 1;
 }
 
-HL_CompoundTypeDescription* copyHL_CompoundTypeDescription(HL_CompoundTypeDescription* descr)
+HL_CompoundTypeDescription* copyHL_CompoundTypeDescription(
+  HL_CompoundTypeDescription* descr)
 {
-   HL_CompoundTypeDescription* retv = NULL;
-   int i;
-   HL_DEBUG0("ENTER: copyCompoundTypeDescription");
-   if(descr==NULL)
-      return NULL;
+  HL_CompoundTypeDescription* retv = NULL;
+  int i;
+  HL_DEBUG0("ENTER: copyCompoundTypeDescription");
+  if (descr == NULL)
+    return NULL;
 
-   if(!(retv=newHL_CompoundTypeDescription())) {
-      return NULL;
-   }
-   strcpy(retv->hltypename,descr->hltypename);
-   memcpy(retv->objno,descr->objno,sizeof(unsigned long)*2);
-   retv->size = descr->size;
-   retv->nAttrs = descr->nAttrs;
-   retv->nAllocAttrs = descr->nAllocAttrs;
+  if (!(retv = newHL_CompoundTypeDescription())) {
+    return NULL;
+  }
+  strcpy(retv->hltypename, descr->hltypename);
+  memcpy(retv->objno, descr->objno, sizeof(unsigned long) * 2);
+  retv->size = descr->size;
+  retv->nAttrs = descr->nAttrs;
+  retv->nAllocAttrs = descr->nAllocAttrs;
 
-   if(!(retv->attrs = (HL_CompoundTypeAttribute**)malloc(sizeof(HL_CompoundTypeAttribute*)*retv->nAllocAttrs))) {
-      HL_ERROR0("Failed to allocate list of HL_CompoundTypeAttribute");
+  HLHDF_FREE(retv->attrs);
+  if (!(retv->attrs
+      = (HL_CompoundTypeAttribute**) HLHDF_MALLOC(sizeof(HL_CompoundTypeAttribute*)*retv->nAllocAttrs))) {
+    HL_ERROR0("Failed to allocate list of HL_CompoundTypeAttribute");
+    goto fail;
+  }
+
+  for (i = 0; i < retv->nAllocAttrs; i++)
+    retv->attrs[i] = NULL;
+  for (i = 0; i < retv->nAttrs; i++) {
+    if (!(retv->attrs[i]
+        = newHL_CompoundTypeAttribute(descr->attrs[i]->attrname,
+                                      descr->attrs[i]->offset,
+                                      descr->attrs[i]->format,
+                                      descr->attrs[i]->size,
+                                      descr->attrs[i]->ndims,
+                                      descr->attrs[i]->dims))) {
+      HL_ERROR0("Failed to allocate HL_CompoundTypeAttribute");
       goto fail;
-   }
+    }
+  }
 
-   for(i=0;i<retv->nAllocAttrs;i++)
-      retv->attrs[i]=NULL;
-   for(i=0;i<retv->nAttrs;i++) {
-      if(!(retv->attrs[i] = newHL_CompoundTypeAttribute(descr->attrs[i]->attrname,
-              descr->attrs[i]->offset,
-              descr->attrs[i]->format,
-              descr->attrs[i]->size,
-              descr->attrs[i]->ndims,
-              descr->attrs[i]->dims))) {
-   HL_ERROR0("Failed to allocate HL_CompoundTypeAttribute");
-   goto fail;
-      }
-   }
-
-   return retv;
+  return retv;
 fail:
-   freeHL_CompoundTypeDescription(retv);
-   return NULL;
+  freeHL_CompoundTypeDescription(retv);
+  return NULL;
 }

@@ -26,7 +26,7 @@ if test "${prefix}" = "NONE"; then
 	prefix=/usr/local/hlhdf
 fi
 
-AC_ARG_WITH(python,[ --with-python=(yes|no)     Compile for python],
+AC_ARG_WITH(python,[  --with-python=(yes|no)     Compile for python],
 	    ,withval=yes)
 
 COMPILE_FOR_PYTHON=yes
@@ -90,7 +90,7 @@ dnl Check for programs which are useful when generating
 dnl the makefile.
 dnl Check for fortran unless --with-fortran=no
 COMPILE_FOR_FORTRAN=no
-AC_ARG_WITH(fortran,[ --with-fortran=yes|no Configure with fortran],
+AC_ARG_WITH(fortran,[  --with-fortran=yes|no Configure with fortran],
 		,withval=no)
 case $withval in
   yes)
@@ -447,6 +447,14 @@ fi
 
 PYDEFS="$PYDEFS $BYTE_ORDER"
 
+dnl It is possible to turn on memory debugging within HLHDF
+debugmemory=no
+AC_ARG_ENABLE(debug-memory,
+  [  --enable-debug-memory     Turns on the hlhdf memory debugging. This should usually not be activated.],
+  debugmemory=$enableval)
+if [[ "x$debugmemory" = "xyes" ]]; then
+  PYOPT="$PYOPT -DHLHDF_MEMORY_DEBUG"
+fi
 
 dnl Okie, now I'd better try to extract all information I can about
 dnl the fortran.
@@ -544,7 +552,6 @@ esac
 
 dnl Substitue all variables
 AC_SUBST(COMPILE_FOR_PYTHON)
-#AC_SUBST(PYCC)
 AC_SUBST(CC)
 AC_SUBST(PY_INCLUDES)
 AC_SUBST(PY_SITEPACK)

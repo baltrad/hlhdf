@@ -12,6 +12,7 @@
 #define HLHDF_PYMODULE_WITH_IMPORT_ARRAY
 #include "pyhlhdf_common.h"  /* this includes arrayobject.h */
 #include "hlhdf.h"
+#include "hlhdf_alloc.h"
 #include "hlhdf_private.h"
 #include "hlhdf_node_private.h"
 #include "hlhdf_debug.h"
@@ -921,7 +922,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
         pyo=NULL;
       }
       itemSize = maxstrlen + 1;
-      if(!(tmpData=malloc(itemSize * n))) {
+      if(!(tmpData=HLHDF_MALLOC(itemSize * n))) {
         setException(PyExc_MemoryError,"Could not allocate memory for strings");
         goto fail;
       }
@@ -934,7 +935,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       }
       if ((strtype = H5Tcopy(H5T_C_S1))<0) {
         setException(PyExc_MemoryError,"Could not create a string type");
-        free(tmpData);
+        HLHDF_FREE(tmpData);
         goto fail;
       }
       H5Tset_size(strtype, itemSize);
@@ -942,7 +943,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       if(!(setHL_NodeArrayValue(self->node,itemSize,1,dims,(unsigned char*)tmpData,hltypename,strtype))) {
         setException(PyExc_AttributeError,"Could not set array data");
         H5Tclose(strtype);
-        free(tmpData);
+        HLHDF_FREE(tmpData);
         goto fail;
       }
     } else {
@@ -955,16 +956,16 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
         goto fail;
       }
       if(strcmp(hltypename,"double")==0) {
-        doubleptr = malloc(sizeof(double)*n);
+        doubleptr = HLHDF_MALLOC(sizeof(double)*n);
         tmpData = (char*)doubleptr;
       } else if(strcmp(hltypename,"float")==0) {
-        floatptr = malloc(sizeof(float)*n);
+        floatptr = HLHDF_MALLOC(sizeof(float)*n);
         tmpData = (char*)floatptr;
       } else if(strcmp(hltypename,"int")==0) {
-        intptr = malloc(sizeof(int)*n);
+        intptr = HLHDF_MALLOC(sizeof(int)*n);
         tmpData = (char*)intptr;
       } else if(strcmp(hltypename,"long")==0) {
-        longptr = malloc(sizeof(long)*n);
+        longptr = HLHDF_MALLOC(sizeof(long)*n);
         tmpData = (char*)longptr;
       } else {
         setException(PyExc_TypeError,"Only supported types on list are double,float,int and long");
@@ -978,7 +979,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       for(i=0;i<n;i++) {
         if(!(pyo=PySequence_GetItem(data,i))) {
           setException(PyExc_AttributeError,"Could not get list item");
-          free(tmpData);
+          HLHDF_FREE(tmpData);
           goto fail;
         }
         if(doubleptr) {
@@ -991,7 +992,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
           longptr[i] = (long)PyInt_AsLong(pyo);
         } else {
           setException(PyExc_AttributeError,"Whoa, something very strange happened");
-          free(tmpData);
+          HLHDF_FREE(tmpData);
           goto fail;
         }
         Py_XDECREF(pyo);
@@ -1000,11 +1001,11 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       dims[0]=n;
       if(!(setHL_NodeArrayValue(self->node,tmpSize,1,dims,(unsigned char*)tmpData,hltypename,-1))) {
         setException(PyExc_AttributeError,"Could not set array data");
-        free(tmpData);
+        HLHDF_FREE(tmpData);
         goto fail;
       }
     }
-    if(tmpData) free(tmpData);
+    HLHDF_FREE(tmpData);
   } else if(strcmp(hltypename,"compound")==0) {
     size_t tmpLen=0;
     char* tmpData=PyString_AsString(data);
@@ -1187,7 +1188,7 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
     }
     }
   } else { /*Simple*/
-    if (!(dims = malloc(sizeof(int) * getHL_NodeRank(self->node)))) {
+    if (!(dims = HLHDF_MALLOC(sizeof(int) * getHL_NodeRank(self->node)))) {
       setException(PyExc_MemoryError,"Could not allocate dims");
       goto fail;
     }
@@ -1347,7 +1348,7 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
     }
     }
   } else { /*Simple*/
-    if (!(dims = malloc(sizeof(int) * getHL_NodeRank(self->node)))) {
+    if (!(dims = HLHDF_MALLOC(sizeof(int) * getHL_NodeRank(self->node)))) {
       setException(PyExc_MemoryError,"Could not allocate dims");
       goto fail;
     }
@@ -1416,15 +1417,13 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
     }
     }
   }
-  if(dims)
-    free(dims);
+  HLHDF_FREE(dims);
   if(tmpHid>=0)
     H5Tclose(tmpHid);
   return retv;
 fail:
   Py_XDECREF(retv);
-  if(dims)
-    free(dims);
+  HLHDF_FREE(dims);
   if(tmpHid>=0)
     H5Tclose(tmpHid);
   return NULL;
@@ -1436,110 +1435,68 @@ static PyObject* getPythonObjectFromNode(HL_CompoundTypeAttribute* descr,
   PyObject* pyo = NULL;
 
   int offset = descr->offset + idx * descr->size;
-  int debug = 0;
-
-  char tmpstr[300];
-  memset(tmpstr, 0, 300);
-
-  if (debug) {
-    printf("name = %s, offset = %d, descr->offset = %ld, idx = %d, descr->size=%ld, ",
-           descr->attrname, offset, (long)descr->offset, idx, (long)descr->size);
-  }
 
   if (strcmp(descr->format, "string") == 0) {
     int len = strlen((char*) &data[offset]);
     char* dummystr = "";
     if (len > 0 && len <= descr->size) {
-      if (debug)
-        strncpy(&tmpstr[0], (char*) &data[offset], len);
       pyo = PyString_FromStringAndSize((char*) &data[offset], len);
     } else if (len <= 0) {
-      if (debug)
-        strncpy(&tmpstr[0], dummystr, len);
       pyo = PyString_FromString(dummystr);
     } else if (len >= descr->size) {
-      if (debug)
-        strncpy(&tmpstr[0], (char*) &data[offset], len);
       pyo = PyString_FromStringAndSize((char*) &data[offset], descr->size);
     }
-    if (debug)
-      printf("val = '%s'\n", tmpstr);
-  } else if (strcmp(descr->format, "schar") == 0 || strcmp(descr->format,
-                                                           "uchar") == 0
-      || strcmp(descr->format, "char") == 0) {
+  } else if (strcmp(descr->format, "schar") == 0 ||
+      strcmp(descr->format, "uchar") == 0 || strcmp(descr->format, "char") == 0) {
     char val = 0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%c\n", val);
     pyo = PyString_FromStringAndSize(&val, 1);
-  } else if (strcmp(descr->format, "short") == 0 || strcmp(descr->format,
-                                                           "ushort") == 0) {
+  } else if (strcmp(descr->format, "short") == 0 ||
+      strcmp(descr->format, "ushort") == 0) {
     short val = 0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%d\n", val);
     pyo = PyInt_FromLong((long) val);
-  } else if (strcmp(descr->format, "int") == 0 || strcmp(descr->format, "uint")
-      == 0) {
+  } else if (strcmp(descr->format, "int") == 0 ||
+      strcmp(descr->format, "uint") == 0) {
     int val = 0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%d\n", val);
     pyo = PyInt_FromLong((long) val);
-  } else if (strcmp(descr->format, "long") == 0 || strcmp(descr->format,
-                                                          "ulong") == 0) {
+  } else if (strcmp(descr->format, "long") == 0 ||
+      strcmp(descr->format, "ulong") == 0) {
     long val = 0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%d\n", (int) val);
     pyo = PyInt_FromLong((long) val);
   } else if (strcmp(descr->format, "llong") == 0) {
     long long val = 0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%d\n", (int) val);
     pyo = PyInt_FromLong((long) val);
   } else if (strcmp(descr->format, "float") == 0) {
     float val = 0.0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%f\n", val); /*offset = descr->offset + idx * descr->size;*/
     pyo = PyFloat_FromDouble((double) val);
   } else if (strcmp(descr->format, "double") == 0) {
     double val = 0.0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("dval=%f\n", val);
     pyo = PyFloat_FromDouble((double) val);
   } else if (strcmp(descr->format, "ldouble") == 0) {
     double val = 0.0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%f\n", val);
     pyo = PyFloat_FromDouble((double) val);
   } else if (strcmp(descr->format, "hsize") == 0) {
     hsize_t val = 0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%d\n", (int) val);
     pyo = PyInt_FromLong((long) val);
   } else if (strcmp(descr->format, "hssize") == 0) {
     hssize_t val = 0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%d\n", (int) val);
     pyo = PyInt_FromLong((long) val);
   } else if (strcmp(descr->format, "herr") == 0) {
     herr_t val = 0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%d\n", val);
     pyo = PyInt_FromLong((long) val);
   } else if (strcmp(descr->format, "hbool") == 0) {
     hbool_t val = 0;
     memcpy((unsigned char*) &val, &data[offset], descr->size);
-    if (debug)
-      printf("val=%d\n", val);
     pyo = PyInt_FromLong((long) val);
   } else {
     char errmsg[256];

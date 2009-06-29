@@ -5,6 +5,7 @@
  * @date 2009-06-12
  */
 #include "hlhdf.h"
+#include "hlhdf_alloc.h"
 #include "hlhdf_node_private.h"
 #include "hlhdf_debug.h"
 #include "hlhdf_private.h"

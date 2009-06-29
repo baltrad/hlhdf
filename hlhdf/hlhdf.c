@@ -7,6 +7,7 @@
 #include "hlhdf.h"
 #include "hlhdf_private.h"
 #include "hlhdf_debug.h"
+#include "hlhdf_alloc.h"
 #include "hlhdf_defines_private.h"
 #include <string.h>
 #include <stdlib.h>
@@ -95,6 +96,14 @@ void enableErrorReporting()
   }
 }
 
+#ifdef HLHDF_MEMORY_DEBUG
+static void hlhdf_dump_memory_information(void)
+{
+  hlhdf_alloc_dump_heap();
+  hlhdf_alloc_print_statistics();
+}
+#endif
+
 /************************************************
  * initHlHdf
  ***********************************************/
@@ -107,6 +116,11 @@ void initHlHdf()
     HL_InitializeDebugger();
     HL_enableHdf5ErrorReporting();
     disableErrorReporting();
+#ifdef HLHDF_MEMORY_DEBUG
+    if (atexit(hlhdf_dump_memory_information) != 0) {
+      fprintf(stderr, "Could not set atexit function");
+    }
+#endif
   }
 }
 
@@ -154,16 +168,14 @@ HL_FileCreationProperty* createHlHdfFileCreationProperty()
 
   HL_DEBUG0("ENTER: createHlHdfFileCreationProperty");
 
-  if ((retv
-      = (HL_FileCreationProperty*) malloc(sizeof(HL_FileCreationProperty)))
-      ==NULL) {
+  if ((retv = (HL_FileCreationProperty*) HLHDF_MALLOC(sizeof(HL_FileCreationProperty))) == NULL) {
     HL_ERROR0("Failure when allocating memory for HL_FileCreationProperty");
     return NULL;
   }
 
   if ((theHid = H5Pcreate(H5P_FILE_CREATE)) < 0) {
     HL_ERROR0("Failure when creating the property list");
-    free(retv);
+    HLHDF_FREE(retv);
     return NULL;
   }
 
@@ -222,7 +234,7 @@ void freeHL_fileCreationProperty(HL_FileCreationProperty* prop)
   if (prop == NULL) {
     return;
   }
-  free(prop);
+  HLHDF_FREE(prop);
 }
 
 /**********************************************************
@@ -289,7 +301,7 @@ HL_Compression* newHL_Compression(HL_CompressionType aType)
 {
   HL_Compression* retv = NULL;
   HL_DEBUG0("ENTER: newHL_Compression");
-  if (!(retv = (HL_Compression*) malloc(sizeof(HL_Compression)))) {
+  if (!(retv = (HL_Compression*) HLHDF_MALLOC(sizeof(HL_Compression)))) {
     HL_ERROR0("Failed to allocate memory for HL_Compression");
     return NULL;
   }
@@ -308,7 +320,7 @@ HL_Compression* dupHL_Compression(HL_Compression* inv)
     HL_SPEWDEBUG0("dupHL_Compression: compression object NULL");
     goto fail;
   }
-  if (!(retv = (HL_Compression*) malloc(sizeof(HL_Compression)))) {
+  if (!(retv = (HL_Compression*) HLHDF_MALLOC(sizeof(HL_Compression)))) {
     HL_ERROR0("Failed to allocate memory for HL_Compression");
     goto fail;
   }
@@ -503,10 +515,10 @@ hid_t getFixedType(hid_t type)
   case H5T_COMPOUND:
     HL_SPEWDEBUG0("This is of type H5T_COMPOUND");
     nmembs = H5Tget_nmembers(type);
-    memb = calloc(nmembs, sizeof(hid_t));
-    name = calloc(nmembs, sizeof(char*));
-    ndims = calloc(nmembs, sizeof(int));
-    dims141 = calloc(nmembs * 4, sizeof(hsize_t));
+    memb = HLHDF_CALLOC(nmembs, sizeof(hid_t));
+    name = HLHDF_CALLOC(nmembs, sizeof(char*));
+    ndims = HLHDF_CALLOC(nmembs, sizeof(int));
+    dims141 = HLHDF_CALLOC(nmembs * 4, sizeof(hsize_t));
 
     if (!memb || !name || !ndims || !dims141) {
       HL_ERROR0("Failed to allocate memory");
@@ -554,10 +566,10 @@ hid_t getFixedType(hid_t type)
     }
 
     mtype = H5Tcreate(H5T_COMPOUND, size);
-
     for (i = 0, offset = 0; i < nmembs; i++) {
-      for (j = 0, nelmts = 1; j < ndims[i]; j++)
+      for (j = 0, nelmts = 1; j < ndims[i]; j++) {
         nelmts *= dims141[i * 4 + j];
+      }
 
       if (H5T_ARRAY == H5Tget_member_class(type, i)) {
         f_memb = H5Tget_member_type(type, i);
@@ -619,7 +631,7 @@ done:
       HL_H5T_CLOSE(memb[i]);
     }
     if (name != NULL) {
-      HLHDF_FREE(name[i]);
+      free(name[i]); /* Not allocated by HLHDF */
     }
   }
   HLHDF_FREE(memb);
@@ -988,8 +1000,8 @@ int extractParentChildName(HL_Node* node, char** parent, char** child)
 
   tmpPtr[0] = '\0';
   tmpPtr++;
-  *parent = strdup(tmpStr);
-  *child = strdup(tmpPtr);
+  *parent = HLHDF_STRDUP(tmpStr);
+  *child = HLHDF_STRDUP(tmpPtr);
   if (*parent == NULL || *child == NULL) {
     HL_ERROR0("Failed to allocate memory for parent and/or child");
     goto fail;

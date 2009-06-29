@@ -5,6 +5,7 @@
  * @date 2009-06-12
  */
 #include "hlhdf.h"
+#include "hlhdf_alloc.h"
 #include "hlhdf_private.h"
 #include "hlhdf_debug.h"
 #include "hlhdf_defines_private.h"
@@ -81,17 +82,17 @@ static HL_CompoundTypeDescription* buildTypeDescriptionFromTypeHid(hid_t type_id
 
     if (H5T_ARRAY == H5Tget_member_class(type_id, i)) {
       ndims = H5Tget_array_ndims(mtype);
-      dims_h514 = (hsize_t*) malloc(sizeof(hsize_t) * ndims);
+      dims_h514 = (hsize_t*) HLHDF_MALLOC(sizeof(hsize_t) * ndims);
       if (H5Tget_array_dims(mtype, dims_h514) < 0) {
         HL_ERROR0("Failed to retrieve array dimensions");
       }
-      dims = (size_t*) malloc(sizeof(size_t) * ndims);
+      dims = (size_t*) HLHDF_MALLOC(sizeof(size_t) * ndims);
       for (j = 0; j < ndims; j++) {
         dims[j] = (size_t) dims_h514[j];
       }
     } else {
       ndims = 1;
-      dims = (size_t*) malloc(sizeof(size_t) * ndims);
+      dims = (size_t*) HLHDF_MALLOC(sizeof(size_t) * ndims);
       dims[0] = 1;
     }
     dSize = H5Tget_size(fixedType);
@@ -111,7 +112,7 @@ static HL_CompoundTypeDescription* buildTypeDescriptionFromTypeHid(hid_t type_id
     HLHDF_FREE(dims);
     HLHDF_FREE(dims_h514);
     HL_H5T_CLOSE(mtype);
-    HLHDF_FREE(fname);
+    if (fname != NULL) { free(fname); fname = NULL; }
     HL_H5T_CLOSE(fixedType);
   }
 
@@ -119,7 +120,7 @@ static HL_CompoundTypeDescription* buildTypeDescriptionFromTypeHid(hid_t type_id
   HLHDF_FREE(dims);
   HL_H5T_CLOSE(mtype);
   HL_H5T_CLOSE(fixedType);
-  HLHDF_FREE(fname);
+  if (fname != NULL) { free(fname); fname = NULL; }
   return typelist;
 fail:
   HLHDF_FREE(dims);
@@ -237,7 +238,7 @@ static char* locateNameForReference(hid_t file_id, hobj_ref_t* ref)
   if (lookup.reffound == 0)
     goto fail;
 
-  return strdup(lookup.found_name);
+  return HLHDF_STRDUP(lookup.found_name);
 fail:
   return NULL;
 }
@@ -252,7 +253,7 @@ static int hlhdf_read_readAttributeData(hid_t obj, hid_t type, hsize_t npoints,
   }
 
   *dSize = H5Tget_size(type);
-  if (!(*dataptr = (unsigned char*) malloc((*dSize) * npoints))) {
+  if (!(*dataptr = (unsigned char*) HLHDF_MALLOC((*dSize) * npoints))) {
     HL_ERROR0("Could not allocate memory for attribute data");
     goto fail;
   }
@@ -321,7 +322,7 @@ static int hlhdf_read_getSpaceDimensions(hid_t spaceid, int* ndims, hsize_t* npo
   *npoints = H5Sget_simple_extent_npoints(spaceid);
   *dims = NULL;
   if (*ndims > 0) {
-    *dims = (hsize_t*)malloc(sizeof(hsize_t)* (*ndims));
+    *dims = (hsize_t*)HLHDF_MALLOC(sizeof(hsize_t)* (*ndims));
     if (H5Sget_simple_extent_dims(spaceid, *dims, NULL) != *ndims) {
       HL_ERROR0("Could not get dimensions from space");
       goto fail;
@@ -488,8 +489,8 @@ static int fillReferenceNode(hid_t file_id, HL_Node* node)
     refername = strdup("UNKNOWN");
   }
 
-  HLNodePrivate_setData(node, strlen(refername)+1, (unsigned char*)strdup(refername));
-  HLNodePrivate_setRawdata(node, strlen(refername)+1, (unsigned char*)strdup(refername));
+  HLNodePrivate_setData(node, strlen(refername)+1, (unsigned char*)HLHDF_STRDUP(refername));
+  HLNodePrivate_setRawdata(node, strlen(refername)+1, (unsigned char*)HLHDF_STRDUP(refername));
   setHL_NodeDimensions(node, 0, NULL);
   setHL_NodeMark(node, NMARK_ORIGINAL);
 
@@ -576,7 +577,7 @@ static int fillDatasetNode(hid_t file_id, HL_Node* node)
     if (H5Sis_simple(f_space) >= 0) { /*Only allow simple dataspace, nothing else supported by HDF5 anyway */
       unsigned char* dataptr = NULL;
       size_t dSize = H5Tget_size(mtype);
-      dataptr = (unsigned char*) malloc(dSize * npoints);
+      dataptr = (unsigned char*) HLHDF_MALLOC(dSize * npoints);
       if (dataptr == NULL) {
         HL_ERROR0("Failed to allocate memory for dataset arrray");
         goto fail;
@@ -712,7 +713,7 @@ static char* hlhdf_read_createPath(const char* root, const char* name)
     goto fail;
   }
 
-  newpath = malloc(sizeof(char)*(strlen(root) + strlen(name) + 2));
+  newpath = HLHDF_MALLOC(sizeof(char)*(strlen(root) + strlen(name) + 2));
   if (newpath == NULL) {
     HL_ERROR0("Failed to allocate memory\n");
     goto fail;

@@ -13,8 +13,8 @@ CFLAGS= $(OPTS) $(DEFS) $(INCLUDE_PYTHON) $(HDF5_INCDIR) $(ZLIB_INCDIR)
 
 TARGET=libhlhdf.so
 TARGET.2=libhlhdf.a
-SOURCES=hlhdf.c hlhdf_node.c hlhdf_nodelist.c hlhdf_compound.c hlhdf_compound_utils.c hlhdf_read.c hlhdf_write.c hlhdf_debug.c
-INSTALL_HEADERS=hlhdf.h hlhdf_types.h hlhdf_node.h hlhdf_nodelist.h hlhdf_compound.h hlhdf_compound_utils.h hlhdf_read.h hlhdf_write.h hlhdf_debug.h
+SOURCES=hlhdf.c hlhdf_node.c hlhdf_nodelist.c hlhdf_compound.c hlhdf_compound_utils.c hlhdf_read.c hlhdf_write.c hlhdf_debug.c hlhdf_alloc.c
+INSTALL_HEADERS=hlhdf.h hlhdf_types.h hlhdf_node.h hlhdf_nodelist.h hlhdf_compound.h hlhdf_compound_utils.h hlhdf_read.h hlhdf_write.h hlhdf_debug.h hlhdf_alloc.h
 
 OBJS=$(SOURCES:.c=.o)
 

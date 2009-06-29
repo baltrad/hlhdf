@@ -49,11 +49,6 @@
 #define HL_H5P_CLOSE(x) if (x>=0) {H5Pclose(x); x=-1;}
 
 /**
- * @brief Frees the pointer if != NULL
- */
-#define HLHDF_FREE(x) if (x != NULL) {free(x);x=NULL;}
-
-/**
  * @brief Used to align the offsets when creating a compound type.
  */
 #define HLHDF_ALIGN(A,Z)  ((((A)+(Z)-1)/(Z))*(Z))

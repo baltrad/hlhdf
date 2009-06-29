@@ -7,6 +7,7 @@
  * @date 2009-06-12
  */
 #include "hlhdf.h"
+#include "hlhdf_alloc.h"
 #include "hlhdf_private.h"
 #include "hlhdf_debug.h"
 #include "hlhdf_defines_private.h"
@@ -60,7 +61,7 @@ herr_t addArrayToCompoundType(hid_t loc_id, const char* name, size_t offset,
   herr_t status = -1;
   hid_t array_type = -1;
   int i;
-  hsize_t* dims_hsize_t = (hsize_t*) malloc(sizeof(hsize_t) * ndims);
+  hsize_t* dims_hsize_t = (hsize_t*) HLHDF_MALLOC(sizeof(hsize_t) * ndims);
   HL_SPEWDEBUG0("ENTER: addArrayToCompoundType");
 
   if (!dims_hsize_t) {
