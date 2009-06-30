@@ -61,7 +61,7 @@ distclean:
 		cd $$TDIR; \
 	done
 	@\rm -f def.mk
-
+	
 distribution:
 	@for i in $(SOURCE_DIRS) ; \
 	do \

@@ -1,6 +1,6 @@
-2009-06-17
+2009-06-30
 
-HL-HDF Release 0.7
+HL-HDF Release 0.7+
 
 This version supports HDF5 1.8.x and is not fully backward compatible with previous releases
 of HL-HDF, please refer to the migration guide in the documentation.
