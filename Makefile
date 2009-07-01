@@ -28,7 +28,7 @@ all:
 		TDIR=`pwd` ; \
 		cd $$i; \
 		$(MAKE); \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done;
 
 docs:
@@ -37,7 +37,7 @@ docs:
 		TDIR=`pwd` ; \
 		cd $$i; \
 		$(MAKE) docs; \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done;
 
 clean:
@@ -47,7 +47,7 @@ clean:
 		TDIR=`pwd`; \
 		cd $$i; \
 		$(MAKE) clean; \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done;
 
 distclean:
@@ -58,7 +58,7 @@ distclean:
 		TDIR=`pwd`; \
 		cd $$i; \
 		$(MAKE) distclean; \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done
 	@\rm -f def.mk
 	
@@ -69,7 +69,7 @@ distribution:
 		TDIR=`pwd`; \
 		cd $$i; \
 		$(MAKE) distribution; \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done
 
 check:
@@ -83,8 +83,8 @@ install:
 		TDIR=`pwd`; \
 		cd $$i; \
 		$(MAKE) install; \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done
-	@$(HL_INSTALL) -f -o -C -m644 def.mk $(prefix)/mkf/hldef.mk
-	@$(HL_INSTALL) -f -o -C ./tools/install-sh.sh $(prefix)/bin/hlinstall.sh
+	@"$(HL_INSTALL)" -f -o -C -m644 def.mk "$(prefix)/mkf/hldef.mk"
+	@"$(HL_INSTALL)" -f -o -C ./tools/install-sh.sh "$(prefix)/bin/hlinstall.sh"
 

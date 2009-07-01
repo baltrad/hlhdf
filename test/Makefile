@@ -26,7 +26,7 @@ all:
 		TDIR=`pwd` ; \
 		cd $$i; \
 		$(MAKE); \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done;
 
 clean:
@@ -36,7 +36,7 @@ clean:
 		TDIR=`pwd`; \
 		cd $$i; \
 		$(MAKE) clean; \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done;
 
 distclean:
@@ -47,7 +47,7 @@ distclean:
 		TDIR=`pwd`; \
 		cd $$i; \
 		$(MAKE) distclean; \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done
 
 distribution:
@@ -57,7 +57,7 @@ distribution:
 		TDIR=`pwd`; \
 		cd $$i; \
 		$(MAKE) distribution; \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done
 
 install:
@@ -67,6 +67,6 @@ install:
 		TDIR=`pwd`; \
 		cd $$i; \
 		$(MAKE) install; \
-		cd $$TDIR; \
+		cd "$$TDIR"; \
 	done
 

@@ -40,9 +40,9 @@ distribution:
 	@echo "Would bring the latest revision upto date"
 
 install:
-	@$(HL_INSTALL) -f -o -C $(TARGET) $(prefix)/lib/$(TARGET)
+	@"$(HL_INSTALL)" -f -o -C $(TARGET) "$(prefix)/lib/$(TARGET)"
 	@for i in $(INSTALL_HEADERS) ; \
 	do \
-		$(HL_INSTALL) -f -o -m644 -C $$i $(prefix)/include/$$i; \
+		"$(HL_INSTALL)" -f -o -m644 -C $$i "$(prefix)/include/$$i"; \
 	done	
 #@echo "Would install this package"

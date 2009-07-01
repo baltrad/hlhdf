@@ -2,8 +2,8 @@
 
 CURRENT_DIR=`pwd`
 
-SCRIPTPATH=`dirname $(readlink -f $0)`
-cd $SCRIPTPATH/..
+SCRIPTPATH=`dirname "$(readlink -f $0)"`
+cd "$SCRIPTPATH/.."
 
 CURRENT_VERSION=`git describe`
 if [ $? -ne 0 ]; then
@@ -18,7 +18,7 @@ make distclean 2> /dev/null
 
 # This directory
 THISDIR=`pwd`
-HLHDFDIR=`basename $THISDIR`
+HLHDFDIR=`basename "$THISDIR"`
 
 TARBALLNAME="${CURRENT_DIR}/${RELEASE_NAME}"
 
@@ -44,7 +44,7 @@ if [ $? -ne 0 ]; then
   exit 255
 fi
 
-cat << EOF > $TMPFILE
+cat << EOF > "$TMPFILE"
 $HLHDFDIR/.git
 $HLHDFDIR/.cproject
 $HLHDFDIR/.project
@@ -53,6 +53,6 @@ EOF
 
 # Create the tar-ball
 cd ..
-tar --exclude-from $TMPFILE -cvzf "${CURRENT_DIR}/${RELEASE_NAME}" HLHDF
+tar --exclude-from "$TMPFILE" -cvzf "${CURRENT_DIR}/${RELEASE_NAME}" HLHDF
 
-\rm -f $TMPFILE
+\rm -f "$TMPFILE"

@@ -50,8 +50,8 @@ distribution:
 	@echo "Would bring the latest revision upto date"
 
 install:
-	@$(HL_INSTALL) -f -o -C $(TARGET) $(prefix)/lib/$(TARGET)
-	@echo $(prefix)/lib > hlhdf.tmp
-	@$(HL_INSTALL) -f -o -C -m644 hlhdf.tmp $(prefix)/hlhdf.pth
+	@"$(HL_INSTALL)" -f -o -C $(TARGET) "$(prefix)/lib/$(TARGET)"
+	@echo "$(prefix)/lib" > hlhdf.tmp
+	@"$(HL_INSTALL)" -f -o -C -m644 hlhdf.tmp "$(prefix)/hlhdf.pth"
 	@\rm -f hlhdf.tmp
 

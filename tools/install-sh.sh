@@ -10,7 +10,7 @@
 # History:	2000-03-22 Created by Anders Henja
 ############################################################
 
-PROG=`basename $0`
+PROG=`basename "$0"`
 
 FORCED_UPDATE=no
 THE_GROUP=
@@ -55,8 +55,8 @@ create_directory()
 {
    TARGET_DIR=$1
    RESULT=0
-   if [ ! -d $TARGET_DIR ]; then
-      mkdir -p $TARGET_DIR
+   if [ ! -d "$TARGET_DIR" ]; then
+      mkdir -p "$TARGET_DIR"
       RESULT=$?
    fi
    return $RESULT
@@ -70,7 +70,7 @@ install_the_file()
 
    echo "Installing $ITF_T"
 
-   \cp $ITF_S $ITF_T
+   \cp "$ITF_S" "$ITF_T"
    RESULT=$?
 
    if [ $RESULT -ne 0 ]; then
@@ -85,7 +85,7 @@ change_group_id()
    CGI_T=$1
    CGI_G=$2
    RESULT=0
-   \chgrp $CGI_G $CGI_T
+   \chgrp $CGI_G "$CGI_T"
    RESULT=$?
 
    if [ $RESULT -ne 0 ]; then
@@ -100,7 +100,7 @@ change_user_id()
    CUI_T=$1
    CUI_U=$2
    RESULT=0
-   \chown $CUI_U $CUI_T
+   \chown $CUI_U "$CUI_T"
    RESULT=$?
    if [ $RESULT -ne 0 ]; then
       echo "Failed to change user id on file $CUI_T"
@@ -113,7 +113,7 @@ change_mode()
    CM_T=$1
    CM_M=$2
    RESULT=0
-   \chmod $CM_M $CM_T
+   \chmod $CM_M "$CM_T"
    RESULT=$?
    if [ $RESULT -ne 0 ]; then
       echo "Failed to change user mode on file $CM_T"
@@ -144,68 +144,70 @@ for i in $*; do
     esac
 done
 
-if [ $# -ne 2 ]; then
+if [ $# -lt 2 ]; then
    PrintHelp
    exit 1
 fi
 
 SOURCE_FILE=$1
-TARGET_FILE=$2
+shift
+TARGET_FILE=$*
+#echo "TGT: $TARGET_FILE"
 
 #echo "Would install $SOURCE_FILE as $TARGET_FILE"
 
 #Start by making sure the directory exists, if -C has been specified
-FIRST_DIR=`dirname $TARGET_FILE`
-if [ ! -d $FIRST_DIR -a "x$CREATE_NEEDED_DIRS" = "xno" ]; then
+FIRST_DIR=`dirname "$TARGET_FILE"`
+if [ ! -d "$FIRST_DIR" -a "x$CREATE_NEEDED_DIRS" = "xno" ]; then
    echo "No directory called '$FIRST_DIR'"
    exit 1
 fi
 
-if [ ! -d $FIRST_DIR ]; then
-   create_directory $FIRST_DIR
+if [ ! -d "$FIRST_DIR" ]; then
+   create_directory "$FIRST_DIR"
    if [ $? -ne 0 ]; then
       echo "Could not create directory structure"
       exit 1
    fi
 fi
 
-if [ -f $TARGET_FILE -a "x$FORCED_UPDATE" = "xno" ]; then
+if [ -f "$TARGET_FILE" -a "x$FORCED_UPDATE" = "xno" ]; then
    echo "$TARGET_FILE already exists, Ignoring update"
-elif [ -f $TARGET_FILE -a "x$FORCED_UPDATE" = "xyes" ]; then
-   THE_DIRNAME=`dirname $TARGET_FILE`
-   THE_BASENAME=`basename $TARGET_FILE`
+elif [ -f "$TARGET_FILE" -a "x$FORCED_UPDATE" = "xyes" ]; then
+   THE_DIRNAME=`dirname "$TARGET_FILE"`
+   THE_BASENAME=`basename "$TARGET_FILE"`
    if [ "x$SAVE_OLD" = "xyes" ]; then
       echo "$TARGET_FILE renamed to $THE_DIRNAME/OLD$THE_BASENAME"
-      \mv $TARGET_FILE $THE_DIRNAME/OLD$THE_BASENAME
+      \mv "$TARGET_FILE" "$THE_DIRNAME/OLD$THE_BASENAME"
    else
-      \rm -f $TARGET_FILE
+      \rm -f "$TARGET_FILE"
    fi
-   install_the_file $SOURCE_FILE $TARGET_FILE
+   install_the_file "$SOURCE_FILE" "$TARGET_FILE"
    if [ $? -ne 0 ]; then
       exit 1
    fi
 else
-   install_the_file $SOURCE_FILE $TARGET_FILE
+   install_the_file "$SOURCE_FILE" "$TARGET_FILE"
    if [ $? -ne 0 ]; then
       exit 1
    fi
 fi
 
 if [ "x$THE_GROUP" != "x" ]; then
-   change_group_id $TARGET_FILE $THE_GROUP
+   change_group_id "$TARGET_FILE" "$THE_GROUP"
    if [ $? -ne 0 ]; then
       exit 1
    fi
 fi
 
 if [ "x$THE_USER" != "x" ]; then
-   change_user_id $TARGET_FILE $THE_USER
+   change_user_id "$TARGET_FILE" "$THE_USER"
    if [ $? -ne 0 ]; then
       exit 1
    fi
 fi
 
-change_mode $TARGET_FILE $THE_MODE
+change_mode "$TARGET_FILE" "$THE_MODE"
 if [ $? -ne 0 ]; then
    exit 1
 fi

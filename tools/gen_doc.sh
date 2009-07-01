@@ -9,7 +9,7 @@
 # History:  2009-06-17 Created by Anders Henja
 ############################################################
 
-SCRIPTPATH=`dirname $(readlink -f $0)`
+SCRIPTPATH=`dirname "$(readlink -f $0)"`
 
 LASTDIR=`pwd`
 cd $SCRIPTPATH/../doxygen

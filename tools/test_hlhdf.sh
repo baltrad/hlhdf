@@ -9,7 +9,7 @@
 #
 # History:  2009-06-15 Created by Anders Henja
 ############################################################
-SCRIPTPATH=`dirname $(readlink -f $0)`
+SCRIPTPATH=`dirname "$(readlink -f $0)"`
 
 DEF_MK_FILE="${SCRIPTPATH}/../def.mk"
 
