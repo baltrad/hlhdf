@@ -610,6 +610,38 @@ class HlhdfWriteTest(unittest.TestCase):
     self.assertEqual(120, result['xscale'])
     self.assertEqual(130, result['yscale'])
     self.assertTrue(numpy.all([33.0,32.0,31.0,30.0]==result['area_extent']))
+  
+  # Bug: longs are written as int32 on MAC.
+  def testReadWriteVariousTypes(self):
+    a=_pyhl.nodelist()
     
+    b=_pyhl.node(_pyhl.GROUP_ID,"/info")
+    a.addNode(b)
+
+    b=_pyhl.node(_pyhl.ATTRIBUTE_ID,"/info/xscale")
+    b.setScalarValue(-1,0.85,"double",-1)
+    a.addNode(b)
+
+    b=_pyhl.node(_pyhl.ATTRIBUTE_ID,"/info/yscale")
+    b.setScalarValue(-1,1.0,"float",-1)
+    a.addNode(b);
+
+    b=_pyhl.node(_pyhl.ATTRIBUTE_ID,"/info/xsize")
+    b.setScalarValue(-1, 240, "int", -1)
+    a.addNode(b)
+
+    b=_pyhl.node(_pyhl.ATTRIBUTE_ID,"/info/ysize")
+    b.setScalarValue(-1,long(480),"long",-1)
+    a.addNode(b)
+
+    a.write(self.TESTFILE)
+    
+    #verify
+    a=_pyhl.read_nodelist(self.TESTFILE)
+    self.assertEquals("double", a.fetchNode("/info/xscale").format())
+    self.assertEquals("float", a.fetchNode("/info/yscale").format())
+    self.assertEquals("int", a.fetchNode("/info/xsize").format())
+    self.assertEquals("long", a.fetchNode("/info/ysize").format())
+        
 if __name__ == '__main__':
   unittest.main()

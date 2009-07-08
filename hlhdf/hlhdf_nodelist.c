@@ -235,7 +235,7 @@ HL_Node* HLNodeList_getNodeByName(HL_NodeList* nodelist, const char* nodeName)
     }
   }
 
-  HL_ERROR1("Could not locate node '%s'",nodeName);
+  HL_DEBUG1("Could not locate node '%s'",nodeName);
 
   return NULL;
 }
