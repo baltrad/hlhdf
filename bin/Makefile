@@ -64,6 +64,7 @@ check:
 	@echo "Nothing to test"
 
 install:
-	@$(HL_INSTALL) -f -o -C $(TARGET_HLDEC) $(prefix)/bin/$(TARGET_HLDEC)
-	@$(HL_INSTALL) -f -o -C $(TARGET_HLENC) $(prefix)/bin/$(TARGET_HLENC)
-	@$(HL_INSTALL) -f -o -C $(TARGET_HLLIST) $(prefix)/bin/$(TARGET_HLLIST)
+	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLDEC) "$(prefix)/bin/$(TARGET_HLDEC)"
+	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLENC) "$(prefix)/bin/$(TARGET_HLENC)"
+	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLLIST) "$(prefix)/bin/$(TARGET_HLLIST)"
+
