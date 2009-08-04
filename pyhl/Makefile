@@ -9,7 +9,7 @@
 ############################################################
 include ../def.mk
 
-CFLAGS= $(OPTS) $(DEFS) -I../hlhdf -I../pyhlhdf $(NUMPY_INCLUDE_DIR) \
+CFLAGS= $(OPTS) $(CCSHARED) $(DEFS) -I../hlhdf -I../pyhlhdf $(NUMPY_INCLUDE_DIR) \
 	$(INCLUDE_PYTHON) \
 	$(HDF5_INCDIR) $(ZLIB_INCDIR) $(SZLIB_INCDIR)
 

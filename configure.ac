@@ -167,8 +167,13 @@ case $withval in
 		numpy_inc="`echo $withval`"
 		FOUND_NUMPY_INC=no
 		numpy_inc_app=
-		if test "xyes" = "x$numpy_inc"; then
-			numpy_inc="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
+      if test "xyes" = "x$numpy_inc"; then
+         TESTNUMPYDIR=`python -c "import numpy; print eval(\"numpy.__\"+\"file__\")"`
+         if test $? -ne 0; then
+            numpy_inc="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
+         else
+            numpy_inc=`echo $TESTNUMPYDIR | sed -e"s/\/__init__.pyc//"`
+         fi
 		fi
 		if [[ -f $numpy_inc/arrayobject.h ]]; then
 			numpy_inc_app=
@@ -176,6 +181,12 @@ case $withval in
 		elif [[ -f $numpy_inc/numpy/arrayobject.h ]]; then
 			numpy_inc_app="/numpy"
 			FOUND_NUMPY_INC=yes
+      elif [[ -f $numpy_inc/core/include/numpy/arrayobject.h ]]; then
+          numpy_inc_app="/core/include/numpy"
+          FOUND_NUMPY_INC=yes
+      elif [[ -f $numpy_inc/numpy/core/include/numpy/arrayobject.h ]]; then
+          numpy_inc_app="/numpy/core/include/numpy"
+          FOUND_NUMPY_INC=yes
 		fi
 		if test "xyes" != "x$FOUND_NUMPY_INC"; then
 			AC_MSG_ERROR(Could not locate arrayobject.h)

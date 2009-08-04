@@ -9,7 +9,7 @@
 ############################################################
 include ../def.mk
 
-CFLAGS = $(OPTS) $(DEFS) $(NUMPY_INCLUDE_DIR) $(INCLUDE_PYTHON) $(HDF5_INCDIR) $(ZLIB_INCDIR) -I../hlhdf
+CFLAGS = $(OPTS) $(CCSHARED) $(DEFS) $(NUMPY_INCLUDE_DIR) $(INCLUDE_PYTHON) $(HDF5_INCDIR) $(ZLIB_INCDIR) -I../hlhdf
 
 # I gotta learn how to use expanded variables sometime.
 #TEMP= $(CFLAGS)

@@ -9,7 +9,7 @@
 ############################################################
 include ../def.mk
 
-CFLAGS= $(OPTS) $(DEFS) $(INCLUDE_PYTHON) $(HDF5_INCDIR) $(ZLIB_INCDIR) 
+CFLAGS= $(OPTS) $(CCSHARED) $(DEFS) $(INCLUDE_PYTHON) $(HDF5_INCDIR) $(ZLIB_INCDIR) 
 
 TARGET=libhlhdf.so
 TARGET.2=libhlhdf.a
