@@ -14,9 +14,9 @@ SHELL=/bin/sh
 TEST_YES=yes
 
 ifeq ($(COMPILE_FOR_PYTHON),yes)
-  SOURCE_DIRS=hlhdf pyhlhdf pyhl bin test doc doxygen examples
+  SOURCE_DIRS=hlhdf pyhlhdf pyhl bin test doc doxygen examples tools
 else
-  SOURCE_DIRS=hlhdf bin test doc doxygen examples
+  SOURCE_DIRS=hlhdf bin test doc doxygen examples tools
 endif
 
 DOCS_DIRS=doxygen

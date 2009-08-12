@@ -228,7 +228,6 @@ HL_Node* HLNodeList_getNodeByName(HL_NodeList* nodelist, const char* nodeName)
     HL_ERROR0("Can't get node when either nodelist or nodeName is NULL");
     return NULL;
   }
-
   for (i = 0; i < nodelist->nNodes; i++) {
     if (HLNode_nameEquals(nodelist->nodes[i], nodeName)) {
       return nodelist->nodes[i];

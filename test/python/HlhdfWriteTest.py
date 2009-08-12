@@ -12,16 +12,21 @@ import _rave_info_type
 
 class HlhdfWriteTest(unittest.TestCase):
   TESTFILE = "testskrivning.hdf"
+  TESTFILE2 = "testskrivning2.hdf"
   
   def setUp(self):
     _pyhl.show_hlhdferrors(0)
     _pyhl.show_hdf5errors(0)
     if os.path.isfile(self.TESTFILE):
       os.unlink(self.TESTFILE)
-    
+    if os.path.isfile(self.TESTFILE2):
+      os.unlink(self.TESTFILE2)   
+
   def tearDown(self):
     if os.path.isfile(self.TESTFILE):
       os.unlink(self.TESTFILE)
+    if os.path.isfile(self.TESTFILE2):
+      os.unlink(self.TESTFILE2)   
   
   def addScalarValueNode(self, nodelist, type, name, sz, value, hltype, hid):
     b = _pyhl.node(type, name)
@@ -642,6 +647,25 @@ class HlhdfWriteTest(unittest.TestCase):
     self.assertEquals("float", a.fetchNode("/info/yscale").format())
     self.assertEquals("int", a.fetchNode("/info/xsize").format())
     self.assertEquals("long", a.fetchNode("/info/ysize").format())
-        
+
+  def testWriteOnlyRootGroup(self):
+    a=_pyhl.nodelist()
+    b=_pyhl.node(_pyhl.GROUP_ID, "/")
+    a.addNode(b)
+    try:
+      a.write(self.TESTFILE)
+      self.fail("Expected IOError")
+    except IOError, e:
+      pass
+  
+  def testReadWriteSameFile(self):
+    a=_pyhl.nodelist()
+    b=_pyhl.node(_pyhl.GROUP_ID, "/slask")
+    a.addNode(b)
+    a.write(self.TESTFILE)
+    
+    a = _pyhl.read_nodelist(self.TESTFILE)
+    a.write(self.TESTFILE2)
+    
 if __name__ == '__main__':
   unittest.main()

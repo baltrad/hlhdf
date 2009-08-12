@@ -825,6 +825,10 @@ class HlhdfReadTest(unittest.TestCase):
     
     node = self.h5nodelist.getNode("/rootreferencetolongarray")
     self.assertEqual("/longarray", node.data())
-       
+
+  def testGetNodeNames(self):
+    names = self.h5nodelist.getNodeNames()
+    self.assertFalse(names.has_key("/"));
+
 if __name__ == "__main__":
     unittest.main()

@@ -822,7 +822,11 @@ static herr_t hlhdf_node_visitor(hid_t g_id, const char *name, const H5O_info_t 
   switch (info->type) {
   case H5O_TYPE_GROUP: {
     hsize_t n=0;
-    HLNodeList_addNode(vsp->nodelist, HLNode_newGroup(vs.path));
+    // The visitor also visits the root-node but that is not a valid
+    // node to write since it always should exist.
+    if (strcmp("/", path) != 0) {
+      HLNodeList_addNode(vsp->nodelist, HLNode_newGroup(vs.path));
+    }
     if (H5Aiterate_by_name(g_id, name, H5_INDEX_NAME, H5_ITER_INC, &n, hlhdf_node_attribute_visitor, &vs, H5P_DEFAULT) < 0) {
       HL_ERROR1("Failed to iterate over %s", vs.path);
       goto fail;
