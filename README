@@ -6,7 +6,7 @@ This version supports HDF5 1.8.x and is not fully backward compatible with previ
 of HL-HDF, please refer to the migration guide in the documentation.
 
 We have changed to use doxygen for documentation purpose so, if if you want to read the documentation
-without installing the software run the script "gen_doc.sh" that resides in <HLHDF src dir>/tools.
+without installing the software run the script "gen_doc.sh" that resides in <HLHDF src dir>/scripts.
 The documentation will be generated in <HLHDF src dir>/doxygen/doxygen/html.
 You can also generate the documentation through the make-system but that requires that configure
 has successfully been run.

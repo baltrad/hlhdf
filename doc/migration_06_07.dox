@@ -65,12 +65,12 @@ H5Tset_size(type,length);
 
 \section mig0607_upgrade_script Upgrade script
 We have added a very simple upgrade script that will help you with the renaming of the .c and .h files.
-It is called &lt;HLHDF src&gt;/tools/upgrade_0_7plus.sh and there is also a perl script called
-&lt;HLHDF src&gt;/tools/rename_functions.pl.
+It is called &lt;HLHDF src&gt;/scripts/upgrade_0_7plus.sh and there is also a perl script called
+&lt;HLHDF src&gt;/scripts/rename_functions.pl.
 
 To use upgrade_0_7plus.sh script, go to the root directory of your source code and execute:
 \verbatim
-%> <HLHDF src>/tools/upgrade_0_7plus.sh
+%> <HLHDF src>/scripts/upgrade_0_7plus.sh
 \endverbatim
 This will locate all .h and .c files in this directory and downwards in the directory structure and
 rename the old HLHDF functions into the new naming convention.
@@ -78,7 +78,7 @@ rename the old HLHDF functions into the new naming convention.
 If you want to play it safe, it is also possible to use the perl script instead and perform the
 name conversion manually.
 \verbatim
-%> perl <HLHDF src>/tools/rename_functions.pl <the file name to be translated>
+%> perl <HLHDF src>/scripts/rename_functions.pl <the file name to be translated>
 \endverbatim
 This command will perform the translation and print the translated file to stdout.
 

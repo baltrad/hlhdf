@@ -1,3 +1,22 @@
+/* --------------------------------------------------------------------
+Copyright (C) 2009 Swedish Meteorological and Hydrological Institute, SMHI,
+
+This file is part of HLHDF.
+
+HLHDF is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+HLHDF is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
+------------------------------------------------------------------------*/
+
 /**
  * @file
  * @author Anders Henja (Swedish Meteorological and Hydrological Institute, SMHI)
@@ -1118,7 +1137,7 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
   hid_t tmpHid = -1;
   size_t typeSize;
   char errbuf[256];
-  int* dims = NULL;
+  npy_intp* dims = NULL;
   int i;
   size_t npts;
 
@@ -1188,7 +1207,7 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
     }
     }
   } else { /*Simple*/
-    if (!(dims = HLHDF_MALLOC(sizeof(int) * HLNode_getRank(self->node)))) {
+    if (!(dims = HLHDF_MALLOC(sizeof(npy_intp) * HLNode_getRank(self->node)))) {
       setException(PyExc_MemoryError,"Could not allocate dims");
       goto fail;
     }
@@ -1203,10 +1222,9 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
         goto fail;
       }
       for (i = 0; i < HLNode_getRank(self->node); i++)
-        dims[i] = (int) HLNode_getDimension(self->node, i);
+        dims[i] = (npy_intp) HLNode_getDimension(self->node, i);
 
-      /* Replaced PyArray_FromDimsAndData with this */
-      retv = PyArray_FromDims(HLNode_getRank(self->node), dims, iformat);
+      retv = PyArray_SimpleNew(HLNode_getRank(self->node), dims, iformat);
       if (!retv) {
         setException(PyExc_MemoryError,"Could not create array");
         goto fail;
@@ -1273,7 +1291,7 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
   hid_t tmpHid = -1;
   size_t typeSize;
   char errbuf[256];
-  int* dims = NULL;
+  npy_intp* dims = NULL;
   int i;
   size_t npts;
 
@@ -1348,7 +1366,7 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
     }
     }
   } else { /*Simple*/
-    if (!(dims = HLHDF_MALLOC(sizeof(int) * HLNode_getRank(self->node)))) {
+    if (!(dims = HLHDF_MALLOC(sizeof(npy_intp) * HLNode_getRank(self->node)))) {
       setException(PyExc_MemoryError,"Could not allocate dims");
       goto fail;
     }
@@ -1363,10 +1381,9 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
         goto fail;
       }
       for (i = 0; i < HLNode_getRank(self->node); i++)
-        dims[i] = (int) HLNode_getDimension(self->node,i);
+        dims[i] = (npy_intp) HLNode_getDimension(self->node,i);
 
-      /* Replaced PyArray_FromDimsAndData with this */
-      retv = PyArray_FromDims(HLNode_getRank(self->node), dims, iformat);
+      retv = PyArray_SimpleNew(HLNode_getRank(self->node), dims, iformat);
       if (!retv) {
         setException(PyExc_MemoryError,"Could not create array");
         goto fail;

@@ -17,14 +17,34 @@
 # along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
 ###########################################################################
 
-##
-# Suite containing all testfiles for the python package.
+############################################################
+# Makefile for generating the documentation
+# 
+# Author(s):	Anders Henja (Swedish Meteorological and Hydrological Institute, SMHI)
 #
-import unittest
-from HlhdfReadTest import *
-from HlhdfWriteTest import *
-from HlhdfUpdateTest import *
-from HlhdfNodeTest import *
+# Date:		2009-06-11
+############################################################
+include ../def.mk
 
-if __name__ == '__main__':
-  unittest.main()
+all:
+
+.PHONY: clean
+clean:
+	@\rm -f *.o
+	@\rm -f *~
+
+.PHONY: docs
+docs:
+
+.PHONY: distclean
+distclean:
+	@\rm -f *.o
+	@\rm -f *~ core
+	@\rm -fr doxygen
+
+.PHONY: distribution
+distribution:
+
+.PHONY: install
+install:
+

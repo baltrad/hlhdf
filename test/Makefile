@@ -1,3 +1,22 @@
+###########################################################################
+# Copyright (C) 2009 Swedish Meteorological and Hydrological Institute, SMHI,
+#
+# This file is part of HLHDF.
+#
+# HLHDF is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# HLHDF is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
+###########################################################################
+
 ############################################################
 # Description:	Makefile for the tests.
 #
@@ -29,6 +48,7 @@ all:
 		cd "$$TDIR"; \
 	done;
 
+.PHONY: clean
 clean:
 	@\rm -f *~ core
 	@for i in $(SOURCE_DIRS) ; \
@@ -39,6 +59,7 @@ clean:
 		cd "$$TDIR"; \
 	done;
 
+.PHONY: distclean
 distclean:
 	@\rm -f *~ core config.*
 	@for i in $(SOURCE_DIRS) ; \
@@ -50,6 +71,7 @@ distclean:
 		cd "$$TDIR"; \
 	done
 
+.PHONY: distribution
 distribution:
 	@for i in $(SOURCE_DIRS) ; \
 	do \
@@ -60,6 +82,7 @@ distribution:
 		cd "$$TDIR"; \
 	done
 
+.PHONY: install
 install:
 	@for i in $(SOURCE_DIRS) ; \
 	do \

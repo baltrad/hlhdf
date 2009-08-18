@@ -1,3 +1,22 @@
+###########################################################################
+# Copyright (C) 2009 Swedish Meteorological and Hydrological Institute, SMHI,
+#
+# This file is part of HLHDF.
+#
+# HLHDF is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# HLHDF is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Lesser General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
+###########################################################################
+
 ############################################################
 # Description:	Makefile for building the hlhdf library.
 #
@@ -26,19 +45,23 @@ $(TARGET): $(OBJS)
 $(TARGET.2): $(OBJS)
 	$(AR) cr $@ $(OBJS) 
 
+.PHONY: clean
 clean:
 	@\rm -f *.o
 	@\rm -f *~
 
+.PHONY: distclean
 distclean:
 	@\rm -f *.o
 	@\rm -f $(TARGET)
 	@\rm -f $(TARGET.2)	
 	@\rm -f *~ core
 
+.PHONY: distribution
 distribution:
 	@echo "Would bring the latest revision upto date"
 
+.PHONY: install
 install:
 	@"$(HL_INSTALL)" -f -o -C $(TARGET) "$(prefix)/lib/$(TARGET)"
 	@"$(HL_INSTALL)" -f -o -C $(TARGET.2) "$(prefix)/lib/$(TARGET.2)"

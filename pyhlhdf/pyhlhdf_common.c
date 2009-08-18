@@ -1,3 +1,22 @@
+/* --------------------------------------------------------------------
+Copyright (C) 2009 Swedish Meteorological and Hydrological Institute, SMHI,
+
+This file is part of HLHDF.
+
+HLHDF is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+HLHDF is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
+------------------------------------------------------------------------*/
+
 /**
  * @file
  * @author Anders Henja (Swedish Meteorological and Hydrological Institute, SMHI)
@@ -586,16 +605,16 @@ int pyarraytypeFromHdfType(const char* format)
 PyArrayObject* new1d_ArrayObject(int nl, \
 				 const char* format)
 {
-   int dims[1];
+   npy_intp dims[1];
    PyArrayObject* arr;
    int iformat=pyarraytypeFromHdfType(format);
 
    if(iformat==-1)
       return NULL;
 
-   dims[0]=nl;
+   dims[0]=(npy_intp)nl;
 
-   arr=(PyArrayObject*)PyArray_FromDims(1,dims,iformat);
+   arr=(PyArrayObject*)PyArray_SimpleNew(1,dims,iformat);
 
    return arr;
 }
@@ -606,17 +625,17 @@ PyArrayObject* new1d_ArrayObject(int nl, \
 PyArrayObject* new2d_ArrayObject(int xsize,int ysize, \
 					const char* format)
 {
-   int dims[2];
+   npy_intp dims[2];
    PyArrayObject* arr;
    int iformat=pyarraytypeFromHdfType(format);
 
    if(iformat==-1)
       return NULL;
 
-   dims[0]=ysize;
-   dims[1]=xsize;
+   dims[0]=(npy_intp)ysize;
+   dims[1]=(npy_intp)xsize;
 
-   arr=(PyArrayObject*)PyArray_FromDims(2,dims,iformat);
+   arr=(PyArrayObject*)PyArray_SimpleNew(2,dims,iformat);
 
    return arr;
 }

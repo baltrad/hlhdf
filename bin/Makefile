@@ -44,11 +44,13 @@ $(TARGET_HLENC): $(OBJECTS_HLENC) ../hlhdf/libhlhdf.a
 $(TARGET_HLLIST): $(OBJECTS_HLLIST) ../hlhdf/libhlhdf.a
 	$(CC) -o $@ $(LDFLAGS) $(OBJECTS_HLLIST) $(LIBRARIES)
 
+.PHONY: clean
 clean:
 	@\rm -f *.o
 	@\rm -f *~
 	@\rm -f so_locations
 
+.PHONY: distclean
 distclean:
 	@\rm -f *.o
 	@\rm -f $(TARGET_HLDEC)
@@ -57,12 +59,15 @@ distclean:
 	@\rm -f *~ core
 	@\rm -f so_locations
 
+.PHONY: distribution
 distribution:
 	@echo "Would bring the latest revision upto date"
 
-check:
+.PHONY: test
+test:
 	@echo "Nothing to test"
 
+.PHONY: install
 install:
 	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLDEC) "$(prefix)/bin/$(TARGET_HLDEC)"
 	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLENC) "$(prefix)/bin/$(TARGET_HLENC)"

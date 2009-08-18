@@ -1,3 +1,4 @@
+#!/bin/sh
 ###########################################################################
 # Copyright (C) 2009 Swedish Meteorological and Hydrological Institute, SMHI,
 #
@@ -17,14 +18,19 @@
 # along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
 ###########################################################################
 
-##
-# Suite containing all testfiles for the python package.
+############################################################
+# Description: Script that generates the documentation.
 #
-import unittest
-from HlhdfReadTest import *
-from HlhdfWriteTest import *
-from HlhdfUpdateTest import *
-from HlhdfNodeTest import *
+# Author(s):   Anders Henja
+#
+# Copyright:   Swedish Meteorological and Hydrological Institute, 2009
+#
+# History:  2009-06-17 Created by Anders Henja
+############################################################
 
-if __name__ == '__main__':
-  unittest.main()
+SCRIPTPATH=`dirname "$(readlink -f $0)"`
+
+LASTDIR=`pwd`
+cd $SCRIPTPATH/../doxygen
+doxygen hlhdf_doxygen.cfg
+cd $LASTDIR

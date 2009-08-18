@@ -1,0 +1,53 @@
+///////////////////////////////////////////////////////////////////////
+  Copyright 2009 Swedish Meteorological and Hydrological Institute, SMHI,
+
+  This file is part of HLHDF.
+
+  HLHDF is free software: you can redistribute it and/or modify
+  it under the terms of the GNU Lesser General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  HLHDF is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU Lesser General Public License for more details.
+
+  You should have received a copy of the GNU Lesser General Public License
+  along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
+///////////////////////////////////////////////////////////////////////
+
+The installation of HLHDF follows the traditional configure, make, make install sequence. 
+
+Requirements:
+- HDF5 library version 1.8.x or higher (http://www.hdfgroup.org/HDF5)
+- gnu zip (including zlib), version 1.1.0 or higher
+- gnu tar
+- gnu make version 3.7x or higher (or compatible)
+
+
+Configure & Build
+Most of the options for the configure is probably not nessecary to specify but
+if you are uncertain, then type './configure --help' to get a list of all options.
+
+The two options that might be nessecary to specify is the installation directory and where
+the HDF5 library resides.
+
+  ./configure --prefix=<where to install HLHDF> --with-hdf5=<HDF5 include files>,<HDF5 library files>
+
+When the configuration has successfully be done, then it is time to build the software which is done
+by using 'make'.
+
+Example:
+%> ./configure --prefix=/opt/HLHDF --with-hdf5=/opt/include,/opt/lib
+%> make
+
+Test
+After the software successfully has been built, it is possible to perform
+a sanity test before installing the package. This is done by executing:
+%> make test
+
+Installation
+Make sure that you have permissions to write files in the directory specified by the --prefix
+directive during the configuration phase before typing:
+%> make install
