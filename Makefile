@@ -102,6 +102,8 @@ test:
 
 .PHONY: install
 install:
+	@chmod +x ./scripts/prepare_installdir.sh
+	@./scripts/prepare_installdir.sh "$(prefix)"
 	@for i in $(SOURCE_DIRS) ; \
 	do \
 		echo "------Installing from directory $$i------"; \
@@ -113,3 +115,8 @@ install:
 	@"$(HL_INSTALL)" -f -o -C -m644 def.mk "$(prefix)/mkf/hldef.mk"
 	@"$(HL_INSTALL)" -f -o -C ./scripts/install-sh.sh "$(prefix)/bin/hlinstall.sh"
 
+.PHONY: rollbackinstall
+rollbackinstall:
+	@chmod +x ./scripts/rollback_installation.sh
+	@./scripts/rollback_installation.sh "$(prefix)"
+  
