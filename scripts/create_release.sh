@@ -180,6 +180,7 @@ echo -n "Do you want to create a tag in the git branch? [yes]: "
 YESNO=yes
 read YESNO
 if [ "x$YESNO" = "xyes" ]; then
+  cd "$SCRIPTPATH/.."
   git tag -a "$NEW_VERSION" -m "$TAG_MESSAGE"
 fi
 
