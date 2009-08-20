@@ -450,7 +450,7 @@ execute_upgrade_test() {
   
   verify_hlhdf_directory_structure "$1" "v0.7.4" || return 255
   
-  verify_version_file_contents "$1" ".rollback" "$3" || return 255
+  verify_version_file_contents "$1" ".rollback" "v0.7.4" || return 255
   
   return 0  
 }
