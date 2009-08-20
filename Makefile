@@ -50,13 +50,13 @@ all:
 		cd "$$TDIR"; \
 	done;
 
-.PHONY: docs
-docs:
+.PHONY: doc
+doc:
 	@for i in $(DOCS_DIRS) ; \
 	do \
 		TDIR=`pwd` ; \
 		cd $$i; \
-		$(MAKE) docs; \
+		$(MAKE) doc; \
 		cd "$$TDIR"; \
 	done;
 	

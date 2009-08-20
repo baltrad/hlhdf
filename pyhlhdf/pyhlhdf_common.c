@@ -521,16 +521,17 @@ char* translatePyFormatToHlHdf(char type)
 
    switch(type) {
    case 'c':
+   case 'b':
       retv=strdup("char");
       break;
-   case '1':
-      retv=strdup("schar");
-      break;
-   case 'b':
+   case 'B':
       retv=strdup("uchar");
       break;
-   case 's':
+   case 'h':
       retv=strdup("short");
+      break;
+   case 'H':
+      retv=strdup("ushort");
       break;
    case 'i':
       retv=strdup("int");

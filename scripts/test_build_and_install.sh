@@ -357,7 +357,7 @@ prepare_build() {
 }
 
 ###
-# Runs the configure, make, make test and make install sequence
+# Runs the configure, make, make test, make doc and make install sequence
 # as one operation.
 #
 # Arguments:
@@ -380,6 +380,8 @@ run_config_make_sequence() {
   execute_command "$1" "make" || return 255
 
   execute_command "$1" "make test" || return 255
+
+  execute_command "$1" "make doc" || return 255
 
   execute_command "$1" "make install" || return 255
 

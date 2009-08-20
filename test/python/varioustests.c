@@ -25,6 +25,9 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
  * Various functions that are used during the testing
  */
 #include <Python.h>
+/** To ensure that arrayobject is imported correctly */
+#define HLHDF_PYMODULE_WITH_IMPORT_ARRAY
+#include "pyhlhdf_common.h"
 
 static PyObject *ErrorObject;
 
@@ -44,9 +47,30 @@ static PyObject* _varioustests_sizeoflonglong(PyObject* self, PyObject* args)
   return PyInt_FromLong((int)sizeof(long long));
 }
 
+static PyObject* _varioustests_translatePyFormatToHlHdf(PyObject* self, PyObject* args)
+{
+  char c=(char)0;
+  char* format = NULL;
+  PyObject* result = NULL;
+
+  if (!PyArg_ParseTuple(args, "c", &c)) {
+    return NULL;
+  }
+
+  format = translatePyFormatToHlHdf(c);
+  if (format == NULL) {
+    return NULL;
+  }
+
+  result = PyString_FromString(format);
+  free(format);
+  return result;
+}
+
 static PyMethodDef functions[] = {
   {"sizeoflong", (PyCFunction)_varioustests_sizeoflong, 1},
   {"sizeoflonglong", (PyCFunction)_varioustests_sizeoflonglong, 1},
+  {"translatePyFormatToHlhdf", (PyCFunction)_varioustests_translatePyFormatToHlHdf, 1},
   {NULL,NULL} /*Sentinel*/
 };
 
@@ -59,6 +83,8 @@ void init_varioustests(void)
 
   m = Py_InitModule("_varioustests",functions);
   d = PyModule_GetDict(m);
+
+  import_array(); /*To make sure I get access to Numeric*/
 
   ErrorObject = PyString_FromString("_pyhl.error");
   if (ErrorObject == NULL || PyDict_SetItemString(d, "error", ErrorObject) != 0) {

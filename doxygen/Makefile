@@ -33,8 +33,8 @@ clean:
 	@\rm -f *.o
 	@\rm -f *~
 
-.PHONY: docs
-docs:
+.PHONY: doc
+doc:
 	@doxygen hlhdf_doxygen.cfg
 
 .PHONY: distclean

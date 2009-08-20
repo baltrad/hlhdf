@@ -25,6 +25,7 @@ from HlhdfReadTest import *
 from HlhdfWriteTest import *
 from HlhdfUpdateTest import *
 from HlhdfNodeTest import *
+from HlhdfPyhlhdfCommonTest import *
 
 if __name__ == '__main__':
   unittest.main()
