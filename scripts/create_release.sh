@@ -126,6 +126,35 @@ if [ $? -ne 0 ]; then
   echo "Failed to create version file"
   exit 255
 fi
+
+#
+# CREATE A RELEASE SUMMARY TO KEEP TRACK ON CHANGES
+#
+if [ -f /tmp/hlhdf-$NEW_VERSION/RELEASE ]; then
+  echo "RELEASE has been added to the source tree, this file should automatically be generated from the revision history"
+  exit 255
+fi
+
+NLINES=`git tag | wc -l | awk '{print $1}'`
+LASTLINE=`expr $NLINES - 1`
+LASTTAG=`git tag | sed "1,$LASTLINE d"`
+COMMITLOG=`git log $LASTTAG.. --pretty=format:"%s"`
+RHISTORY=`git tag -n10`
+
+cat << EOF > "/tmp/hlhdf-$NEW_VERSION/RELEASE"
+News for $NEW_VERSION: $TAG_MESSAGE
+
+$COMMITLOG
+
+Previous releases:
+$RHISTORY
+EOF
+
+if [ $? -ne 0 ]; then
+  echo "Failed to create RELEASE file"
+  exit 255
+fi
+
 cd /tmp/
 tar -cvzf "/tmp/hlhdf-$NEW_VERSION.tgz" "hlhdf-$NEW_VERSION/"
 if [ $? -ne 0 ]; then
@@ -134,105 +163,24 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Running build and installation tests...."
-#$SCRIPTPATH/test_build_and_install.sh "/tmp/hlhdf-$NEW_VERSION.tgz" "$NEW_VERSION"
-#if [ $? -ne 0 ]; then
-#  echo "Build and installation tests failed"
-#  exit 255
-#fi
+$SCRIPTPATH/test_build_and_install.sh "/tmp/hlhdf-$NEW_VERSION.tgz" "$NEW_VERSION"
+if [ $? -ne 0 ]; then
+  echo "Build and installation tests failed"
+  exit 255
+fi
 
 echo "Build and installation tests successful."
 
-exit 255
+echo "Copying deliverable (hlhdf-$NEW_VERSION.tgz) to $CURRENT_DIR"
+cp "/tmp/hlhdf-$NEW_VERSION.tgz" "$CURRENT_DIR"
 
-echo "Attempting to generate a release....."
-
-\rm -fr "/tmp/hlhdfbuild-$NEW_VERSION"
-\rm -fr "/tmp/hlhdfinstall-$NEW_VERSION"
-
-git archive --format=tar --prefix="hlhdfbuild-$NEW_VERSION/" HEAD | (cd /tmp && tar xf -) 
-if [ $? -ne 0 ]; then
-  echo "Failed to create temporary distribution"
-  exit 255
-fi
-
-cd "/tmp/hlhdfbuild-$NEW_VERSION"
-
-$CONFIGURECMD --prefix="/tmp/hlhdfinstall-$NEW_VERSION"
-if [ $? -ne 0 ]; then
-  echo "Failed to configure system"
-  exit 255
-fi
-
-make
-if [ $? -ne 0 ]; then
-  echo "Failed to build the system"
-  exit 255
-fi
-
-make test
-if [ $? -ne 0 ]; then
-  echo "Tests failed."
-  exit 255
-fi
-
-make install
-if [ $? -ne 0 ]; then
-  echo "Failed to install the system."
-  exit 255
-fi
-
-\rm -fr "/tmp/hlhdfbuild-$NEW_VERSION"
-\rm -fr "/tmp/hlhdfinstall-$NEW_VERSION"
-
-echo ""
-echo "Sanity check performed and no obvious errors encountered!
-echo ""
-echo "Should release be tagged before creating tar-ball? [yes]: "
-
-exit 255
-
-echo -n "Will create release $CURRENT_VERSION, is this correct [no]? "
-YESNO=no
+echo "RELEASE: $NEW_VERSION"
+echo "MESSAGE: $TAG_MESSAGE"
+echo -n "Do you want to create a tag in the git branch? [yes]: "
+YESNO=yes
 read YESNO
-if [ $? -ne 0 ]; then
-  exit 255;
+if [ "x$YESNO" == "xyes" ]; then
+  git tag -a "$NEW_VERSION" -m "$TAG_MESSAGE"
 fi
 
-if [ "x$YESNO" != "xyes" ]; then
-  exit 255;
-fi
-
-
-cd "$SCRIPTPATH/.."
-CURRENT_VERSION=`git describe`
-if [ $? -ne 0 ]; then
-  echo "No 'git tag -a <version> -m <message>' has been run"
-  exit 255
-fi
-
-CONFIGURECMD=./configure
-if [ -f .release_conf ]; then
-  CONFIGURECMD=`cat .release_conf`
-else
-  echo "No configuration parameters setup, will only use ./configure"
-  echo "If you want some other ./configure parameters, edit the file .release_conf in the root directory of HLHDF"
-  echo "with only one line containing the full ./configure command."
-fi
-
-echo -n "Will create release $CURRENT_VERSION, is this correct [no]? "
-YESNO=no
-read YESNO
-if [ $? -ne 0 ]; then
-  exit 255;
-fi
-
-if [ "x$YESNO" != "xyes" ]; then
-  exit 255;
-fi
-
-if [ -d "/tmp/hlhdf-$CURRENT_VERSION" ]; then
-  \rm -fr "/tmp/hlhdf-$CURRENT_VERSION"
-fi
-mkdir "/tmp/hlhdf-$CURRENT_VERSION"
-
-exit 255
+echo "Release created successfully"
