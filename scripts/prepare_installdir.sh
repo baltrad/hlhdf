@@ -115,6 +115,39 @@ if [ -d "$INSTALLDIR" ]; then
   fi
 fi
 
+BAD_INSTALL_DIR=no
+if [ -d "${INSTALLDIR}" ]; then
+  if [ -d "${INSTALLDIR}/include" ]; then
+    PINS_INCL_FILES=`ls -1 "${INSTALLDIR}/include" | grep -v hlhdf`
+    if [ "x$PINS_INCL_FILES" != "x" ]; then
+      BAD_INSTALL_DIR=yes
+    fi
+  fi
+  
+  if [ -d "${INSTALLDIR}/lib" ]; then
+    PINS_LIB_FILES=`ls -1 "${INSTALLDIR}/lib" | grep -v hlhdf | grep -v pyhl`
+    if [ "x$PINS_LIB_FILES" != "x" ]; then
+      BAD_INSTALL_DIR=yes
+    fi
+  fi
+  
+  if [ -d "${INSTALLDIR}/bin" ]; then
+    PINS_BIN_FILES=`ls -1 "${INSTALLDIR}/bin" | grep -v hllist | grep -v hldec | grep -v hlenc | grep -v hlinstall`
+    if [ "x$PINS_BIN_FILES" != "x" ]; then
+      BAD_INSTALL_DIR=yes
+    fi
+  fi
+elif [ -e "${INSTALLDIR}" ]; then
+  echo "Install directory ${INSTALLDIR} already exists as a non-directory"
+  exit 255
+fi
+
+if [ "x$BAD_INSTALL_DIR" = "xyes" ]; then
+  echo "It is not allowed to install hlhdf in a directory that is shared between other components"
+  echo ""
+  exit 255
+fi
+
 if [ $DIREXISTS -eq 1 -a $NEWHLHDF -eq 0 ]; then
   echo "Converting old HLHDF installation to new version"
   create_directory "$INSTALLDIR/pre-0.7" || exit 255

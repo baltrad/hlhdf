@@ -73,7 +73,7 @@ HL_NodeList* HLNodeList_new(void)
 void HLNodeList_free(HL_NodeList* nodelist)
 {
   int i;
-  HL_SPEWDEBUG0("ENTER: freeHL_NodeList");
+  HL_SPEWDEBUG0("ENTER: HLNodeList_free");
   if (!nodelist)
     return;
 
@@ -85,6 +85,7 @@ void HLNodeList_free(HL_NodeList* nodelist)
   }
   HLHDF_FREE(nodelist->filename);
   HLHDF_FREE(nodelist);
+  HL_SPEWDEBUG0("EXIT: HLNodeList_free");
 }
 
 int HLNodeList_setFileName(HL_NodeList* nodelist, const char* filename)

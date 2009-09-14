@@ -1726,6 +1726,50 @@ if test "${prefix}" = "NONE"; then
 	prefix=/usr/local/hlhdf
 fi
 
+BAD_INSTALL_DIR=no
+if [ -d "${prefix}" ]; then
+  if [ -d "${prefix}/include" ]; then
+    PINS_INCL_FILES=`ls -1 "${prefix}/include" | grep -v hlhdf`
+    if [ "x$PINS_INCL_FILES" != "x" ]; then
+      BAD_INSTALL_DIR=yes
+    fi
+  elif [ -e "${prefix}/include" ]; then
+    { { echo "$as_me:$LINENO: error: \"${prefix}/include exists but is not a directory\"" >&5
+echo "$as_me: error: \"${prefix}/include exists but is not a directory\"" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  if [ -d "${prefix}/lib" ]; then
+    PINS_LIB_FILES=`ls -1 "${prefix}/lib" | grep -v hlhdf | grep -v pyhl`
+    if [ "x$PINS_LIB_FILES" != "x" ]; then
+      BAD_INSTALL_DIR=yes
+    fi
+  elif [ -e "${prefix}/lib" ]; then
+    { { echo "$as_me:$LINENO: error: \"${prefix}/lib exists but is not a directory\"" >&5
+echo "$as_me: error: \"${prefix}/lib exists but is not a directory\"" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+  if [ -d "${prefix}/bin" ]; then
+    PINS_BIN_FILES=`ls -1 "${prefix}/bin" | grep -v hllist | grep -v hldec | grep -v hlenc | grep -v hlinstall`
+    if [ "x$PINS_BIN_FILES" != "x" ]; then
+      BAD_INSTALL_DIR=yes
+    fi
+  elif [ -e "${prefix}/bin" ]; then
+    { { echo "$as_me:$LINENO: error: \"${prefix}/bin exists but is not a directory\"" >&5
+echo "$as_me: error: \"${prefix}/bin exists but is not a directory\"" >&2;}
+   { (exit 1); exit 1; }; }
+  fi
+elif [ -e "${prefix}" ]; then
+  { { echo "$as_me:$LINENO: error: \"${prefix} is not a directory\"" >&5
+echo "$as_me: error: \"${prefix} is not a directory\"" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
+if [ "x$BAD_INSTALL_DIR" = "xyes" ]; then
+  { { echo "$as_me:$LINENO: error: \"It is not allowed to install hlhdf in a directory that is shared between other components\"" >&5
+echo "$as_me: error: \"It is not allowed to install hlhdf in a directory that is shared between other components\"" >&2;}
+   { (exit 1); exit 1; }; }
+fi
+
 
 # Check whether --with-python was given.
 if test "${with_python+set}" = set; then

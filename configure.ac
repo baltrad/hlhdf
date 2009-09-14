@@ -45,6 +45,42 @@ if test "${prefix}" = "NONE"; then
 	prefix=/usr/local/hlhdf
 fi
 
+dnl Ensure that the wanted installation directory does not contain
+dnl files that not are related to HLHDF.
+BAD_INSTALL_DIR=no
+if [[ -d "${prefix}" ]]; then
+  if [[ -d "${prefix}/include" ]]; then
+    PINS_INCL_FILES=`ls -1 "${prefix}/include" | grep -v hlhdf`
+    if [[ "x$PINS_INCL_FILES" != "x" ]]; then
+      BAD_INSTALL_DIR=yes
+    fi
+  elif [[ -e "${prefix}/include" ]]; then
+    AC_MSG_ERROR("${prefix}/include exists but is not a directory")
+  fi
+  if [[ -d "${prefix}/lib" ]]; then
+    PINS_LIB_FILES=`ls -1 "${prefix}/lib" | grep -v hlhdf | grep -v pyhl`
+    if [[ "x$PINS_LIB_FILES" != "x" ]]; then
+      BAD_INSTALL_DIR=yes
+    fi
+  elif [[ -e "${prefix}/lib" ]]; then
+    AC_MSG_ERROR("${prefix}/lib exists but is not a directory")
+  fi
+  if [[ -d "${prefix}/bin" ]]; then
+    PINS_BIN_FILES=`ls -1 "${prefix}/bin" | grep -v hllist | grep -v hldec | grep -v hlenc | grep -v hlinstall`
+    if [[ "x$PINS_BIN_FILES" != "x" ]]; then
+      BAD_INSTALL_DIR=yes
+    fi
+  elif [[ -e "${prefix}/bin" ]]; then
+    AC_MSG_ERROR("${prefix}/bin exists but is not a directory")
+  fi
+elif [[ -e "${prefix}" ]]; then
+  AC_MSG_ERROR("${prefix} is not a directory")
+fi
+
+if [[ "x$BAD_INSTALL_DIR" = "xyes" ]]; then
+  AC_MSG_ERROR("It is not allowed to install hlhdf in a directory that is shared between other components")
+fi
+
 AC_ARG_WITH(python,[  --with-python=(yes|no)     Compile for python],
 	    ,withval=yes)
 

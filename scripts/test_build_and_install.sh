@@ -357,6 +357,26 @@ prepare_build() {
 }
 
 ###
+# Runs the configure.
+#
+# Arguments:
+#  1 - Comment, typically the test case name
+#  2 - Builddir, the directory where the tarball should be extracted
+#  3 - Installdir, the directory to install the deliverables in
+#  4 - Version, the version that should be built and installed
+#  5 - Configcmd, the configure command
+#
+# Returns: Returns 0 on success, otherwise 255
+run_configure() {
+  change_directory "$2/hlhdf-$4" || return 255
+  $5 --prefix="$3"
+  if [ $? -ne 0 ]; then
+    return 255
+  fi
+  return 0
+}
+
+###
 # Runs the configure, make, make test, make doc and make install sequence
 # as one operation.
 #
@@ -488,6 +508,60 @@ execute_pre075_upgrade_test() {
   return 0
 }
 
+execute_illegal_config_prefix_bin() {
+  # Setup
+  prepare_build "$1" "$4" "$2" "$3" || return 255
+
+  # Setup a simulated dir-structure containing other include files
+  remove_directory "$5"
+  remove_and_create_directory "$5/bin" || return 255
+  remove_and_create_directory "$5/include" || return 255
+  remove_and_create_directory "$5/lib" || return 255  
+  remove_and_create_file "$5/bin/xyz" || return 255
+  
+  run_configure "$1" "$4" "$5" "$3" "$6"
+  if [ $? -ne 255 ]; then
+    return 255
+  fi
+  return 0
+}
+
+execute_illegal_config_prefix_include() {
+  # Setup
+  prepare_build "$1" "$4" "$2" "$3" || return 255
+
+  # Setup a simulated dir-structure containing other include files
+  remove_directory "$5"
+  remove_and_create_directory "$5/bin" || return 255
+  remove_and_create_directory "$5/include" || return 255
+  remove_and_create_directory "$5/lib" || return 255  
+  remove_and_create_file "$5/include/stdio.h" || return 255
+  
+  run_configure "$1" "$4" "$5" "$3" "$6"
+  if [ $? -ne 255 ]; then
+    return 255
+  fi
+  return 0
+}
+
+execute_illegal_config_prefix_lib() {
+  # Setup
+  prepare_build "$1" "$4" "$2" "$3" || return 255
+
+  # Setup a simulated dir-structure containing other include files
+  remove_directory "$5"
+  remove_and_create_directory "$5/bin" || return 255
+  remove_and_create_directory "$5/include" || return 255
+  remove_and_create_directory "$5/lib" || return 255  
+  remove_and_create_file "$5/lib/libabc.a" || return 255
+  
+  run_configure "$1" "$4" "$5" "$3" "$6"
+  if [ $? -ne 255 ]; then
+    return 255
+  fi
+  return 0
+}
+
 SCRFILE=`python -c "import os;print os.path.abspath(\"$0\")"`
 SCRIPTPATH=`dirname "$SCRFILE"`
 cd "$SCRIPTPATH/.."
@@ -535,6 +609,15 @@ execute_pre075_upgrade_test "Upgrade test from pre0.7.5 to newer" "$TB" "$VER" "
 
 echo "Running upgrade test from old version"
 execute_upgrade_test "Upgrade test" "$TB" "$VER" "/tmp/hlhdfbuild" "/tmp/hlhdfinstall" "$CONFIGURECMD" 2>&1 >> /tmp/hlhdf_buildandinstall.log || exit 255
+
+echo "Running configure test where bin directory contains non-hlhdf related files"
+execute_illegal_config_prefix_bin "Illegal configuration prefix bin" "$TB" "$VER" "/tmp/hlhdfbuild" "/tmp/hlhdfinstall" "$CONFIGURECMD" 2>&1 >> /tmp/hlhdf_buildandinstall.log || exit 255
+
+echo "Running configure test where include directory contains non-hlhdf related files"
+execute_illegal_config_prefix_include "Illegal configuration prefix include" "$TB" "$VER" "/tmp/hlhdfbuild" "/tmp/hlhdfinstall" "$CONFIGURECMD" 2>&1 >> /tmp/hlhdf_buildandinstall.log || exit 255
+
+echo "Running configure test where lib directory contains non-hlhdf related files"
+execute_illegal_config_prefix_lib "Illegal configuration prefix lib" "$TB" "$VER" "/tmp/hlhdfbuild" "/tmp/hlhdfinstall" "$CONFIGURECMD" 2>&1 >> /tmp/hlhdf_buildandinstall.log || exit 255
 
 echo "Tests executed successfully"
 exit 0

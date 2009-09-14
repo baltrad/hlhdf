@@ -58,6 +58,9 @@ static void HL_DefaultDebugFunction(char* filename, int lineno, HL_Debug lvl,
 
   if (lvl >= hlhdfDbg.dbgLevel) {
     switch (lvl) {
+    case HLHDF_SPEWDEBUG:
+      sprintf(dbgtype, "SDEBUG");
+      break;
     case HLHDF_DEBUG:
       sprintf(dbgtype, "DEBUG");
       break;
