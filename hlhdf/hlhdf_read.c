@@ -680,9 +680,7 @@ static int fillTypeNode(hid_t file_id, HL_Node* node)
 
   HLNode_setMark(node, NMARK_ORIGINAL);
 
-  HLNodePrivate_setHdfID(node, obj);
-
-  //node->hdfId = obj; /*Save hdfid for later use, which means that obj not should be closed now. */
+  HLNodePrivate_setHdfID(node, obj); /*Save hdfid for later use, which means that obj not should be closed now. */
   //@todo This causes the file not to be closed when atempting to update a file.
   return 1;
 fail:
