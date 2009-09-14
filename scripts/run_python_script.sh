@@ -25,9 +25,14 @@ TESTPYTHON=`fgrep COMPILE_FOR_PYTHON "${DEF_MK_FILE}" | sed -e"s/\(COMPILE_FOR_P
 
 # RUN THE PYTHON TESTS
 if test "${TESTPYTHON}" = "yes"; then
-HDF5_LDPATH=`fgrep HDF5_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(HDF5_LIBDIR=[ \t]*-L\)//"`
+HDF5_LDPATH=`fgrep HDF5_LIBDIR "${DEF_MK_FILE}" | sed -e "s/\(HDF5_LIBDIR=[ \t]*\)\(-L\)*//"`
 LIBHLHDFPATH="${SCRIPTPATH}/../hlhdf"
-export LD_LIBRARY_PATH="${LIBHLHDFPATH}:${HDF5_LDPATH}"
+if test "${HDF5_LDPATH}" != ""; then
+  export LD_LIBRARY_PATH="${LIBHLHDFPATH}:${HDF5_LDPATH}"
+else
+  export LD_LIBRARY_PATH="${LIBHLHDFPATH}"
+fi
+
 export PYHLPATH="${SCRIPTPATH}/../pyhl"
 
 if test "${PYTHONPATH}" != ""; then
