@@ -513,7 +513,7 @@ execute_illegal_config_prefix_bin() {
   prepare_build "$1" "$4" "$2" "$3" || return 255
 
   # Setup a simulated dir-structure containing other include files
-  remove_directory "$5"
+  remove_and_create_directory "$5" || return 255
   remove_and_create_directory "$5/bin" || return 255
   remove_and_create_directory "$5/include" || return 255
   remove_and_create_directory "$5/lib" || return 255  
@@ -531,7 +531,7 @@ execute_illegal_config_prefix_include() {
   prepare_build "$1" "$4" "$2" "$3" || return 255
 
   # Setup a simulated dir-structure containing other include files
-  remove_directory "$5"
+  remove_and_create_directory "$5" || return 255
   remove_and_create_directory "$5/bin" || return 255
   remove_and_create_directory "$5/include" || return 255
   remove_and_create_directory "$5/lib" || return 255  
@@ -549,7 +549,7 @@ execute_illegal_config_prefix_lib() {
   prepare_build "$1" "$4" "$2" "$3" || return 255
 
   # Setup a simulated dir-structure containing other include files
-  remove_directory "$5"
+  remove_and_create_directory "$5" || return 255
   remove_and_create_directory "$5/bin" || return 255
   remove_and_create_directory "$5/include" || return 255
   remove_and_create_directory "$5/lib" || return 255  
