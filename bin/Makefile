@@ -19,7 +19,7 @@ else
   LIB_SZLIB=
 endif
 
-LIBRARIES= $(LD_FORCE_STATIC) -lhlhdf -lhdf5 -lz $(LIB_SZLIB) $(LD_FORCE_SHARE) -lm
+LIBRARIES= $(LD_FORCE_STATIC) -lhlhdf $(LD_FORCE_SHARE) -lhdf5 -lz $(LIB_SZLIB) -lm
 
 TARGET_HLDEC=hldec
 SOURCES_HLDEC=hldec.c
