@@ -178,7 +178,11 @@ echo "RELEASE: $NEW_VERSION"
 echo "MESSAGE: $TAG_MESSAGE"
 echo -n "Do you want to create a tag in the git branch? [yes]: "
 YESNO=yes
-read YESNO
+read CTAG
+if [ "x$CTAG" != "x" ]; then
+  YESNO=$CTAG
+fi
+
 if [ "x$YESNO" = "xyes" ]; then
   cd "$SCRIPTPATH/.."
   git tag -a "$NEW_VERSION" -m "$TAG_MESSAGE"
