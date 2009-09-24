@@ -1356,7 +1356,7 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
       break;
     }
     case H5T_STRING: {
-      retv = PyString_FromStringAndSize((char*) HLNode_getRawdata(self->node), typeSize - 1);
+      retv = PyString_FromStringAndSize((char*) HLNode_getRawdata(self->node), typeSize);
       break;
     }
     default: {

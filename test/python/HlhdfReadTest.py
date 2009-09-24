@@ -29,6 +29,7 @@ import os
 
 class HlhdfReadTest(unittest.TestCase):
   TESTFILE = "fixture_VhlhdfRead_datafile.h5"
+  STRINGSFIXTURE = "fixture_strings.h5"
   
   def setUp(self):
     _pyhl.show_hlhdferrors(0)
@@ -44,7 +45,7 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual("My String", node.data())
     self.assertEqual("/stringvalue", node.name())
     self.assertEqual(_pyhl.ATTRIBUTE_ID, node.type())
-    self.assertEqual("My String", node.rawdata())
+    self.assertEqual("My String\x00", node.rawdata())
     try:
       x = node.compound_data()
       self.fail("Expected exception")
@@ -265,7 +266,7 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual("/longarray", node.data())
     self.assertEqual("/rootreferencetolongarray", node.name())
     self.assertEqual(_pyhl.REFERENCE_ID, node.type())
-    self.assertEqual("/longarray", node.rawdata())
+    self.assertEqual("/longarray\x00", node.rawdata())
     try:
       x = node.compound_data()
       self.fail("Expected exception")
@@ -638,7 +639,7 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual("/doublearray", node.data())
     self.assertEqual("/references/doublearray", node.name())
     self.assertEqual(_pyhl.REFERENCE_ID, node.type())
-    self.assertEqual("/doublearray", node.rawdata())
+    self.assertEqual("/doublearray\x00", node.rawdata())
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
@@ -651,7 +652,7 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual("/group1/floatdset", node.data())
     self.assertEqual("/references/floatdset", node.name())
     self.assertEqual(_pyhl.REFERENCE_ID, node.type())
-    self.assertEqual("/group1/floatdset", node.rawdata())
+    self.assertEqual("/group1/floatdset\x00", node.rawdata())
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
@@ -664,7 +665,7 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual("/group1", node.data())
     self.assertEqual("/references/group1", node.name())
     self.assertEqual(_pyhl.REFERENCE_ID, node.type())
-    self.assertEqual("/group1", node.rawdata())
+    self.assertEqual("/group1\x00", node.rawdata())
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
@@ -827,7 +828,7 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual("/longarray", node.data())
     self.assertEqual("/rootreferencetolongarray", node.name())
     self.assertEqual(_pyhl.REFERENCE_ID, node.type())
-    self.assertEqual("/longarray", node.rawdata()) 
+    self.assertEqual("/longarray\x00", node.rawdata()) 
 
   def testSelectAndFetch_2(self):
     self.h5nodelist.selectNode("/ucharvalue")
@@ -848,5 +849,26 @@ class HlhdfReadTest(unittest.TestCase):
     names = self.h5nodelist.getNodeNames()
     self.assertFalse(names.has_key("/"));
 
+  def testReadNullterminatedString(self):
+    nodelist = _pyhl.read_nodelist(self.STRINGSFIXTURE)
+    node = nodelist.fetchNode("/nullterminated")
+    self.assertEqual("this is a null terminated string", node.data())
+    self.assertEqual("this is a null terminated string\x00", node.rawdata())
+    nodelist = None
+
+  def testReadNullpaddedString(self):
+    nodelist = _pyhl.read_nodelist(self.STRINGSFIXTURE)
+    node = nodelist.fetchNode("/nullpadded")
+    self.assertEqual("this is a nullpadded string", node.data())
+    self.assertEqual("this is a nullpadded string", node.rawdata())
+    nodelist = None
+    
+  def testReadSpacepaddedString(self):
+    nodelist = _pyhl.read_nodelist(self.STRINGSFIXTURE)
+    node = nodelist.fetchNode("/spacepadded")
+    self.assertEqual("this is a spacepadded string", node.data())
+    self.assertEqual("this is a spacepadded string", node.rawdata())
+    nodelist = None
+    
 if __name__ == "__main__":
     unittest.main()

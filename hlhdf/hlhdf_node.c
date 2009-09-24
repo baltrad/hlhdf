@@ -296,11 +296,10 @@ HL_Node* HLNode_copy(HL_Node* node)
   }
   retv->format = node->format;
 
-  if(node->typeId>=0)
+  if(node->typeId>=0) {
     retv->typeId=H5Tcopy(node->typeId);
-
+  }
   retv->dataType=node->dataType;
-  //fprintf(stderr, "Copying node with hdfId = %d\n",node->hdfId);
   retv->hdfId=-1; //node->hdfId;
   retv->mark=node->mark;
 

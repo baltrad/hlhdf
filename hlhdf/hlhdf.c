@@ -487,7 +487,6 @@ hid_t getFixedType(hid_t type)
   hid_t f_memb = -1;
   hid_t member_type;
   hid_t tmpt = -1;
-
   HL_SPEWDEBUG0("ENTER: getFixedType, version > 1.4");
 
   size = H5Tget_size(type);
@@ -523,13 +522,28 @@ hid_t getFixedType(hid_t type)
     strpad = H5Tget_strpad(type);
     H5Tset_strpad(mtype, strpad);
     if (H5Tequal(mtype, type) < 0) {
-      H5Tclose(mtype);
+      HL_H5T_CLOSE(mtype);
       mtype = H5Tcopy(H5T_FORTRAN_S1);
       H5Tset_size(mtype, size);
       H5Tset_strpad(mtype, strpad);
-      if (H5Tequal(mtype, type) < 0)
-        mtype = -1;
+      if (mtype >= 0 && H5Tequal(mtype, type) < 0) {
+        HL_H5T_CLOSE(mtype);
+      }
     }
+    if (mtype >= 0 &&
+        (H5Tget_strpad(mtype) == H5T_STR_NULLPAD ||
+         H5Tget_strpad(mtype) == H5T_STR_SPACEPAD)) {
+      size_t msize = H5Tget_size(mtype);
+      if (H5Tset_strpad(mtype, H5T_STR_NULLTERM) < 0) {
+        HL_ERROR0("Failed to change strpad to NULLTERMINATION");
+        HL_H5T_CLOSE(mtype);
+      }
+      if (mtype>=0 && H5Tset_size(mtype, msize+1)<0) {
+        HL_ERROR0("Failed to modify size to contain 1 more character");
+        HL_H5T_CLOSE(mtype);
+      }
+    }
+
     break;
   case H5T_COMPOUND:
     HL_SPEWDEBUG0("This is of type H5T_COMPOUND");
