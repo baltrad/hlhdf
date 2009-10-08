@@ -508,6 +508,38 @@ execute_pre075_upgrade_test() {
   return 0
 }
 
+###
+# Executes one installation test, i.e. verifies deliverable
+# that configure, make, make test, make install works as expected.
+# It also verifies that the structure of the installed software
+# is correct, etc. etc.
+#
+# Arguments:
+#  1 - Comment, typically the test case name
+#  2 - Tarball, the deliverable
+#  3 - Version, the version that should be built and installed
+#  4 - Builddir, the directory where the software should be built in
+#  5 - Installdir, the directory where the software should be installed in
+#  6 - Configcmd, the configure command (excluding the prefix)
+#
+# Returns: Returns 0 on success, otherwise 255
+execute_no_distutil_install_test() {
+  # Setup
+  prepare_build "$1" "$4" "$2" "$3" || return 255
+
+  # Configure, make, make test and make install
+  remove_directory "$5"
+  run_config_make_sequence "$1" "$4" "$5" "$3" "$6 --disable-distutil-check" || return 255
+
+  # Verify that structure is correct on installation
+  verify_installation "$1" "$5" "$3" || return 255
+  
+  remove_directory "$4"
+  remove_directory "$5"
+
+  return 0
+}
+
 execute_illegal_config_prefix_bin() {
   # Setup
   prepare_build "$1" "$4" "$2" "$3" || return 255
@@ -618,6 +650,9 @@ execute_illegal_config_prefix_include "Illegal configuration prefix include" "$T
 
 echo "Running configure test where lib directory contains non-hlhdf related files"
 execute_illegal_config_prefix_lib "Illegal configuration prefix lib" "$TB" "$VER" "/tmp/hlhdfbuild" "/tmp/hlhdfinstall" "$CONFIGURECMD" 2>&1 >> /tmp/hlhdf_buildandinstall.log || exit 255
+
+echo "Running configure test without distutils check activated"
+execute_no_distutil_install_test "Standard (no distutils)" "$TB" "$VER" "/tmp/hlhdfbuild" "/tmp/hlhdfinstall" "$CONFIGURECMD" 2>&1 >> /tmp/hlhdf_buildandinstall.log || exit 255
 
 echo "Tests executed successfully"
 exit 0

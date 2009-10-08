@@ -1270,6 +1270,7 @@ if test -n "$ac_init_help"; then
 Optional Features:
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-distutil-check     Atempts to use python distutils for inquirying for settings. Defaults to yes.
   --enable-debug-memory     Turns on the hlhdf memory debugging. This should usually not be activated.
 
 Optional Packages:
@@ -3101,29 +3102,90 @@ done
 test -n "$AR" || AR="ar"
 
 
+# Check for python version
+PYVERSION=
+if [ "x$COMPILE_FOR_PYTHON" = "xyes" ]; then
+  { echo "$as_me:$LINENO: checking for python version" >&5
+echo $ECHO_N "checking for python version... $ECHO_C" >&6; }
+  PYVERSION=`python -c "import sys; print sys.version[:3]"`
+  { echo "$as_me:$LINENO: result: $PYVERSION" >&5
+echo "${ECHO_T}$PYVERSION" >&6; }
+fi
+
+# Check if python has got distutils (makes life a whole lot easier)
+GOTDISTUTILS=no
+enabledistutils=yes
+# Check whether --enable-distutil-check was given.
+if test "${enable_distutil_check+set}" = set; then
+  enableval=$enable_distutil_check; enabledistutils=$enableval
+fi
+
+
+if [ "x$COMPILE_FOR_PYTHON" = "xyes" -a "x$enabledistutils" = "xyes" ]; then
+  { echo "$as_me:$LINENO: checking for python distutils" >&5
+echo $ECHO_N "checking for python distutils... $ECHO_C" >&6; }
+  GOTDISTUTILS="no"
+  XYZ=`python -c "from distutils import sysconfig"`
+  if [ $? -eq 0 ]; then
+    GOTDISTUTILS="yes"
+  fi
+  { echo "$as_me:$LINENO: result: $GOTDISTUTILS" >&5
+echo "${ECHO_T}$GOTDISTUTILS" >&6; }
+fi
+
+# Check for exec install dir if distutils not should be used
+PY_EXEC_INSTALLDIR=
+if [ "x$COMPILE_FOR_PYTHON" = "xyes" -a "x$GOTDISTUTILS" = "xno" ]; then
+  { echo "$as_me:$LINENO: checking for python install dir" >&5
+echo $ECHO_N "checking for python install dir... $ECHO_C" >&6; }
+  PY_EXEC_INSTALLDIR=`python -c "import sys; print sys.exec_prefix"`
+  { echo "$as_me:$LINENO: result: $PY_EXEC_INSTALLDIR" >&5
+echo "${ECHO_T}$PY_EXEC_INSTALLDIR" >&6; }
+fi
+
+# Atempt to locate Makefile used for building python
+PY_CONFIG_MAKE=
+if [ "x$COMPILE_FOR_PYTHON" = "xyes" ]; then
+  { echo "$as_me:$LINENO: checking for python Makefile" >&5
+echo $ECHO_N "checking for python Makefile... $ECHO_C" >&6; }
+  if [ "x$GOTDISTUTILS" = "xyes" ]; then
+    PY_CONFIG_MAKE=`python -c "from distutils import sysconfig; print sysconfig.get_makefile_filename()" | grep -v "^None\$"`
+  else
+    if [ "x$bit64" = "xyes" ]; then
+      PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib64/python$PYVERSION/config/Makefile"
+    fi
+    if [ ! -f "$PY_CONFIG_MAKE" ]; then
+      PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/config/Makefile"
+    fi
+  fi
+
+  if [ ! -f "$PY_CONFIG_MAKE" ]; then
+    { { echo "$as_me:$LINENO: error: failed to locate Makefile" >&5
+echo "$as_me: error: failed to locate Makefile" >&2;}
+   { (exit 1); exit 1; }; }
+  else
+    { echo "$as_me:$LINENO: result: $PY_CONFIG_MAKE" >&5
+echo "${ECHO_T}$PY_CONFIG_MAKE" >&6; }
+  fi
+fi
+
 #
 # Extract what compiler the python binary was compiled with
 #
-{ echo "$as_me:$LINENO: checking \"for the compiler used for generating python\"" >&5
-echo $ECHO_N "checking \"for the compiler used for generating python\"... $ECHO_C" >&6; }
-
+{ echo "$as_me:$LINENO: checking for the compiler used for generating python" >&5
+echo $ECHO_N "checking for the compiler used for generating python... $ECHO_C" >&6; }
 if [ "x$COMPILE_FOR_PYTHON" = "xyes" ]; then
-  PYVERSION=`python -c "import sys; print sys.version[:3]"`
-  PY_EXEC_INSTALLDIR=`python -c "import sys; print sys.exec_prefix"`
-  #PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/config/Makefile"
-  if [ "x$bit64" = "xyes" ]; then
-    PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib64/python$PYVERSION/config/Makefile"
+  if [ "x$GOTDISTUTILS" = "xyes" ]; then
+    PYCC=`python -c "from distutils import sysconfig; print sysconfig.get_config_var(\"CC\")" | grep -v "^None\$"`
   else
-    PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/config/Makefile"
+    PYCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | awk '{print $1}'`
   fi
-  PYCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | awk '{print $1}'`
-  { echo "$as_me:$LINENO: result: \"$PYCC\"" >&5
-echo "${ECHO_T}\"$PYCC\"" >&6; }
+  { echo "$as_me:$LINENO: result: $PYCC" >&5
+echo "${ECHO_T}$PYCC" >&6; }
   CC=$PYCC
 else
-  { echo "$as_me:$LINENO: result: \"suppressed\"" >&5
-echo "${ECHO_T}\"suppressed\"" >&6; }
-  #PYCC=$CC
+  { echo "$as_me:$LINENO: result: suppressed" >&5
+echo "${ECHO_T}suppressed" >&6; }
 fi
 
 COMPILE_FOR_FORTRAN=no
@@ -4468,48 +4530,76 @@ PYCCSHARED=
 PYDEFS=
 
 if [ "x$COMPILE_FOR_PYTHON" = "xyes" ]; then
-  { echo "$as_me:$LINENO: checking \"for python includes\"" >&5
-echo $ECHO_N "checking \"for python includes\"... $ECHO_C" >&6; }
-  PY_INCLUDES="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
-  { echo "$as_me:$LINENO: result: \"$PY_INCLUDES\"" >&5
-echo "${ECHO_T}\"$PY_INCLUDES\"" >&6; }
+  { echo "$as_me:$LINENO: checking for python includes" >&5
+echo $ECHO_N "checking for python includes... $ECHO_C" >&6; }
+  if [ "x$GOTDISTUTILS" = "xyes" ]; then
+    PY_INCLUDES=`python -c "from distutils import sysconfig; print sysconfig.get_python_inc()" | grep -v "^None\$"`
+  else
+    PY_INCLUDES="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
+  fi
+  { echo "$as_me:$LINENO: result: $PY_INCLUDES" >&5
+echo "${ECHO_T}$PY_INCLUDES" >&6; }
   PY_INCLUDES="-I$PY_INCLUDES"
 
-  { echo "$as_me:$LINENO: checking \"for python lib site-packages\"" >&5
-echo $ECHO_N "checking \"for python lib site-packages\"... $ECHO_C" >&6; }
-  PY_SITEPACK="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/site-packages"
-  { echo "$as_me:$LINENO: result: \"$PY_SITEPACK\"" >&5
-echo "${ECHO_T}\"$PY_SITEPACK\"" >&6; }
+  { echo "$as_me:$LINENO: checking for python lib site-packages" >&5
+echo $ECHO_N "checking for python lib site-packages... $ECHO_C" >&6; }
+  if [ "x$GOTDISTUTILS" = "xyes" ]; then
+    PY_SITEPACK=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib()" | grep -v "^None\$"`
+  else
+    PY_SITEPACK="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/site-packages"
+  fi
+  { echo "$as_me:$LINENO: result: $PY_SITEPACK" >&5
+echo "${ECHO_T}$PY_SITEPACK" >&6; }
 
-    { echo "$as_me:$LINENO: checking \"for python options\"" >&5
-echo $ECHO_N "checking \"for python options\"... $ECHO_C" >&6; }
-  PYOPT=`cat $PY_CONFIG_MAKE | sed -n "/^OPT=/p" | sed -n -e"s/^OPT=[ 	]*\(.*\)/\1/p"`
-  { echo "$as_me:$LINENO: result: \"$PYOPT\"" >&5
-echo "${ECHO_T}\"$PYOPT\"" >&6; }
+    { echo "$as_me:$LINENO: checking for python options" >&5
+echo $ECHO_N "checking for python options... $ECHO_C" >&6; }
+  if [ "x$GOTDISTUTILS" = "xyes" ]; then
+    PYOPT=`python -c "from distutils import sysconfig; print sysconfig.get_config_var(\"OPT\")" | grep -v "^None\$"`
+  else
+    PYOPT=`cat $PY_CONFIG_MAKE | sed -n "/^OPT=/p" | sed -n -e"s/^OPT=[ 	]*\(.*\)/\1/p"`
+  fi
+  { echo "$as_me:$LINENO: result: $PYOPT" >&5
+echo "${ECHO_T}$PYOPT" >&6; }
 
-  { echo "$as_me:$LINENO: checking \"for ldflags\"" >&5
-echo $ECHO_N "checking \"for ldflags\"... $ECHO_C" >&6; }
-  PYLDFLAGS=`cat $PY_CONFIG_MAKE | sed -n "/^LDFLAGS=/p" | sed -n -e"s/^LDFLAGS=[ 	]*\(.*\)/\1/p"`
-  { echo "$as_me:$LINENO: result: \"$PYLDFLAGS\"" >&5
-echo "${ECHO_T}\"$PYLDFLAGS\"" >&6; }
+  { echo "$as_me:$LINENO: checking for ldflags" >&5
+echo $ECHO_N "checking for ldflags... $ECHO_C" >&6; }
+  if [ "x$GOTDISTUTILS" = "xyes" ]; then
+    PYLDFLAGS=`python -c "from distutils import sysconfig; print sysconfig.get_config_var(\"LDFLAGS\")" | grep -v "^None\$"`
+  else
+    PYLDFLAGS=`cat $PY_CONFIG_MAKE | sed -n "/^LDFLAGS=/p" | sed -n -e"s/^LDFLAGS=[  ]*\(.*\)/\1/p"`
+  fi
+  { echo "$as_me:$LINENO: result: $PYLDFLAGS" >&5
+echo "${ECHO_T}$PYLDFLAGS" >&6; }
 
-  { echo "$as_me:$LINENO: checking \"for ldshared\"" >&5
-echo $ECHO_N "checking \"for ldshared\"... $ECHO_C" >&6; }
-  PYLDSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^LDSHARED=/p" | sed -n -e"s/^LDSHARED=[ 	]*\(.*\)/\1/p"`
-  { echo "$as_me:$LINENO: result: \"$PYLDSHARED\"" >&5
-echo "${ECHO_T}\"$PYLDSHARED\"" >&6; }
+  { echo "$as_me:$LINENO: checking for ldshared" >&5
+echo $ECHO_N "checking for ldshared... $ECHO_C" >&6; }
+  if [ "x$GOTDISTUTILS" = "xyes" ]; then
+    PYLDSHARED=`python  -c "from distutils import sysconfig; print sysconfig.get_config_var(\"LDSHARED\")" | grep -v "^None\$"`
+  else
+    PYLDSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^LDSHARED=/p" | sed -n -e"s/^LDSHARED=[   ]*\(.*\)/\1/p"`
+  fi
+  { echo "$as_me:$LINENO: result: $PYLDSHARED" >&5
+echo "${ECHO_T}$PYLDSHARED" >&6; }
 
-  { echo "$as_me:$LINENO: checking \"for ccshared\"" >&5
-echo $ECHO_N "checking \"for ccshared\"... $ECHO_C" >&6; }
-  PYCCSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^CCSHARED=/p" | sed -n -e"s/^CCSHARED=[ 	]*\(.*\)/\1/p"`
-  { echo "$as_me:$LINENO: result: \"$PYCCSHARED\"" >&5
-echo "${ECHO_T}\"$PYCCSHARED\"" >&6; }
+  { echo "$as_me:$LINENO: checking for ccshared" >&5
+echo $ECHO_N "checking for ccshared... $ECHO_C" >&6; }
+  if [ "x$GOTDISTUTILS" = "xyes" ]; then
+    PYCCSHARED=`python  -c "from distutils import sysconfig; print sysconfig.get_config_var(\"CCSHARED\")" | grep -v "^None\$"`
+  else
+    PYCCSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^CCSHARED=/p" | sed -n -e"s/^CCSHARED=[ 	]*\(.*\)/\1/p"`
+  fi
+  { echo "$as_me:$LINENO: result: $PYCCSHARED" >&5
+echo "${ECHO_T}$PYCCSHARED" >&6; }
 
-  { echo "$as_me:$LINENO: checking \"for defs\"" >&5
-echo $ECHO_N "checking \"for defs\"... $ECHO_C" >&6; }
-  PYDEFS=`cat $PY_CONFIG_MAKE | sed -n "/^DEFS=/p" | sed -n -e"s/^DEFS=[ 	]*\(.*\)/\1/p"`
-  { echo "$as_me:$LINENO: result: \"$PYDEFS\"" >&5
-echo "${ECHO_T}\"$PYDEFS\"" >&6; }
+  { echo "$as_me:$LINENO: checking for defs" >&5
+echo $ECHO_N "checking for defs... $ECHO_C" >&6; }
+  if [ "x$GOTDISTUTILS" = "xyes" ]; then
+    PYDEFS=`python  -c "from distutils import sysconfig; xyz=sysconfig.get_config_var(\"DEFS\")" | grep -v "^None\$"`
+  else
+    PYDEFS=`cat $PY_CONFIG_MAKE | sed -n "/^DEFS=/p" | sed -n -e"s/^DEFS=[ 	]*\(.*\)/\1/p"`
+  fi
+  { echo "$as_me:$LINENO: result: $PYDEFS" >&5
+echo "${ECHO_T}$PYDEFS" >&6; }
 fi
 
 
