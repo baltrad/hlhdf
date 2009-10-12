@@ -47,11 +47,12 @@ HDF5_LDPATH=`fgrep HDF5_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(HDF5_LIBDIR=[ \t]*-
 LIBHLHDFPATH="${SCRIPTPATH}/../hlhdf"
 export LD_LIBRARY_PATH="${LIBHLHDFPATH}:${HDF5_LDPATH}"
 export PYHLPATH="${SCRIPTPATH}/../pyhl"
+export XRUNNERPATH="${SCRIPTPATH}/../test/lib"
 
 if test "${PYTHONPATH}" != ""; then
-  export PYTHONPATH="${PYHLPATH}:${PYTHONPATH}"
+  export PYTHONPATH="${PYHLPATH}:${XRUNNERPATH}:${PYTHONPATH}"
 else
-  export PYTHONPATH="${PYHLPATH}"
+  export PYTHONPATH="${PYHLPATH}:${XRUNNERPATH}"
 fi
 
 cd "${SCRIPTPATH}/../test/python"
@@ -60,6 +61,13 @@ VAL=$?
 if [ $VAL != 0 ]; then
   RESULT=$VAL
 fi
+\rm -f TEST-unittest.TestSuite.xml
+python HlhdfXmlTestSuite.py
+VAL=$?
+if [ $RESULT -eq 0 -a $VAL -ne 0 ]; then
+  RESULT=$VAL
+fi
+
 fi
 
 #RUN OTHER ESSENTIAL TESTS
