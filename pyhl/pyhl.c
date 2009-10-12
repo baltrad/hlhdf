@@ -1994,27 +1994,22 @@ static int _setattr_filecreationproperty(PyhlFileCreationProperty* self,
     self->props->userblock = tmpv;
     return 0;
   } else if (strcmp(name, "sizes") == 0) {
-    size_t sizeof_addr, sizeof_size;
-    if (!PyArg_ParseTuple(val, "ii", &sizeof_addr, &sizeof_size)) {
+    int sia, sis;
+    if (!PyArg_ParseTuple(val, "ii", &sia, &sis)) {
       setException(PyExc_AttributeError,"sizes should be set with a tuble (sizeof_addr,sizeof_size)\n");
       return -1;
     }
-    if (sizeof_addr != 0 && sizeof_addr != 2 && sizeof_addr != 4 && sizeof_addr
-        != 8 && sizeof_addr != 16) {
+
+    if (sia != 0 && sia != 2 && sia != 4 && sia != 8 && sia != 16) {
       setException(PyExc_AttributeError,"first argument in sizes (sizeof_addr) must be one of 0,2,4,8 or 16\n");
       return -1;
     }
-    if (sizeof_size != 0 && sizeof_size != 2 && sizeof_size != 4 && sizeof_size
-        != 8 && sizeof_size != 16) {
+    if (sis != 0 && sis != 2 && sis != 4 && sis != 8 && sis != 16) {
       setException(PyExc_AttributeError,"second argument in sizes (sizeof_size) must be one of 0,2,4,8 or 16\n");
       return -1;
     }
-    if (sizeof_size != 0) {
-      self->props->sizes.sizeof_size = sizeof_size;
-    }
-    if (sizeof_addr != 0) {
-      self->props->sizes.sizeof_addr = sizeof_addr;
-    }
+    self->props->sizes.sizeof_size = (size_t)sis;
+    self->props->sizes.sizeof_addr = (size_t)sia;
     return 0;
   } else if (strcmp(name, "sym_k") == 0) {
     int ik, lk;

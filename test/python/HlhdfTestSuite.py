@@ -26,6 +26,7 @@ from HlhdfWriteTest import *
 from HlhdfUpdateTest import *
 from HlhdfNodeTest import *
 from HlhdfPyhlhdfCommonTest import *
+from HlhdfFileCreationPropertyTest import *
 
 if __name__ == '__main__':
   unittest.main()
