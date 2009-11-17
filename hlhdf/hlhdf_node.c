@@ -220,9 +220,12 @@ void HLNode_free(HL_Node* node)
     return;
 
   if (node->typeId >= 0) {
+    int enableReporting = HL_isErrorReportingEnabled();
     HL_disableErrorReporting();
     H5Tclose(node->typeId);
-    HL_enableErrorReporting();
+    if (enableReporting) {
+      HL_enableErrorReporting();
+    }
   }
 
   HLNodePrivate_setHdfID(node, -1);

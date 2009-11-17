@@ -67,6 +67,13 @@ void HL_disableErrorReporting(void);
  */
 void HL_enableErrorReporting(void);
 
+
+/**
+ * Returns if error reporting is enabled or not.
+ * @ingroup hlhdf_c_apis
+ */
+int HL_isErrorReportingEnabled(void);
+
 /**
  * Initializes the HLHDF handler functions.
  * <b>This always needs to be done before doing anything else when using HLHDF.</b>

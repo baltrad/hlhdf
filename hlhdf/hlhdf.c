@@ -115,6 +115,11 @@ void HL_enableErrorReporting()
   }
 }
 
+int HL_isErrorReportingEnabled()
+{
+  return errorReportingOn;
+}
+
 #ifdef HLHDF_MEMORY_DEBUG
 static void hlhdf_dump_memory_information(void)
 {
@@ -1065,9 +1070,12 @@ int openGroupOrDataset(hid_t file_id, const char* name, hid_t* lid, HL_Type* typ
   if (strcmp(name, "") != 0) {
     H5O_info_t objectInfo;
     herr_t infoStatus = -1;
+    int enableReporting = HL_isErrorReportingEnabled();
     HL_disableErrorReporting(); /*Bypass the error reporting, if failed to open a dataset/or group*/
     infoStatus = H5Oget_info_by_name(file_id, name, &objectInfo, H5P_DEFAULT);
-    HL_enableErrorReporting();
+    if (enableReporting) {
+      HL_enableErrorReporting();
+    }
     if (infoStatus >= 0) {
       if (objectInfo.type == H5O_TYPE_GROUP) {
         *type = GROUP_ID;
