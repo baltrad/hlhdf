@@ -98,6 +98,14 @@ int HLNodeList_addNode(HL_NodeList* nodelist, HL_Node* node);
 HL_Node* HLNodeList_getNodeByName(HL_NodeList* nodelist,const char* nodeName);
 
 /**
+ * Returns if the nodelist contains a node with the specified name or not.
+ * @param[in] nodelist - the nodelist
+ * @param[in] nodeName - the name of the node that is searched for
+ * @returns 1 if the node could be found, otherwise 0
+ */
+int HLNodeList_hasNodeByName(HL_NodeList* nodelist, const char* nodeName);
+
+/**
  * Searches the nodelist for any type node, that has got the same object id as objno0 and objno1.
  * @ingroup hlhdf_c_apis
  * @param[in] nodelist the nodelist that should be searched

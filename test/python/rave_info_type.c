@@ -183,12 +183,12 @@ static PyObject* _rave_info_type_size(RaveInfoType* self, PyObject* args)
 static PyObject* _rave_info_object_fromstring(RaveInfoObject* self, PyObject* args)
 {
    char* thestr=NULL;
-   size_t len;
+   int len;
    char errbuf[256];
    if(!PyArg_ParseTuple(args,"s#",&thestr,&len))
       return NULL;
    if(len!=sizeof(RaveInfoStruct)) {
-      sprintf(errbuf,"Length of data (%ld) is not the same size as of RaveInfoStruct (%ld)",
+      sprintf(errbuf,"Length of data (%d) is not the same size as of RaveInfoStruct (%ld)",
 	      len,sizeof(RaveInfoStruct));
       setException(PyExc_TypeError,errbuf);
       return NULL;

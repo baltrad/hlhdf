@@ -718,6 +718,7 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual("compound", node.format())
     self.assertEqual("/compoundgroup/attribute", node.name())
     self.assertEqual(_pyhl.ATTRIBUTE_ID, node.type())
+    data = node.rawdata()
     rinfo_obj.fromstring(node.rawdata())
     self.assertEqual(10, rinfo_obj.xsize)
     self.assertEqual(10, rinfo_obj.ysize)

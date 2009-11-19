@@ -259,6 +259,24 @@ HL_Node* HLNodeList_getNodeByName(HL_NodeList* nodelist, const char* nodeName)
   return NULL;
 }
 
+int HLNodeList_hasNodeByName(HL_NodeList* nodelist, const char* nodeName)
+{
+  int result = 0;
+  int i = 0;
+
+  if (!nodelist || !nodeName) {
+    HL_ERROR0("Can't locate node when either nodelist or nodeName is NULL");
+    return 0;
+  }
+  for (i = 0; result == 0 && i < nodelist->nNodes; i++) {
+    if (HLNode_nameEquals(nodelist->nodes[i], nodeName)) {
+      result = 1;
+    }
+  }
+
+  return result;
+}
+
 HL_CompoundTypeDescription* HLNodeList_findCompoundDescription(
   HL_NodeList* nodelist, unsigned long objno0, unsigned long objno1)
 {
