@@ -2336,6 +2336,6 @@ void init_pyhl(void)
   import_array(); /*To make sure I get access to Numeric*/
   /*Always have to do this*/
   HL_init();
-  /*And this I just do to be able to get debugging info from hdf*/
-  HL_setDebugMode(2);
+  /* We really should not have debug mode set to 2 */
+  HL_setDebugMode(0);
 }

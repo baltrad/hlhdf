@@ -49,8 +49,9 @@ static void HL_DefaultDebugFunction(char* filename, int lineno, HL_Debug lvl,
   va_list alist;
   va_start(alist,fmt);
 
-  if (hlhdfDbg.dbgLevel == HLHDF_SILENT)
+  if (hlhdfDbg.dbgLevel == HLHDF_SILENT) {
     return;
+  }
 
   setLogTime(strtime, 24);
 

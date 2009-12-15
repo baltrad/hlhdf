@@ -156,6 +156,7 @@ void HL_setDebugMode(int flag)
   if (flag == 0) {
     /*Don't debug anything*/
     _debug_hdf = 0;
+    HL_setDebugLevel(HLHDF_SILENT);
     HL_disableErrorReporting();
   } else if (flag == 1) {
     /*Only debug HLHDF stuff*/
