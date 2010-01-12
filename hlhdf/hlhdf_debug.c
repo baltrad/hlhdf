@@ -96,12 +96,17 @@ static void HL_DefaultDebugFunction(char* filename, int lineno, HL_Debug lvl,
 static void HL_DefaultHdf5ErrorFunction(unsigned n, const H5E_error_t* rowmsg)
 {
   if (hlhdfDbg.hdf5showerror) {
+    char* minorError = NULL;
     fprintf(stderr, "  HDF5-ERROR: #%03d: %s line %d in %s: %s\n", n,
             rowmsg->file_name, rowmsg->line, rowmsg->func_name, rowmsg->desc);
     fprintf(stderr, "    major(%d): %s\n", rowmsg->maj_num,
             H5Eget_major(rowmsg->maj_num));
-    fprintf(stderr, "    minor(%d): %s\n", rowmsg->min_num,
-            H5Eget_minor(rowmsg->min_num));
+    minorError = H5Eget_minor(rowmsg->min_num);
+    if (minorError != NULL) {
+      fprintf(stderr, "    minor(%d): %s\n", rowmsg->min_num,
+              minorError);
+      free(minorError);
+    }
   }
 }
 /*@} End of Private functions */
