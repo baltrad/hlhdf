@@ -284,10 +284,10 @@ void HLNode_setCompression(HL_Node* node, HL_Compression* compression);
  * Will mark the node to be committed, only applicable on type nodes.
  * @ingroup hlhdf_c_apis
  * @param[in] node the node that should be commited
- * @param[in] typeid the HDF5 type identifier
+ * @param[in] typid the HDF5 type identifier
  * @return 1 on success, otherwise 0
  * @deprecated this function will be removed sooner or later.
  */
-int HLNode_commitType(HL_Node* node,hid_t typeid);
+int HLNode_commitType(HL_Node* node,hid_t typid);
 
 #endif

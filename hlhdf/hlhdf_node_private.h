@@ -45,13 +45,13 @@ void HLNodePrivate_setData(HL_Node* node, size_t datasize, unsigned char* data);
 void HLNodePrivate_setRawdata(HL_Node* node, size_t datasize, unsigned char* data);
 
 /**
- * Copies the typeid and sets it in the node and also atempts to derive
+ * Copies the typid and sets it in the node and also atempts to derive
  * the format name.
  * @param[in] node the node
- * @param[in] typeId the type identifier
+ * @param[in] typid the type identifier
  * @return 1 on success, otherwise 0.
  */
-int HLNodePrivate_setTypeIdAndDeriveFormat(HL_Node* node, hid_t typeId);
+int HLNodePrivate_setTypeIdAndDeriveFormat(HL_Node* node, hid_t typid);
 
 /**
  * Sets the HDF identifier.
