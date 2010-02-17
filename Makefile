@@ -46,7 +46,7 @@ all:
 		echo "-------Compiling directory $$i------------"; \
 		TDIR=`pwd` ; \
 		cd $$i; \
-		$(MAKE); \
+		$(MAKE) || exit 255; \
 		cd "$$TDIR"; \
 	done;
 
@@ -56,7 +56,7 @@ doc:
 	do \
 		TDIR=`pwd` ; \
 		cd $$i; \
-		$(MAKE) doc; \
+		$(MAKE) doc || exit 255; \
 		cd "$$TDIR"; \
 	done;
 	
@@ -67,7 +67,7 @@ clean:
 	do \
 		TDIR=`pwd`; \
 		cd $$i; \
-		$(MAKE) clean; \
+		$(MAKE) clean || exit 255; \
 		cd "$$TDIR"; \
 	done;
 
@@ -79,7 +79,7 @@ distclean:
 		echo "------Distcleaning directory $$i-------"; \
 		TDIR=`pwd`; \
 		cd $$i; \
-		$(MAKE) distclean; \
+		$(MAKE) distclean || exit 255; \
 		cd "$$TDIR"; \
 	done
 	@\rm -f def.mk
@@ -91,7 +91,7 @@ distribution:
 		echo "----Creating distribution for directory $$i-----"; \
 		TDIR=`pwd`; \
 		cd $$i; \
-		$(MAKE) distribution; \
+		$(MAKE) distribution || exit 255; \
 		cd "$$TDIR"; \
 	done
 
@@ -109,7 +109,7 @@ install:
 		echo "------Installing from directory $$i------"; \
 		TDIR=`pwd`; \
 		cd $$i; \
-		$(MAKE) install; \
+		$(MAKE) install || exit 255; \
 		cd "$$TDIR"; \
 	done
 	@"$(HL_INSTALL)" -f -o -C -m644 def.mk "$(prefix)/mkf/hldef.mk"

@@ -146,7 +146,7 @@ fail:
   HLHDF_FREE(dims_h514);
   HL_H5T_CLOSE(mtype);
   HL_H5T_CLOSE(fixedType);
-  HLHDF_FREE(fname);
+  if (fname != NULL) { free(fname); fname = NULL; }
   freeHL_CompoundTypeDescription(typelist);
   return NULL;
 }
