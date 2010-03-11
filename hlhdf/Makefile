@@ -40,7 +40,7 @@ OBJS=$(SOURCES:.c=.o)
 all: $(TARGET) $(TARGET.2)
 
 $(TARGET): $(OBJS)
-	$(LDSHARED) -o $@ $(OBJS)
+	$(LDSHARED) -o $@ $(OBJS) $(HDF5_LIBDIR) -lhdf5
 
 $(TARGET.2): $(OBJS)
 	$(AR) cr $@ $(OBJS) 
