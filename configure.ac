@@ -81,6 +81,14 @@ if [[ "x$BAD_INSTALL_DIR" = "xyes" ]]; then
   AC_MSG_ERROR("It is not allowed to install hlhdf in a directory that is shared between other components")
 fi
 
+ac_sys_system=`uname -s`
+if test "$ac_sys_system" = "AIX" -o "$ac_sys_system" = "Monterey64" \
+    -o "$ac_sys_system" = "UnixWare" -o "$ac_sys_system" = "OpenUNIX"; then
+  ac_sys_release=`uname -v`
+else
+  ac_sys_release=`uname -r`
+fi
+
 AC_ARG_WITH(python,[  --with-python=(yes|no)     Compile for python],
 	    ,withval=yes)
 
@@ -281,6 +289,67 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
     PYDEFS=`cat $PY_CONFIG_MAKE | sed -n "/^DEFS=/p" | sed -n -e"s/^DEFS=[[ 	]]*\(.*\)/\1/p"`
   fi
   AC_MSG_RESULT($PYDEFS)
+else
+AC_MSG_CHECKING(CCSHARED)
+if test -z "$CCSHARED"
+then
+  case $ac_sys_system/$ac_sys_release in
+    SunOS*)
+      if test "$GCC" = yes; then 
+        PYCCSHARED="-fPIC";
+      elif test `uname -p` = sparc; then 
+        PYCCSHARED="-xcode=pic32";
+      else
+        PYCCSHARED="-Kpic";
+      fi
+      ;;
+    hp*|HP*)
+      if test "$GCC" = yes; then
+        PYCCSHARED="-fPIC";
+      else 
+        PYCCSHARED="+z";
+      fi
+      ;;
+    Linux*|GNU*)
+      PYCCSHARED="-fPIC"
+      ;;
+  esac
+else
+  PYCCSHARED="$CCSHARED"
+fi
+AC_MSG_RESULT($PYCCSHARED)
+
+AC_MSG_CHECKING(LDSHARED)
+if test -z "$LDSHARED"
+then
+  case $ac_sys_system/$ac_sys_release in
+    IRIX/5*) PYLDSHARED="ld -shared";;
+    IRIX*/6*) PYLDSHARED="ld ${SGI_ABI} -shared -all";;
+    SunOS/5*) 
+      if test "$GCC" = "yes"
+        then PYLDSHARED='$(CC) -shared'
+      else PYLDSHARED='$(CC) -G';
+      fi ;;
+    hp*|HP*)
+      if test "$GCC" = "yes"
+        then PYLDSHARED='$(CC) -shared'
+      else PYLDSHARED='ld -b';
+      fi 
+      ;;
+    Darwin/*)
+      PYLDSHARED='$(CC) $(LDFLAGS) -bundle'
+      ;;
+    Linux*|GNU*|QNX*)
+      PYLDSHARED='$(CC) -shared'
+      ;;
+    *)
+      PYLDSHARED="ld"
+      ;;
+  esac
+else
+  PYLDSHARED="$LDSHARED"
+fi
+AC_MSG_RESULT($PYLDSHARED)
 fi
 
 dnl -----------------------------
@@ -291,7 +360,8 @@ dnl -----------------------------
 AC_ARG_WITH(numpy,[  --with-numpy=INC     Use the numpy include file],
 		,withval=yes)
 NUMPY_INCLUDE_DIR=
-case $withval in
+if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
+  case $withval in
 	no)
 		AC_MSG_ERROR(You can not remove dependencies to numpy)
 		;;
@@ -325,7 +395,11 @@ case $withval in
 		fi
 		NUMPY_INCLUDE_DIR="-I$numpy_inc$numpy_inc_app"
 		;;
-esac
+  esac
+else
+  AC_MSG_CHECKING(for numpy)
+  AC_MSG_RESULT(suppressed)
+fi
 
 dnl -----------------------------
 dnl Is the GNU zlib present? It has a header file 'zlib.h' and a library -lz.
