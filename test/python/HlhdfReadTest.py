@@ -39,6 +39,11 @@ class HlhdfReadTest(unittest.TestCase):
   def tearDown(self):
     self.h5nodelist = None
 
+  def testGetHDF5Version(self):
+    x = _pyhl.get_hdf5version()
+    self.assertTrue(x != None)
+    self.assertTrue(x != "")
+    
   def testReadString(self):
     node=self.h5nodelist.fetchNode("/stringvalue")
     self.assertEqual("string", node.format())

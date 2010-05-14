@@ -64,6 +64,8 @@ static const char HLHDF_STRING_STR[]   = "string";    /**< 'string' */
 static const char HLHDF_COMPOUND_STR[] = "compound";  /**< 'compound' */
 static const char HLHDF_ARRAY_STR[]    = "array";     /**< 'array' */
 
+static char HLHDF_HDF5_VERSION_STRING[64];      /**< keeps the version string */
+
 static const char* VALID_FORMAT_SPECIFIERS[] = {
   HLHDF_UNDEFINED_STR,
   HLHDF_CHAR_STR,
@@ -319,6 +321,16 @@ const char* HL_getFormatSpecifierString(HL_FormatSpecifier specifier)
   }
   return VALID_FORMAT_SPECIFIERS[specifier];
 }
+
+const char* HL_getHDF5Version() {
+  if (strcmp("", H5_VERS_SUBRELEASE)==0) {
+    sprintf(HLHDF_HDF5_VERSION_STRING, "%d.%d.%d", H5_VERS_MAJOR, H5_VERS_MINOR, H5_VERS_RELEASE);
+  } else {
+    sprintf(HLHDF_HDF5_VERSION_STRING, "%d.%d.%d-%s", H5_VERS_MAJOR, H5_VERS_MINOR, H5_VERS_RELEASE, H5_VERS_SUBRELEASE);
+  }
+  return HLHDF_HDF5_VERSION_STRING;
+}
+
 /**********************************************************
  *Function: newHL_Compression
  **********************************************************/

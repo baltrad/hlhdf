@@ -410,6 +410,16 @@ static PyObject* _pyhl_show_hlhdferrors(PyObject* self, PyObject* args)
   return Py_None;
 }
 
+static PyObject* _pyhl_get_hdf5version(PyObject* self, PyObject* args)
+{
+  const char* ver = HL_getHDF5Version();
+  if (ver != NULL) {
+    return PyString_FromString(ver);
+  } else {
+    Py_RETURN_NONE;
+  }
+}
+
 /* PyhlNodelist member methods */
 static PyObject* _pyhl_add_node(PyhlNodelist* self, PyObject* args)
 {
@@ -2284,6 +2294,7 @@ static PyMethodDef functions[] = {
   {"is_file_hdf5",(PyCFunction)_pyhl_is_file_hdf5,1},
   {"show_hdf5errors",(PyCFunction)_pyhl_show_hdf5errors,1},
   {"show_hlhdferrors",(PyCFunction)_pyhl_show_hlhdferrors,1},
+  {"get_hdf5version", (PyCFunction)_pyhl_get_hdf5version,1},
   {NULL,NULL} /*Sentinel*/
 };
 

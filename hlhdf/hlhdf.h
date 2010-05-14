@@ -150,6 +150,12 @@ HL_FormatSpecifier HL_getFormatSpecifier(const char* format);
 const char* HL_getFormatSpecifierString(HL_FormatSpecifier specifier);
 
 /**
+ * Returns the version that was used for building this binary.
+ * @return the version string.
+ */
+const char* HL_getHDF5Version(void);
+
+/**
  * Creates an allocated and initialized instance of HL_Compression.
  * @ingroup hlhdf_c_apis
  * @param[in] type the compression type to use
