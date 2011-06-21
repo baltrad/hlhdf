@@ -570,32 +570,23 @@ int pyarraytypeFromHdfType(const char* format)
     return PyArray_UBYTE;
   } else if (strcmp(format, "short") == 0) {
     return PyArray_SHORT;
+  } else if (strcmp(format, "ushort") == 0) {
+    return PyArray_USHORT;
   } else if (strcmp(format, "int") == 0) {
     return PyArray_INT;
+  } else if (strcmp(format, "uint") == 0) {
+    return PyArray_UINT;
   } else if (strcmp(format, "long") == 0) {
     return PyArray_LONG;
+  } else if (strcmp(format, "ulong") == 0) {
+    return PyArray_ULONG;
   } else if (strcmp(format, "float") == 0) {
     return PyArray_FLOAT;
   } else if (strcmp(format, "double") == 0) {
     return PyArray_DOUBLE;
   } else {
-    /*Hmm, there are no more supported types by the PyArray right now, so
-     *then I just try to create an array with a datasize equal to the hdf,
-     *'char', 'schar', 'uchar', 'short', 'ushort',
-     *'int', 'uint', 'long', 'ulong', 'llong',
-     *'ullong', 'float', 'double', 'hsize', 'hssize',
-     *'herr', 'hbool'
-     */
-    if (strcmp(format, "ushort") == 0) {
-      return PyArray_SHORT;
-    } else if (strcmp(format, "uint") == 0) {
-      return PyArray_INT;
-    } else if (strcmp(format, "ulong") == 0) {
-      return PyArray_LONG;
-    } else {
-      fprintf(stderr, "Unsupported type %s\n", format);
-      return -1;
-    }
+    fprintf(stderr, "Unsupported type %s\n", format);
+    return -1;
   }
   return -1;
 }
