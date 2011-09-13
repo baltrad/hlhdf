@@ -1,53 +1,63 @@
-///////////////////////////////////////////////////////////////////////
-  Copyright 2009 Swedish Meteorological and Hydrological Institute, SMHI,
+INSTALL instructions for
+High-Level HDF5: HL-HDF
 
-  This file is part of HLHDF.
+Anders Henja and Daniel Michelson
+Swedish Meteorological and Hydrological Institute
 
-  HLHDF is free software: you can redistribute it and/or modify
-  it under the terms of the GNU Lesser General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+September 2011
 
-  HLHDF is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU Lesser General Public License for more details.
-
-  You should have received a copy of the GNU Lesser General Public License
-  along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
-///////////////////////////////////////////////////////////////////////
-
-The installation of HLHDF follows the traditional configure, make, make install sequence. 
+The installation of HL-HDF follows the traditional configure, make, make 
+install sequence. 
 
 Requirements:
-- HDF5 library version 1.8.x or higher (http://www.hdfgroup.org/HDF5)
-- gnu zip (including zlib), version 1.1.0 or higher
-- gnu tar
-- gnu make version 3.7x or higher (or compatible)
+- HDF5 library version 1.8.5-patch1 or higher (http://www.hdfgroup.org/HDF5)
+- GNU zip (including zlib), version 1.1.0 or higher
+- GNU tar
+- GNU make version 3.7x or higher (or compatible)
+- Python 2.6 final or 2.7.x, but not 3.x
+- Numeric Python (NumPy) 1.2.1 or higher
 
+Most, if not all, of these packages are available on any credible Linux 
+distribution, and can be managed through package managers like yum, apt-get, 
+and dpkg.
+
+If you use pre-compiled packages that come along with your Linux
+distribution, don't forget to install the respective "devel" 
+package containing headers and libraries too.
 
 Configure & Build
 Most of the options for the configure is probably not nessecary to specify but
-if you are uncertain, then type './configure --help' to get a list of all options.
+if you are uncertain, then type './configure --help' to get a list of all 
+options.
 
-The two options that might be nessecary to specify is the installation directory and where
-the HDF5 library resides.
+The two options that might be nessecary to specify is the installation directory
+and where the HDF5 library resides.
 
   ./configure --prefix=<where to install HLHDF> --with-hdf5=<HDF5 include files>,<HDF5 library files>
 
-When the configuration has successfully be done, then it is time to build the software which is done
-by using 'make'.
+When the configuration has successfully be done, then it is time to build the 
+software which is done with 'make'.
 
 Example:
 %> ./configure --prefix=/opt/HLHDF --with-hdf5=/opt/include,/opt/lib
 %> make
 
 Test
-After the software successfully has been built, it is possible to perform
-a sanity test before installing the package. This is done by executing:
+After the software has been built successfully, you can run the package's unit
+tests to check the build's integrity. This is done through:
 %> make test
 
 Installation
-Make sure that you have permissions to write files in the directory specified by the --prefix
-directive during the configuration phase before typing:
+Make sure that you have permissions to write files in the directory specified by
+the --prefix directive during the configuration phase before typing:
 %> make install
+
+When HL-HDF is installed, you should add prefix/lib to your $LD_LIBRARY_PATH. 
+
+Python-specific issues
+You must be able to copy one file to your Python's site-packages 
+directory! This is the pyhl/_pyhlmodule.so file.
+However, if you are using a system-wide Python installation without write 
+privileges to its site-packages directory, then you must set up a user 
+site-packages directory and place this file there manually.
+Instructions for this are found at http://www.python.org/dev/peps/pep-0370/
