@@ -536,8 +536,14 @@ char* translatePyFormatToHlHdf(char type)
    case 'i':
       retv=strdup("int");
       break;
+   case 'I':
+      retv=strdup("uint");
+      break;
    case 'l':
       retv=strdup("long");
+      break;
+   case 'L':
+      retv=strdup("ulong");
       break;
    case 'f':
       retv=strdup("float");
