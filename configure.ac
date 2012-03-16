@@ -473,6 +473,28 @@ else
   AC_MSG_RESULT("No")
 fi
 
+dnl If above doesn't work it might just be that there is no libz.a so just try
+dnl if you can use a dynamiz libz instead.
+
+if [[ "$try_ok" = "no" ]]; then
+LIBS=" -Xlinker -Bdynamic -lz"
+AC_MSG_CHECKING(Gnu(Linux) linker options ($LIBS))
+AC_TRY_RUN([
+#include <stdio.h>
+main()
+{
+    int i;
+    return 0;
+}],try_ok=yes,try_ok=no,try_ok=no)
+if [[ "x$try_ok" = "xyes" ]]; then
+  AC_MSG_RESULT("Yes")
+  LINKER_FORCED_SHARED="-Xlinker -Bdynamic"
+  LINKER_FORCED_STATIC="-Xlinker -Bstatic"
+else
+  AC_MSG_RESULT("No")
+fi
+fi
+
 if [[ "x$LINKER_FORCED_SHARED" = "x" ]]; then
   LIBS="-no_so -lz -so_archive"
   AC_MSG_CHECKING(OSF1 linker options ($LIBS))
