@@ -748,7 +748,7 @@ int HLNodeList_write(HL_NodeList* nodelist, HL_FileCreationProperty* property,
     }
     }
   }
-
+  H5Fflush(file_id, H5F_SCOPE_LOCAL);
   status = 1;
 fail:
   HLHDF_FREE(parentName);
