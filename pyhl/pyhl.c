@@ -1207,7 +1207,12 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
       break;
     }
     case H5T_STRING: {
-      retv = PyString_FromStringAndSize((char*)HLNode_getData(self->node), typeSize - 1);
+      char* d = (char*)HLNode_getData(self->node);
+      if (d[typeSize-1] == '\0') {
+        retv = PyString_FromStringAndSize((char*)HLNode_getData(self->node), typeSize - 1);
+      } else {
+        retv = PyString_FromStringAndSize((char*)HLNode_getData(self->node), typeSize);
+      }
       break;
     }
     default: {

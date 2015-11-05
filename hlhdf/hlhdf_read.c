@@ -276,13 +276,27 @@ static int hlhdf_read_readAttributeData(hid_t obj, hid_t type, hsize_t npoints,
     HL_ERROR0("Could not allocate memory for attribute data");
     goto fail;
   }
-
   if (H5Aread(obj, type, *dataptr) < 0) {
     HL_ERROR0("Could not read attribute data\n");
     goto fail;
   }
+  // If string has been stored with bad nullterm, fix it.
+  if (H5Tget_class(type) == H5T_STRING && *dSize > 0) {
+    if (H5Tget_strpad(type) == H5T_STR_NULLTERM) {
+      if (((char*)*dataptr)[*dSize - 1] != '\0') {
+        unsigned char* nptr = (unsigned char*) HLHDF_REALLOC(*dataptr, ((*dSize) * npoints) + 1);
+        if (nptr != NULL) {
+          *dataptr = nptr;
+          ((unsigned char*)*dataptr)[*dSize] = '\0';
+          *dSize = *dSize + 1;
+        } else {
+          HL_ERROR0("Could not reallocate attribute data\n");
+          goto fail;
+        }
+      }
+    }
+  }
   status = 1;
-
 fail:
   if (status == 0) {
     *dSize = 0;
@@ -1104,7 +1118,7 @@ HL_Node* HLNodeList_fetchNode(HL_NodeList* nodelist, const char* name)
     goto fail;
   }
 
-  if (!(file_id = openHlHdfFile(filename, "r")) < 0) {
+  if ((file_id = openHlHdfFile(filename, "r")) < 0) {
     HL_ERROR1("Could not open file '%s' when fetching data",filename);
     goto fail;
   }

@@ -875,6 +875,13 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual("this is a spacepadded string", node.data())
     self.assertEqual("this is a spacepadded string", node.rawdata())
     nodelist = None
-    
+
+  def testReadErroneouslyNullterminatedString(self):
+    nodelist = _pyhl.read_nodelist(self.STRINGSFIXTURE)
+    node = nodelist.fetchNode("/erroneously_nullterminated")
+    self.assertEqual("this is a null terminated string", node.data())
+    self.assertEqual("this is a null terminated string\x00", node.rawdata())
+    nodelist = None
+      
 if __name__ == "__main__":
     unittest.main()

@@ -26,6 +26,29 @@
 ############################################################
 include ../def.mk
 
+CFLAGS = $(OPTS) $(DEFS) $(HDF5_INCDIR) $(ZLIB_INCDIR) $(SZLIB_INCDIR)
+LDFLAGS=  -L. $(HDF5_LIBDIR) $(ZLIB_LIBDIR) $(SZLIB_LIBDIR)
+
+ifeq ($(GOT_SZ_COMPRESS),yes)
+  LIB_SZLIB=-lsz
+else
+  LIB_SZLIB=
+endif
+
+LIBRARIES= $(LD_FORCE_SHARE) -lhdf5 -lz $(LIB_SZLIB) -lm
+
+
+TARGET=create_strings_fixture
+SOURCES=create_strings_fixture.c
+
+OBJS=$(SOURCES:.c=.o)
+
+all: $(TARGET)
+
+$(TARGET): $(OBJS)
+	$(CC) -o $@ $(LDFLAGS) $(OBJS)  $(LIBRARIES)
+
+	
 all:
 
 clean:
@@ -34,6 +57,8 @@ clean:
 	@\rm -f simple_test.hdf
 	@\rm -f compound_test.hdf
 	@\rm -f test_image.hdf
+	@\rm -f $(TARGET)
+	@\rm -f strings_fixture.h5
 
 docs:
 
@@ -43,6 +68,8 @@ distclean:
 	@\rm -f simple_test.hdf
 	@\rm -f compound_test.hdf
 	@\rm -f test_image.hdf
+	@\rm -f $(TARGET)
+	@\rm -f strings_fixture.h5
 
 distribution:
 

@@ -64,6 +64,7 @@ clean:
 	@\rm -f so_locations
 	@\rm -f core
 	@\rm -f *.pyc
+	@\rm -fr TEST-unittest*.xml
 
 distclean:
 	@\rm -f *.o
@@ -72,6 +73,7 @@ distclean:
 	@\rm -f *~ core
 	@\rm -f so_locations
 	@\rm -f *.pyc
+	@\rm -fr TEST-unittest*.xml
 
 distribution:
 	@echo "Would bring the latest revision upto date"
