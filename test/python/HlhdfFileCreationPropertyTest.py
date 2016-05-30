@@ -9,7 +9,8 @@ import _pyhl
 class HlhdfFileCreationPropertyTest(unittest.TestCase):
   
   def setUp(self):
-    pass
+    _pyhl.show_hlhdferrors(0)
+    _pyhl.show_hdf5errors(0)      
   
   def tearDown(self):
     pass

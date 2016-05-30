@@ -1208,6 +1208,9 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
     }
     case H5T_STRING: {
       char* d = (char*)HLNode_getData(self->node);
+      if (H5Tis_variable_str(tmpHid)) { /* You can't trust typeSize when variable length. The size will always be size of pointer */
+        typeSize = strlen(d);
+      }
       if (d[typeSize-1] == '\0') {
         retv = PyString_FromStringAndSize((char*)HLNode_getData(self->node), typeSize - 1);
       } else {

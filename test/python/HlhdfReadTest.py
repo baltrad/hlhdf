@@ -56,7 +56,7 @@ class HlhdfReadTest(unittest.TestCase):
       self.fail("Expected exception")
     except AttributeError, e:
       pass 
-  
+
   def testReadChar(self):
     node=self.h5nodelist.fetchNode("/charvalue")
     self.assertEqual("schar", node.format()) # We are getting the fixed type format
@@ -882,6 +882,13 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual("this is a null terminated string", node.data())
     self.assertEqual("this is a null terminated string\x00", node.rawdata())
     nodelist = None
+
+  def testReadVariableString(self):
+    nl = _pyhl.read_nodelist(self.STRINGSFIXTURE)
+    node= nl.fetchNode("/variable")
+    self.assertEqual("this is a variable length string", node.data())
+    self.assertEqual("this is a variable length string\x00", node.rawdata())
+
       
 if __name__ == "__main__":
     unittest.main()

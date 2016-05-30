@@ -262,6 +262,38 @@ fail:
   return NULL;
 }
 
+static int hlhdf_read_readVariableString(hid_t obj, hid_t type, hsize_t npoints,
+  size_t* dSize, unsigned char** dataptr)
+{
+  int status = 0;
+  hid_t space = H5Dget_space (obj);
+  hsize_t     dims[1] = {1};
+  char* rdata = NULL;
+
+  int ndims = H5Sget_simple_extent_dims (space, dims, NULL);
+  if (ndims <= 0) { /** SCALAR */
+    if (H5Aread(obj, type, &rdata) < 0) {
+      HL_ERROR0("Failed to read string");
+      goto fail;
+    }
+    *dataptr = (unsigned char*)HLHDF_STRDUP(rdata);
+    *dSize = strlen((const char*)*dataptr);
+  } else {
+    HL_ERROR0("Variable string length reading currently not supporting arrays.");
+    goto fail;
+  }
+
+  status = 1;
+fail:
+  if (status == 0) {
+    *dSize = 0;
+    HLHDF_FREE(*dataptr);
+  }
+  HLHDF_FREE(rdata);
+  HL_H5S_CLOSE(space);
+  return status;
+}
+
 static int hlhdf_read_readAttributeData(hid_t obj, hid_t type, hsize_t npoints,
   size_t* dSize, unsigned char** dataptr)
 {
@@ -272,14 +304,22 @@ static int hlhdf_read_readAttributeData(hid_t obj, hid_t type, hsize_t npoints,
   }
 
   *dSize = H5Tget_size(type);
-  if (!(*dataptr = (unsigned char*) HLHDF_MALLOC((*dSize) * npoints))) {
-    HL_ERROR0("Could not allocate memory for attribute data");
-    goto fail;
+  if(H5Tget_class(type) == H5T_STRING && H5Tis_variable_str(type) == 1) {
+    if (hlhdf_read_readVariableString(obj, type, npoints, dSize, dataptr) < 0) {
+      HL_ERROR0("Failed to read variable length string");
+      goto fail;
+    }
+  } else {
+    if (!(*dataptr = (unsigned char*) HLHDF_MALLOC((*dSize) * npoints))) {
+      HL_ERROR0("Could not allocate memory for attribute data");
+      goto fail;
+    }
+    if (H5Aread(obj, type, *dataptr) < 0) {
+      HL_ERROR0("Could not read attribute data\n");
+      goto fail;
+    }
   }
-  if (H5Aread(obj, type, *dataptr) < 0) {
-    HL_ERROR0("Could not read attribute data\n");
-    goto fail;
-  }
+
   // If string has been stored with bad nullterm, fix it.
   if (H5Tget_class(type) == H5T_STRING && *dSize > 0) {
     if (H5Tget_strpad(type) == H5T_STR_NULLTERM) {

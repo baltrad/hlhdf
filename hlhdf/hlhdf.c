@@ -536,7 +536,11 @@ hid_t getFixedType(hid_t type)
   case H5T_STRING:
     HL_SPEWDEBUG0("This is of type H5T_STRING");
     mtype = H5Tcopy(H5T_C_S1);
-    H5Tset_size(mtype, size);
+    if (H5Tis_variable_str(type)) {
+      H5Tset_size(mtype, H5T_VARIABLE);
+    } else {
+      H5Tset_size(mtype, size);
+    }
     strpad = H5Tget_strpad(type);
     H5Tset_strpad(mtype, strpad);
     if (H5Tequal(mtype, type) < 0) {

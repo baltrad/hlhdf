@@ -22,17 +22,22 @@ static int addAttribute(hid_t gid, const char* name, const char* value, int sz, 
     fprintf(stderr, "Failed to create scalar data space\n");
     goto fail;
   }
-
   if ((attr_id = H5Acreate(gid, name, type_id, aid, H5P_DEFAULT, H5P_DEFAULT)) < 0) {
     fprintf(stderr, "Failed to create scalar attribute\n");
     goto fail;
   }
 
-  if (H5Awrite(attr_id, type_id, value) < 0) {
-    fprintf(stderr, "Failed to write scalar data to file\n");
-    goto fail;
+  if (sz == -1) {
+    if (H5Awrite(attr_id, type_id, &value) < 0) {
+      fprintf(stderr, "Failed to write scalar data to file\n");
+      goto fail;
+    }
+  } else {
+    if (H5Awrite(attr_id, type_id, value) < 0) {
+      fprintf(stderr, "Failed to write scalar data to file\n");
+      goto fail;
+    }
   }
-
   status = 0;
 fail:
   if (aid >= 0) H5Sclose(aid);
@@ -47,6 +52,7 @@ int main(int argc, char** argv) {
   char* nullpaddedStr = alloca(sizeof(char)*27);
   const char* nullterminatedStr = "this is a null terminated string";
   const char* spacepaddedStr = "this is a spacepadded string";
+  const char* variableLengthStr = "this is a variable length string";
 
   memset(nullpaddedStr, 0, sizeof(char)*27);
   strncpy(nullpaddedStr, "this is a nullpadded string", strlen("this is a nullpadded string"));
@@ -65,7 +71,7 @@ int main(int argc, char** argv) {
   addAttribute(gid, "nullpadded", nullpaddedStr, 27, H5T_STR_NULLPAD);
   addAttribute(gid, "spacepadded", spacepaddedStr, 28, H5T_STR_SPACEPAD);
   addAttribute(gid, "erroneously_nullterminated", nullterminatedStr, strlen(nullterminatedStr), H5T_STR_NULLTERM);
-
+  addAttribute(gid, "variable", variableLengthStr, -1, H5T_STR_NULLTERM);
   H5Fflush(file_id, H5F_SCOPE_LOCAL);
 done:
   if (file_id >= 0) H5Fclose(file_id);
