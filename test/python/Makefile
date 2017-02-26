@@ -41,8 +41,8 @@ LDFLAGS= -L../../hlhdf -L../../pyhlhdf $(HDF5_LIBDIR) $(ZLIB_LIBDIR) $(SZLIB_LIB
 
 LIBRARIES= -lpyhlhdf $(LD_FORCE_SHARE) -lhlhdf -lhdf5 $(LIB_SZLIB) -lz -lm -lc
 
-TARGET.1=_varioustestsmodule.so
-TARGET.2=_rave_info_typemodule.so
+TARGET.1=_varioustests.so
+TARGET.2=_rave_info_type.so
 
 SOURCES.1=varioustests.c
 OBJECTS.1=$(SOURCES.1:.c=.o)

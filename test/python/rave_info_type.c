@@ -24,7 +24,7 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
  *
  * C-definition of a compound type usable from python
  */
-#include <Python.h>
+#include <pyhlcompat.h>
 /** To ensure that arrayobject is imported correctly */
 #define HLHDF_PYMODULE_WITH_IMPORT_ARRAY
 #include "pyhlhdf_common.h"  /* this includes arrayobject.h */
@@ -70,7 +70,7 @@ typedef struct {
 /**
  * Forward declaration of the RaveInfoType
  */
-staticforward PyTypeObject RaveInfoType_Type;
+static PyTypeObject RaveInfoType_Type;
 
 /**
  * Checks if the object is a RaveInfoType
@@ -80,7 +80,7 @@ staticforward PyTypeObject RaveInfoType_Type;
 /**
  * Forward declaration of the RaveInfoObject
  */
-staticforward PyTypeObject RaveInfoObject_Type;
+static PyTypeObject RaveInfoObject_Type;
 
 /**
  * Checks if the object is a RaveInfoObject
@@ -182,18 +182,24 @@ static PyObject* _rave_info_type_size(RaveInfoType* self, PyObject* args)
  */
 static PyObject* _rave_info_object_fromstring(RaveInfoObject* self, PyObject* args)
 {
-   char* thestr=NULL;
    int len;
    char errbuf[256];
-   if(!PyArg_ParseTuple(args,"s#",&thestr,&len))
-      return NULL;
+   PyObject* pyarr = NULL;
+
+   if (!PyArg_ParseTuple(args, "O", &pyarr))
+     return NULL;
+   if (!PyByteArray_Check(pyarr)) {
+     setException(PyExc_TypeError,"In object is not a byte array");
+     return NULL;
+   }
+   len = PyByteArray_Size(pyarr);
    if(len!=sizeof(RaveInfoStruct)) {
       sprintf(errbuf,"Length of data (%d) is not the same size as of RaveInfoStruct (%ld)",
 	      len,sizeof(RaveInfoStruct));
       setException(PyExc_TypeError,errbuf);
       return NULL;
    }
-   memcpy(&self->info,thestr,sizeof(RaveInfoStruct));
+   memcpy(&self->info,PyByteArray_AsString(pyarr),sizeof(RaveInfoStruct));
    Py_INCREF(Py_None);
    return Py_None;
 }
@@ -203,7 +209,7 @@ static PyObject* _rave_info_object_fromstring(RaveInfoObject* self, PyObject* ar
  */
 static PyObject* _rave_info_object_tostring(RaveInfoObject* self, PyObject* args)
 {
-   return PyString_FromStringAndSize((char*)&self->info,sizeof(RaveInfoStruct));
+   return PyByteArray_FromStringAndSize((char*)&self->info,sizeof(RaveInfoStruct));
 }
 
 static struct PyMethodDef type_methods[] =
@@ -225,53 +231,33 @@ static struct PyMethodDef object_methods[] =
    {NULL,NULL} /*Sentinel*/
 };
 
-static PyObject* _getattr_type(RaveInfoType* self, char* name)
+static PyObject* _getattr_typeo(RaveInfoType* self, PyObject* name)
 {
-    PyObject* res;
-
-    res = Py_FindMethod(type_methods, (PyObject*) self, name);
-    if (res)
-	return res;
-
-    PyErr_Clear();
-
-    PyErr_SetString(PyExc_AttributeError, name);
-
-    return NULL;
+  return PyObject_GenericGetAttr((PyObject*)self, name);
 }
 
-static PyObject* _getattr_object(RaveInfoObject* self, char* name)
+static PyObject* _getattro_object(RaveInfoObject* self, PyObject* name)
 {
-    PyObject* res;
-
-    if(strcmp(name,"xsize")==0)
+    if(PY_COMPARE_ATTRO_NAME_WITH_STRING(name,"xsize")==0)
        return PyInt_FromLong(self->info.xsize);
-    if(strcmp(name,"ysize")==0)
+    if(PY_COMPARE_ATTRO_NAME_WITH_STRING(name,"ysize")==0)
        return PyInt_FromLong(self->info.ysize);
-    if(strcmp(name,"xscale")==0)
+    if(PY_COMPARE_ATTRO_NAME_WITH_STRING(name,"xscale")==0)
        return PyFloat_FromDouble(self->info.xscale);
-    if(strcmp(name,"yscale")==0)
+    if(PY_COMPARE_ATTRO_NAME_WITH_STRING(name,"yscale")==0)
        return PyFloat_FromDouble(self->info.yscale);
-    if(strcmp(name,"area_extent")==0) {
+    if(PY_COMPARE_ATTRO_NAME_WITH_STRING(name,"area_extent")==0) {
        return Py_BuildValue("(dddd)",self->info.area_extent[0],
 			    self->info.area_extent[1],
 			    self->info.area_extent[2],
 			    self->info.area_extent[3]);
     }
-    res = Py_FindMethod(object_methods, (PyObject*) self, name);
-    if (res)
-	return res;
-
-    PyErr_Clear();
-
-    PyErr_SetString(PyExc_AttributeError, name);
-
-    return NULL;
+    return PyObject_GenericGetAttr((PyObject*)self, name);
 }
 
-static int _setattr_object(RaveInfoObject* self, char* name, PyObject* op)
+static int _setattro_object(RaveInfoObject* self, PyObject* name, PyObject* op)
 {
-  if (strcmp(name, "xsize") == 0) {
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "xsize") == 0) {
     if (PyFloat_Check(op) || PyInt_Check(op)) {
       self->info.xsize = PyInt_AsLong(op);
       return 0;
@@ -279,7 +265,7 @@ static int _setattr_object(RaveInfoObject* self, char* name, PyObject* op)
     setException(PyExc_ValueError,"Value not of type int");
     return -1;
   }
-  if (strcmp(name, "ysize") == 0) {
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "ysize") == 0) {
     if (PyFloat_Check(op) || PyInt_Check(op)) {
       self->info.ysize = PyInt_AsLong(op);
       return 0;
@@ -287,7 +273,7 @@ static int _setattr_object(RaveInfoObject* self, char* name, PyObject* op)
     setException(PyExc_ValueError,"Value not of type int");
     return -1;
   }
-  if (strcmp(name, "xscale") == 0) {
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "xscale") == 0) {
     if (PyFloat_Check(op) || PyInt_Check(op)) {
       self->info.xscale = PyFloat_AsDouble(op);
       return 0;
@@ -295,7 +281,7 @@ static int _setattr_object(RaveInfoObject* self, char* name, PyObject* op)
     setException(PyExc_ValueError,"Value not of type float");
     return -1;
   }
-  if (strcmp(name, "yscale") == 0) {
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "yscale") == 0) {
     if (PyFloat_Check(op) || PyInt_Check(op)) {
       self->info.yscale = PyFloat_AsDouble(op);
       return 0;
@@ -303,7 +289,7 @@ static int _setattr_object(RaveInfoObject* self, char* name, PyObject* op)
     setException(PyExc_ValueError,"Value not of type float");
     return -1;
   }
-  if (strcmp(name, "area_extent") == 0) {
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "area_extent") == 0) {
     if (PySequence_Check(op)) {
       if (PyArg_ParseTuple(op, "dddd", &self->info.area_extent[0],
                            &self->info.area_extent[1],
@@ -320,42 +306,92 @@ static int _setattr_object(RaveInfoObject* self, char* name, PyObject* op)
   return -1;
 }
 
-statichere PyTypeObject RaveInfoType_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,				/*ob_size*/
+static PyTypeObject RaveInfoType_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0) /*ob_size*/
     "RaveInfoTypeCore",		/*tp_name*/
     sizeof(RaveInfoType),	/*tp_size*/
     0,				/*tp_itemsize*/
     /* methods */
     (destructor)_dealloc_type,	/*tp_dealloc*/
     0,				/*tp_print*/
-    (getattrfunc)_getattr_type,	/*tp_getattr*/
+    (getattrfunc)0,	              /*tp_getattr*/
     0,				/*tp_setattr*/
-    0,				/*tp_compare*/
-    0,				/*tp_repr*/
-    0,                          /*tp_as_number */
+    0,                            /*tp_compare*/
+    0,                            /*tp_repr*/
+    0,                            /*tp_as_number */
     0,
-    0,                          /*tp_as_mapping */
-    0                           /*tp_hash*/
+    0,                            /*tp_as_mapping */
+    0,                            /*tp_hash*/
+    (ternaryfunc)0,               /*tp_call*/
+    (reprfunc)0,                  /*tp_str*/
+    (getattrofunc)_getattr_typeo, /*tp_getattro*/
+    (setattrofunc)0,              /*tp_setattro*/
+    0,                            /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+    0,                            /*tp_doc*/
+    (traverseproc)0,              /*tp_traverse*/
+    (inquiry)0,                   /*tp_clear*/
+    0,                            /*tp_richcompare*/
+    0,                            /*tp_weaklistoffset*/
+    0,                            /*tp_iter*/
+    0,                            /*tp_iternext*/
+    type_methods,                 /*tp_methods*/
+    0,                            /*tp_members*/
+    0,                            /*tp_getset*/
+    0,                            /*tp_base*/
+    0,                            /*tp_dict*/
+    0,                            /*tp_descr_get*/
+    0,                            /*tp_descr_set*/
+    0,                            /*tp_dictoffset*/
+    0,                            /*tp_init*/
+    0,                            /*tp_alloc*/
+    0,                            /*tp_new*/
+    0,                            /*tp_free*/
+    0,                            /*tp_is_gc*/
 };
 
-statichere PyTypeObject RaveInfoObject_Type = {
-    PyObject_HEAD_INIT(NULL)
-    0,				/*ob_size*/
+static PyTypeObject RaveInfoObject_Type = {
+    PyVarObject_HEAD_INIT(NULL, 0) /*ob_size*/
     "RaveInfoObjectCore",	/*tp_name*/
     sizeof(RaveInfoObject),	/*tp_size*/
     0,				/*tp_itemsize*/
     /* methods */
     (destructor)_dealloc_object,/*tp_dealloc*/
     0,				/*tp_print*/
-    (getattrfunc)_getattr_object,/*tp_getattr*/
-    (setattrfunc)_setattr_object,/*tp_setattr*/
-    0,				/*tp_compare*/
-    0,				/*tp_repr*/
-    0,                          /*tp_as_number */
+    (getattrfunc)0,               /*tp_getattr*/
+    (setattrfunc)0,               /*tp_setattr*/
+    0,                            /*tp_compare*/
+    0,                            /*tp_repr*/
+    0,                            /*tp_as_number */
     0,
-    0,                          /*tp_as_mapping */
-    0                           /*tp_hash*/
+    0,                            /*tp_as_mapping */
+    0,                            /*tp_hash*/
+    (ternaryfunc)0,               /*tp_call*/
+    (reprfunc)0,                  /*tp_str*/
+    (getattrofunc)_getattro_object,/*tp_getattro*/
+    (setattrofunc)_setattro_object,/*tp_setattro*/
+    0,                            /*tp_as_buffer*/
+    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+    0,                            /*tp_doc*/
+    (traverseproc)0,              /*tp_traverse*/
+    (inquiry)0,                   /*tp_clear*/
+    0,                            /*tp_richcompare*/
+    0,                            /*tp_weaklistoffset*/
+    0,                            /*tp_iter*/
+    0,                            /*tp_iternext*/
+    object_methods,                 /*tp_methods*/
+    0,                            /*tp_members*/
+    0,                            /*tp_getset*/
+    0,                            /*tp_base*/
+    0,                            /*tp_dict*/
+    0,                            /*tp_descr_get*/
+    0,                            /*tp_descr_set*/
+    0,                            /*tp_dictoffset*/
+    0,                            /*tp_init*/
+    0,                            /*tp_alloc*/
+    0,                            /*tp_new*/
+    0,                            /*tp_free*/
+    0,                            /*tp_is_gc*/
 };
 
 static PyMethodDef functions[] = {
@@ -367,17 +403,25 @@ static PyMethodDef functions[] = {
 /**
  * Initializes the _rave_info_type
  */
-void init_rave_info_type(void)
+MOD_INIT(_rave_info_type)
 {
-   PyObject *m;
-   RaveInfoType_Type.ob_type=&PyType_Type;
-   RaveInfoObject_Type.ob_type=&PyType_Type;
+  PyObject *module=NULL;
 
-   m=Py_InitModule("_rave_info_type",functions);
+  MOD_INIT_SETUP_TYPE(RaveInfoType_Type, &PyType_Type);
+  MOD_INIT_SETUP_TYPE(RaveInfoObject_Type, &PyType_Type);
 
+  MOD_INIT_VERIFY_TYPE_READY(&RaveInfoType_Type);
+  MOD_INIT_VERIFY_TYPE_READY(&RaveInfoObject_Type);
+
+  MOD_INIT_DEF(module, "_rave_info_type", NULL/*doc*/, functions);
+  if (module == NULL) {
+    return MOD_INIT_ERROR;
+  }
    import_array(); /*To make sure I get access to Numeric*/
    /*Always have to do this*/
    HL_init();
    /*And this I just do to be able to get debugging info from hdf*/
    HL_setDebugMode(2);
+
+   return MOD_INIT_SUCCESS(module);
 }

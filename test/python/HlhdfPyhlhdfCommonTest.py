@@ -22,9 +22,8 @@ class HlhdfPyhlhdfCommonTest(unittest.TestCase):
                    ('l', "long"), ('f', "float"),
                    ('d', "double")]
     for format in TYPEFORMATS:
-      result = _varioustests.translatePyFormatToHlhdf(format[0])
-      self.assertEquals(format[1], result, "Expected: %s but was: %s"%(format[1],result))
+      result = _varioustests.translatePyFormatToHlhdf(format[0].encode('ascii'))
+      self.assertEqual(format[1], result, "Expected: %s but was: %s"%(format[1],result))
 
 if __name__ == "__main__":
-    #import sys;sys.argv = ['', 'Test.testName']
-    unittest.main()
+    import sys;sys.argv = ['', 'Test.testName']

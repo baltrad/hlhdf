@@ -31,7 +31,7 @@ include ../def.mk
 CFLAGS= $(OPTS) $(CCSHARED) $(DEFS) -I../hlhdf -I../pyhlhdf $(NUMPY_INCLUDE_DIR) \
 	$(INCLUDE_PYTHON) \
 	$(HDF5_INCDIR) $(ZLIB_INCDIR) $(SZLIB_INCDIR)
-
+#-save-temps 
 ifeq ($(GOT_SZ_COMPRESS),yes)
   LIB_SZLIB=-lsz
 else
@@ -43,7 +43,7 @@ LDFLAGS= -L../hlhdf -L../pyhlhdf $(HDF5_LIBDIR) $(ZLIB_LIBDIR) $(SZLIB_LIBDIR)
 
 LIBRARIES= -lpyhlhdf $(LD_FORCE_SHARE) -lhlhdf -lhdf5 $(LIB_SZLIB) -lz -lm -lc
 
-TARGET=_pyhlmodule.so
+TARGET=_pyhl.so
 
 SOURCES=pyhl.c
 OBJECTS=$(SOURCES:.c=.o)

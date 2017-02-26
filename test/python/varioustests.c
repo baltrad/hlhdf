@@ -24,7 +24,7 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Various functions that are used during the testing
  */
-#include <Python.h>
+#include <pyhlcompat.h>
 /** To ensure that arrayobject is imported correctly */
 #define HLHDF_PYMODULE_WITH_IMPORT_ARRAY
 #include "pyhlhdf_common.h"
@@ -77,17 +77,21 @@ static PyMethodDef functions[] = {
 /**
  * Initializes the _varioustests module
  */
-void init_varioustests(void)
+MOD_INIT(_varioustests)
 {
-  PyObject *m, *d;
+  PyObject *module=NULL,*dictionary=NULL;
 
-  m = Py_InitModule("_varioustests",functions);
-  d = PyModule_GetDict(m);
-
-  import_array(); /*To make sure I get access to Numeric*/
-
-  ErrorObject = PyString_FromString("_pyhl.error");
-  if (ErrorObject == NULL || PyDict_SetItemString(d, "error", ErrorObject) != 0) {
-    Py_FatalError("Can't define _pyhl.error");
+  MOD_INIT_DEF(module, "_varioustests", NULL/*doc*/, functions);
+  if (module == NULL) {
+    return MOD_INIT_ERROR;
   }
+
+  dictionary = PyModule_GetDict(module);
+  ErrorObject = PyErr_NewException("_varioustests.error", NULL, NULL);
+
+  if (ErrorObject == NULL || PyDict_SetItemString(dictionary, "error", ErrorObject) != 0) {
+    Py_FatalError("Can't define _varioustests.error");
+    return MOD_INIT_ERROR;
+  }
+  return MOD_INIT_SUCCESS(module);
 }

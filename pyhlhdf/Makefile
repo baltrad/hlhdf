@@ -35,8 +35,8 @@ CFLAGS = $(OPTS) $(CCSHARED) $(DEFS) $(NUMPY_INCLUDE_DIR) $(INCLUDE_PYTHON) $(HD
 #CFLAGS := $(CFLAGS) -I../hlhdf
 
 TARGET=libpyhlhdf.a
-SOURCES=pyhlhdf_common.c
-INSTALL_HEADERS=pyhlhdf_common.h hlhdf_arrayobject_wrap.h
+SOURCES=pyhlhdf_common.c pyhlcompat.c
+INSTALL_HEADERS=pyhlhdf_common.h hlhdf_arrayobject_wrap.h pyhlcompat.c
 
 OBJS=$(SOURCES:.c=.o)
 

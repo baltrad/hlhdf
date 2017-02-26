@@ -23,6 +23,8 @@ RESULT=0
 
 TESTPYTHON=`fgrep COMPILE_FOR_PYTHON "${DEF_MK_FILE}" | sed -e"s/\(COMPILE_FOR_PYTHON=[ \t]*\)//"`
 
+PYTHON_BIN=`fgrep PYTHON_BINARY "${DEF_MK_FILE}" | sed -e"s/\(PYTHON_BINARY=[ \t]*\)//"`
+
 # RUN THE PYTHON TESTS
 if test "${TESTPYTHON}" = "yes"; then
 HDF5_LDPATH=`fgrep HDF5_LIBDIR "${DEF_MK_FILE}" | sed -e "s/\(HDF5_LIBDIR=[ \t]*\)\(-L\)*//"`
@@ -41,11 +43,7 @@ else
   export PYTHONPATH="${PYHLPATH}"
 fi
 
-#echo "ARGS: $*"
-#echo "NARGS: $#"
-#exit 255
-#cd "${SCRIPTPATH}/../test/python"
-python $*
+$PYTHON_BIN $*
 VAL=$?
 if [ $VAL != 0 ]; then
   RESULT=$VAL

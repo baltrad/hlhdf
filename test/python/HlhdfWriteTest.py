@@ -146,7 +146,7 @@ class HlhdfWriteTest(unittest.TestCase):
     try:
       self.addArrayValueNode(a, _pyhl.ATTRIBUTE_ID, "/uchararray", -1, [4], [1,2,3,4], "uchar", -1)
       self.fail("Expected TypeError")
-    except TypeError, e:
+    except TypeError:
       pass
 
   def testWriteUcharDataset(self):
@@ -181,7 +181,7 @@ class HlhdfWriteTest(unittest.TestCase):
     try:
       self.addArrayValueNode(a, _pyhl.ATTRIBUTE_ID, "/schararray", -1, [4], [1,2,3,4], "schar", -1)
       self.fail("Expected TypeError")
-    except TypeError, e:
+    except TypeError:
       pass
 
   def testWriteScharDataset(self):
@@ -216,7 +216,7 @@ class HlhdfWriteTest(unittest.TestCase):
     try:
       self.addArrayValueNode(a, _pyhl.ATTRIBUTE_ID, "/ushortarray", -1, [4], [1,2,3,4], "ushort", -1)
       self.fail("Expected TypeError")
-    except TypeError, e:
+    except TypeError:
       pass
 
   def testWriteUshortDataset(self):
@@ -251,7 +251,7 @@ class HlhdfWriteTest(unittest.TestCase):
     try:
       self.addArrayValueNode(a, _pyhl.ATTRIBUTE_ID, "/shortarray", -1, [4], [1,2,3,4], "short", -1)
       self.fail("Expected TypeError")
-    except TypeError, e:
+    except TypeError:
       pass
 
   def testWriteShortDataset(self):
@@ -286,7 +286,7 @@ class HlhdfWriteTest(unittest.TestCase):
     try:
       self.addArrayValueNode(a, _pyhl.ATTRIBUTE_ID, "/uintarray", -1, [4], [1,2,3,4], "uint", -1)
       self.fail("Expected TypeError")
-    except TypeError, e:
+    except TypeError:
       pass    
 
   def testWriteUintDataset(self):
@@ -361,7 +361,7 @@ class HlhdfWriteTest(unittest.TestCase):
     try:
       self.addArrayValueNode(a, _pyhl.ATTRIBUTE_ID, "/ulongarray", -1, [4], [1,2,3,4], "ulong", -1)
       self.fail("Expected TypeError")
-    except TypeError, e:
+    except TypeError:
       pass       
 
   def testWriteUlongDataset(self):
@@ -440,7 +440,7 @@ class HlhdfWriteTest(unittest.TestCase):
     try:
       self.addArrayValueNode(a, _pyhl.ATTRIBUTE_ID, "/llongarray", -1, [4], [1,2,3,4], "llong", -1)
       self.fail("Expected TypeError")
-    except TypeError, e:
+    except TypeError:
       pass
     
     a.write(self.TESTFILE)
@@ -450,7 +450,7 @@ class HlhdfWriteTest(unittest.TestCase):
     try:
       a.fetchNode("/llongarray")
       self.fail("Expected IOError")
-    except IOError, e:
+    except IOError:
       pass
 
   def testWriteLongLongDataset(self):
@@ -494,7 +494,7 @@ class HlhdfWriteTest(unittest.TestCase):
     self.assertEqual("float", b.format())
     self.assertEqual(_pyhl.ATTRIBUTE_ID, b.type())
     c = b.data()
-    self.assertEquals(4, len(c))
+    self.assertEqual(4, len(c))
     self.assertAlmostEqual(1.1, c[0], 4)
     self.assertAlmostEqual(2.2, c[1], 4)
     self.assertAlmostEqual(3.3, c[2], 4)
@@ -655,17 +655,17 @@ class HlhdfWriteTest(unittest.TestCase):
     a.addNode(b)
 
     b=_pyhl.node(_pyhl.ATTRIBUTE_ID,"/info/ysize")
-    b.setScalarValue(-1,long(480),"long",-1)
+    b.setScalarValue(-1,480,"long",-1)
     a.addNode(b)
 
     a.write(self.TESTFILE)
     
     #verify
     a=_pyhl.read_nodelist(self.TESTFILE)
-    self.assertEquals("double", a.fetchNode("/info/xscale").format())
-    self.assertEquals("float", a.fetchNode("/info/yscale").format())
-    self.assertEquals("int", a.fetchNode("/info/xsize").format())
-    self.assertEquals("long", a.fetchNode("/info/ysize").format())
+    self.assertEqual("double", a.fetchNode("/info/xscale").format())
+    self.assertEqual("float", a.fetchNode("/info/yscale").format())
+    self.assertEqual("int", a.fetchNode("/info/xsize").format())
+    self.assertEqual("long", a.fetchNode("/info/ysize").format())
 
   def testWriteOnlyRootGroup(self):
     a=_pyhl.nodelist()
@@ -674,7 +674,7 @@ class HlhdfWriteTest(unittest.TestCase):
     try:
       a.write(self.TESTFILE)
       self.fail("Expected IOError")
-    except IOError, e:
+    except IOError:
       pass
   
   def testReadWriteSameFile(self):

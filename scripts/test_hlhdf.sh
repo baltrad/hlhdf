@@ -33,6 +33,8 @@ SCRIPTPATH=`dirname "$SCRFILE"`
 
 DEF_MK_FILE="${SCRIPTPATH}/../def.mk"
 
+PYTHON_BIN=`fgrep PYTHON_BINARY "${DEF_MK_FILE}" | sed -e"s/\(PYTHON_BINARY=[ \t]*\)//"`
+
 if [ ! -f "${DEF_MK_FILE}" ]; then
   echo "configure has not been run"
   exit 255
@@ -57,13 +59,15 @@ else
 fi
 
 cd "${SCRIPTPATH}/../test/python"
-python HlhdfTestSuite.py
+$PYTHON_BIN HlhdfTestSuite.py
 VAL=$?
 if [ $VAL != 0 ]; then
   RESULT=$VAL
 fi
 \rm -f TEST-unittest.TestSuite.xml
-python HlhdfXmlTestSuite.py
+
+$PYTHON_BIN HlhdfXmlTestSuite.py
+
 VAL=$?
 if [ $RESULT -eq 0 -a $VAL -ne 0 ]; then
   RESULT=$VAL

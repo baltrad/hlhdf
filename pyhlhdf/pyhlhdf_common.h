@@ -27,7 +27,7 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
 #ifndef PYHLHDF_COMMON_H
 #define PYHLHDF_COMMON_H
 
-#include <Python.h>
+#include "pyhlcompat.h"
 #include <hlhdf.h>
 #include "hlhdf_arrayobject_wrap.h"
 

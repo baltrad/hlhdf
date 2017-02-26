@@ -102,6 +102,19 @@ case $withval in
 	;;
 esac
 
+PYBIN=python
+py3support=no
+AC_ARG_ENABLE(py3support,
+  [  --enable-py3support     Builds rave with support for python3.],
+  py3support=$enableval)
+if [[ "x$py3support" = "xyes" ]]; then
+  PYOPT="$PYOPT -DPY3_SUPPORT"
+  PYBIN=python3
+  COMPILE_FOR_PYTHON=yes
+fi
+
+PYTHON_BINARY=$PYBIN
+
 # Check for machine type or hardware-platform (32 bit e.g. = i386 or 64 bit = x86_64):
 bit64="no"
 AC_MSG_CHECKING([hardware platform])
@@ -131,7 +144,7 @@ AC_CHECK_PROGS(AR, ar aal, ar)
 PYVERSION=
 if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
   AC_MSG_CHECKING(for python version)
-  PYVERSION=`python -c "import sys; print sys.version[[:3]]"`
+  PYVERSION=`$PYBIN -c "import sys; print(sys.version[[:3]])"`
   AC_MSG_RESULT($PYVERSION)
 fi
 
@@ -145,7 +158,7 @@ AC_ARG_ENABLE(distutil-check,
 if [[ "x$COMPILE_FOR_PYTHON" = "xyes" -a "x$enabledistutils" = "xyes" ]]; then
   AC_MSG_CHECKING(for python distutils)
   GOTDISTUTILS="no"
-  XYZ=`python -c "from distutils import sysconfig"`
+  XYZ=`$PYBIN -c "from distutils import sysconfig"`
   if [[ $? -eq 0 ]]; then
     GOTDISTUTILS="yes"
   fi
@@ -156,7 +169,7 @@ fi
 PY_EXEC_INSTALLDIR=
 if [[ "x$COMPILE_FOR_PYTHON" = "xyes" -a "x$GOTDISTUTILS" = "xno" ]]; then
   AC_MSG_CHECKING(for python install dir)
-  PY_EXEC_INSTALLDIR=`python -c "import sys; print sys.exec_prefix"`
+  PY_EXEC_INSTALLDIR=`$PYBIN -c "import sys; print(sys.exec_prefix)"`
   AC_MSG_RESULT($PY_EXEC_INSTALLDIR)
 fi
 
@@ -165,7 +178,7 @@ PY_CONFIG_MAKE=
 if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
   AC_MSG_CHECKING(for python Makefile)
   if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PY_CONFIG_MAKE=`python -c "from distutils import sysconfig; print sysconfig.get_makefile_filename()" | grep -v "^None\$"`
+    PY_CONFIG_MAKE=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_makefile_filename())" | grep -v "^None\$"`
   else
     if [[ "x$bit64" = "xyes" ]]; then
       PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib64/python$PYVERSION/config/Makefile"
@@ -188,7 +201,7 @@ fi
 AC_MSG_CHECKING(for the compiler used for generating python)
 if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
   if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYCC=`python -c "from distutils import sysconfig; print sysconfig.get_config_var(\"CC\")" | grep -v "^None\$"`
+    PYCC=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_config_var(\"CC\"))" | grep -v "^None\$"`
   else
     PYCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | awk '{print $1}'`
   fi
@@ -234,7 +247,7 @@ PYDEFS=
 if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
   AC_MSG_CHECKING(for python includes)
   if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PY_INCLUDES=`python -c "from distutils import sysconfig; print sysconfig.get_python_inc()" | grep -v "^None\$"`
+    PY_INCLUDES=`$PYBIN -c "from distutils import sysconfig;print(sysconfig.get_python_inc())" | grep -v "^None\$"`
   else
     PY_INCLUDES="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
   fi
@@ -243,7 +256,7 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
 
   AC_MSG_CHECKING(for python lib site-packages)
   if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PY_SITEPACK=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib()" | grep -v "^None\$"`
+    PY_SITEPACK=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_python_lib())" | grep -v "^None\$"`
   else
     PY_SITEPACK="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/site-packages"
   fi
@@ -252,7 +265,7 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
   dnl Checks for typedefs, structures and compiler characteristics
   AC_MSG_CHECKING(for python options)
   if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYOPT=`python -c "from distutils import sysconfig; print sysconfig.get_config_var(\"OPT\")" | grep -v "^None\$"`
+    PYOPT=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_config_var(\"OPT\"))" | grep -v "^None\$"`
   else
     PYOPT=`cat $PY_CONFIG_MAKE | sed -n "/^OPT=/p" | sed -n -e"s/^OPT=[[ 	]]*\(.*\)/\1/p"`
   fi
@@ -260,7 +273,7 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
 
   AC_MSG_CHECKING(for ldflags)
   if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYLDFLAGS=`python -c "from distutils import sysconfig; print sysconfig.get_config_var(\"LDFLAGS\")" | grep -v "^None\$"`
+    PYLDFLAGS=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_config_var(\"LDFLAGS\"))" | grep -v "^None\$"`
   else
     PYLDFLAGS=`cat $PY_CONFIG_MAKE | sed -n "/^LDFLAGS=/p" | sed -n -e"s/^LDFLAGS=[[  ]]*\(.*\)/\1/p"`
   fi
@@ -268,7 +281,7 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
 
   AC_MSG_CHECKING(for ldshared)
   if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYLDSHARED=`python  -c "from distutils import sysconfig; print sysconfig.get_config_var(\"LDSHARED\")" | grep -v "^None\$"`
+    PYLDSHARED=`$PYBIN  -c "from distutils import sysconfig; print(sysconfig.get_config_var(\"LDSHARED\"))" | grep -v "^None\$"`
   else
     PYLDSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^LDSHARED=/p" | sed -n -e"s/^LDSHARED=[[   ]]*\(.*\)/\1/p"`
   fi
@@ -276,7 +289,7 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
 
   AC_MSG_CHECKING(for ccshared)
   if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYCCSHARED=`python  -c "from distutils import sysconfig; print sysconfig.get_config_var(\"CCSHARED\")" | grep -v "^None\$"`
+    PYCCSHARED=`$PYBIN  -c "from distutils import sysconfig; print(sysconfig.get_config_var(\"CCSHARED\"))" | grep -v "^None\$"`
   else
     PYCCSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^CCSHARED=/p" | sed -n -e"s/^CCSHARED=[[ 	]]*\(.*\)/\1/p"`
   fi
@@ -284,7 +297,7 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
 
   AC_MSG_CHECKING(for defs)
   if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYDEFS=`python  -c "from distutils import sysconfig; xyz=sysconfig.get_config_var(\"DEFS\")" | grep -v "^None\$"`
+    PYDEFS=`$PYBIN  -c "from distutils import sysconfig; xyz=sysconfig.get_config_var(\"DEFS\")" | grep -v "^None\$"`
   else
     PYDEFS=`cat $PY_CONFIG_MAKE | sed -n "/^DEFS=/p" | sed -n -e"s/^DEFS=[[ 	]]*\(.*\)/\1/p"`
   fi
@@ -370,11 +383,11 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
 		FOUND_NUMPY_INC=no
 		numpy_inc_app=
       if test "xyes" = "x$numpy_inc"; then
-         TESTNUMPYDIR=`python -c "import numpy; print eval(\"numpy.__\"+\"file__\")"`
+         TESTNUMPYDIR=`$PYBIN -c "import numpy; print(eval(\"numpy.__\"+\"file__\"))"`
          if test $? -ne 0; then
             numpy_inc="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
          else
-            numpy_inc=`echo $TESTNUMPYDIR | sed -e"s/\/__init__.pyc//"`
+            numpy_inc=`echo $TESTNUMPYDIR | sed -e"s/\/__init__.pyc//" | sed -e"s/\/__init__.py//"`
          fi
 		fi
 		if [[ -f $numpy_inc/arrayobject.h ]]; then
@@ -596,12 +609,8 @@ case $withval in
 		if test "X" != "$hdf5_lib"; then
 			saved_LDFLAGS="$LDFLAGS"
 			LIBS="-lz -lm"
-			#LDFLAGS="$LDFLAGS -L$hdf5_lib -L/usr/lib $LINKER_FORCED_STATIC"
 			LDFLAGS="$LDFLAGS -L$hdf5_lib"
 			AC_CHECK_LIB(hdf5,H5Fopen,GOT_HDF5_LIB=yes)
-			#if [[ "x$GOT_HDF5_LIB" = "xyes" ]]; then
-			#	HDF5_LIBDIR="-L$hdf5_lib"
-			#fi
 
 			# Hmm, might be touchy about the /usr/lib, lets try.
 			if [[ "x$GOT_HDF5_LIB" != "xyes" ]]; then
@@ -791,6 +800,7 @@ esac
 
 dnl Substitue all variables
 AC_SUBST(COMPILE_FOR_PYTHON)
+AC_SUBST(PYTHON_BINARY)
 AC_SUBST(CC)
 AC_SUBST(PY_INCLUDES)
 AC_SUBST(PY_SITEPACK)

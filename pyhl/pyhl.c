@@ -22,7 +22,7 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
  * @author Anders Henja (Swedish Meteorological and Hydrological Institute, SMHI)
  * @date 2009-06-13
  */
-#include <Python.h>
+#include <pyhlcompat.h>
 
 /**
  * You have to define HLHDF_PYMODULE_WITH_IMPORT_ARRAY to be able to force arrayobject to be
@@ -103,42 +103,42 @@ typedef struct {
 /**
  * PyhlNodelist represents a HL_NodeList
  */
-staticforward PyTypeObject PyhlNodelist_Type;
+static PyTypeObject PyhlNodelist_Type;
 
 /**
  * PyhlNode represents a HL_Node.
  */
-staticforward PyTypeObject PyhlNode_Type;
+static PyTypeObject PyhlNode_Type;
 
 /**
  * PyhlFileCreationProperty represents a HL_FileCreationProperty.
  */
-staticforward PyTypeObject PyhlFileCreationProperty_Type;
+static PyTypeObject PyhlFileCreationProperty_Type;
 
 /**
  * PyhlCompression represents a HL_Compression
  */
-staticforward PyTypeObject PyhlCompression_Type;
+static PyTypeObject PyhlCompression_Type;
 
 /**
  * Checks if the object is a Pyhl (nodelist) type
  */
-#define PyhlNodelist_Check(op) ((op)->ob_type == &PyhlNodelist_Type)
+#define PyhlNodelist_Check(op) (Py_TYPE(op) == &PyhlNodelist_Type) //((op)->ob_type == &PyhlNodelist_Type)
 
 /**
  * Checks if the object is a Pyhl node type.
  */
-#define PyhlNode_Check(op) ((op)->ob_type == &PyhlNode_Type)
+#define PyhlNode_Check(op) (Py_TYPE(op) == &PyhlNode_Type) //((op)->ob_type == &PyhlNode_Type)
 
 /**
  * Checks if the object is a Pyhl file creation property object
  */
-#define PyhlFileCreationProperty_Check(op) ((op)->ob_type == &PyhlFileCreationProperty_Type)
+#define PyhlFileCreationProperty_Check(op) (Py_TYPE(op) == &PyhlFileCreationProperty_Type)  //((op)->ob_type == &PyhlFileCreationProperty_Type)
 
 /**
  * Checks if the object is a pyhl compression object
  */
-#define PyhlCompression_Check(op) ((op)->ob_type == &PyhlCompression_Type)
+#define PyhlCompression_Check(op) (Py_TYPE(op) == &PyhlCompression_Type) //((op)->ob_type == &PyhlCompression_Type)
 
 /**
  * Deallocates the pyhl file list.
@@ -840,7 +840,16 @@ static PyObject* _pyhl_node_set_scalar_value(PyhlNode* self, PyObject* args)
       goto fail;
     }
   } else if (strcmp(hltypename, "compound") == 0) {
-    char* mData = PyString_AsString(data);
+    char* mData = NULL;
+    if (!PyByteArray_Check(data)) {
+      setException(PyExc_ValueError, "Compound types must be passed as byte arrays");
+      goto fail;
+    }
+    if (PyByteArray_Size(data) != itemSize) {
+      setException(PyExc_ValueError, "Size of byte array does not match itemSize");
+      goto fail;
+    }
+    mData = PyByteArray_AsString(data);
     if (!mData || !HLNode_setScalarValue(self->node, itemSize, (unsigned char*) mData,
                                          hltypename, lhid)) {
       setException(PyExc_ValueError,"Could not set scalar compound value");
@@ -1370,7 +1379,7 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
       break;
     }
     case H5T_COMPOUND: {
-      retv = PyString_FromStringAndSize((char*) HLNode_getRawdata(self->node), typeSize);
+      retv = PyByteArray_FromStringAndSize((char*) HLNode_getRawdata(self->node), typeSize);
       break;
     }
     case H5T_STRING: {
@@ -1908,85 +1917,53 @@ static struct PyMethodDef compression_methods[] =
   { NULL, NULL }
 };
 
-static PyObject* _getattr(PyhlNodelist* self, char* name)
+static PyObject* _getattro(PyhlNodelist* self, PyObject* name)
 {
-  PyObject* res;
-
-  if (strcmp(name, "ATTRIBUTE_ID") == 0)
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "ATTRIBUTE_ID") == 0)
     return PyInt_FromLong(ATTRIBUTE_ID);
-  if (strcmp(name, "GROUP_ID") == 0)
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "GROUP_ID") == 0)
     return PyInt_FromLong(GROUP_ID);
-  if (strcmp(name, "DATASET_ID") == 0)
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "DATASET_ID") == 0)
     return PyInt_FromLong(DATASET_ID);
-  if (strcmp(name, "TYPE_ID") == 0)
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "TYPE_ID") == 0)
     return PyInt_FromLong(TYPE_ID);
-  if (strcmp(name, "REFERENCE_ID") == 0)
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "REFERENCE_ID") == 0)
     return PyInt_FromLong(REFERENCE_ID);
 
-  res = Py_FindMethod(methods, (PyObject*) self, name);
-  if (res)
-    return res;
-
-  PyErr_Clear();
-
-  PyErr_SetString(PyExc_AttributeError, name);
-
-  return NULL;
+  return PyObject_GenericGetAttr((PyObject*)self, name);
 }
 
-static PyObject* _getattr_node(PyhlNode* self, char* name)
+static PyObject* _getattr_nodeo(PyhlNode* self, PyObject* name)
 {
-  PyObject* res;
-
-  res = Py_FindMethod(node_methods, (PyObject*) self, name);
-  if (res)
-    return res;
-
-  PyErr_Clear();
-
-  PyErr_SetString(PyExc_AttributeError, name);
-
-  return NULL;
+  return PyObject_GenericGetAttr((PyObject*)self, name);
 }
 
-static PyObject* _getattr_filecreationproperty(PyhlFileCreationProperty* self,
-  char* name)
+static PyObject* _getattr_filecreationpropertyo(PyhlFileCreationProperty* self, PyObject* name)
 {
-  PyObject* res;
-
-  if (strcmp(name, "version") == 0) {
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "version") == 0) {
     return Py_BuildValue("(iiii)", self->props->version.super,
                          self->props->version.freelist,
                          self->props->version.stab, self->props->version.shhdr);
-  } else if (strcmp(name, "userblock") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "userblock") == 0) {
     return PyInt_FromLong(self->props->userblock);
-  } else if (strcmp(name, "sizes") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "sizes") == 0) {
     return Py_BuildValue("(ii)", self->props->sizes.sizeof_addr,
                          self->props->sizes.sizeof_size);
-  } else if (strcmp(name, "sym_k") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "sym_k") == 0) {
     return Py_BuildValue("(ii)", self->props->sym_k.ik, self->props->sym_k.lk);
-  } else if (strcmp(name, "istore_k") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "istore_k") == 0) {
     return PyInt_FromLong(self->props->istore_k);
-  } else if (strcmp(name, "meta_block_size") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "meta_block_size") == 0) {
     return PyInt_FromLong(self->props->meta_block_size);
   }
-
-  res = Py_FindMethod(filecreationproperty_methods, (PyObject*) self, name);
-  if (res)
-    return res;
-
-  PyErr_Clear();
-
-  PyErr_SetString(PyExc_AttributeError, name);
-
-  return NULL;
+  return PyObject_GenericGetAttr((PyObject*)self, name);
 }
 
-static int _setattr_filecreationproperty(PyhlFileCreationProperty* self,
-  char* name, PyObject* val)
+static int _setattr_filecreationpropertyo(PyhlFileCreationProperty* self,
+  PyObject* name, PyObject* val)
 {
   char errmsg[256];
-  if (strcmp(name, "userblock") == 0) {
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "userblock") == 0) {
     hsize_t tmpv;
     hsize_t tmpv2;
     hsize_t mask = 1;
@@ -2011,7 +1988,7 @@ static int _setattr_filecreationproperty(PyhlFileCreationProperty* self,
     }
     self->props->userblock = tmpv;
     return 0;
-  } else if (strcmp(name, "sizes") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "sizes") == 0) {
     int sia, sis;
     if (!PyArg_ParseTuple(val, "ii", &sia, &sis)) {
       setException(PyExc_AttributeError,"sizes should be set with a tuble (sizeof_addr,sizeof_size)\n");
@@ -2029,7 +2006,7 @@ static int _setattr_filecreationproperty(PyhlFileCreationProperty* self,
     self->props->sizes.sizeof_size = (size_t)sis;
     self->props->sizes.sizeof_addr = (size_t)sia;
     return 0;
-  } else if (strcmp(name, "sym_k") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "sym_k") == 0) {
     int ik, lk;
     if (!PyArg_ParseTuple(val, "ii", &ik, &lk)) {
       setException(PyExc_AttributeError,"sym_k should be set with a tuple (ik,lk)\n");
@@ -2040,60 +2017,50 @@ static int _setattr_filecreationproperty(PyhlFileCreationProperty* self,
     if (lk != 0)
       self->props->sym_k.lk = lk;
     return 0;
-  } else if (strcmp(name, "istore_k") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "istore_k") == 0) {
     self->props->istore_k = PyInt_AsLong(val);
     return 0;
-  } else if (strcmp(name, "meta_block_size") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "meta_block_size") == 0) {
     self->props->meta_block_size = PyInt_AsLong(val);
     return 0;
   }
 
   sprintf(errmsg,
           "It is not possible to set '%s' in the filecreationproperty instance\n",
-          name);
+          PY_ATTRO_NAME_TO_STRING(name));
   setException(PyExc_AttributeError,errmsg);
 
   return -1;
 }
 
-static PyObject* _getattr_compression(PyhlCompression* self, char* name)
+static PyObject* _getattr_compressiono(PyhlCompression* self, PyObject* name)
 {
-  PyObject* res;
-
-  if (strcmp(name, "type") == 0) {
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "type") == 0) {
     return PyInt_FromLong(self->compr->type);
-  } else if (strcmp(name, "level") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "level") == 0) {
     return PyInt_FromLong(self->compr->level);
-  } else if (strcmp(name, "szlib_mask") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "szlib_mask") == 0) {
     return PyInt_FromLong(self->compr->szlib_mask);
-  } else if (strcmp(name, "szlib_px_per_block") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "szlib_px_per_block") == 0) {
     return PyInt_FromLong(self->compr->szlib_px_per_block);
-  } else if (strcmp(name, "H5_SZIP_CHIP_OPTION_MASK") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "H5_SZIP_CHIP_OPTION_MASK") == 0) {
     return PyInt_FromLong(H5_SZIP_CHIP_OPTION_MASK);
-  } else if (strcmp(name, "H5_SZIP_ALLOW_K13_OPTION_MASK") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "H5_SZIP_ALLOW_K13_OPTION_MASK") == 0) {
     return PyInt_FromLong(H5_SZIP_ALLOW_K13_OPTION_MASK);
-  } else if (strcmp(name, "H5_SZIP_EC_OPTION_MASK") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "H5_SZIP_EC_OPTION_MASK") == 0) {
     return PyInt_FromLong(H5_SZIP_EC_OPTION_MASK);
-  } else if (strcmp(name, "H5_SZIP_NN_OPTION_MASK") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "H5_SZIP_NN_OPTION_MASK") == 0) {
     return PyInt_FromLong(H5_SZIP_NN_OPTION_MASK);
   }
 
-  res = Py_FindMethod(compression_methods, (PyObject*) self, name);
-  if (res)
-    return res;
-
-  PyErr_Clear();
-
-  PyErr_SetString(PyExc_AttributeError, name);
-
-  return NULL;
+  return PyObject_GenericGetAttr((PyObject*)self, name);
 }
 
-static int _setattr_compression(PyhlCompression* self, char* name,
+static int _setattr_compressiono(PyhlCompression* self, PyObject* name,
   PyObject* val)
 {
   char errmsg[256];
-  if (strcmp(name, "level") == 0) {
+  if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "level") == 0) {
     int tmpv;
     if (self->compr->type != CT_ZLIB) {
       setException(PyExc_AttributeError,"level is only usable when compression is of type COMPRESSION_ZLIB\n");
@@ -2106,7 +2073,7 @@ static int _setattr_compression(PyhlCompression* self, char* name,
     }
     self->compr->level = tmpv;
     return 0;
-  } else if (strcmp(name, "szlib_mask") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "szlib_mask") == 0) {
     unsigned int compr_mask = H5_SZIP_CHIP_OPTION_MASK | H5_SZIP_ALLOW_K13_OPTION_MASK;
     unsigned int coding_mask = H5_SZIP_EC_OPTION_MASK | H5_SZIP_NN_OPTION_MASK;
     unsigned int allmask = compr_mask | coding_mask;
@@ -2142,7 +2109,7 @@ static int _setattr_compression(PyhlCompression* self, char* name,
       return -1;
     }
     return 0;
-  } else if (strcmp(name, "szlib_px_per_block") == 0) {
+  } else if (PY_COMPARE_ATTRO_NAME_WITH_STRING(name, "szlib_px_per_block") == 0) {
     int tmpv;
     if (self->compr->type != CT_SZLIB) {
       setException(PyExc_AttributeError,"szlib_px_per_block is only usable when compression is of type COMPRESSION_SZLIB\n");
@@ -2160,85 +2127,189 @@ static int _setattr_compression(PyhlCompression* self, char* name,
   }
 
   sprintf(errmsg,
-          "It is not possible to set '%s' in the compression instance\n", name);
+          "It is not possible to set '%s' in the compression instance\n", PY_ATTRO_NAME_TO_STRING(name));
   setException(PyExc_AttributeError,errmsg);
   return -1;
 }
 
-statichere PyTypeObject PyhlNodelist_Type =
+static PyTypeObject PyhlNodelist_Type =
 {
-  PyObject_HEAD_INIT(NULL)0, /*ob_size*/
+  PyVarObject_HEAD_INIT(NULL, 0) /*ob_size*/
   "PyhlCore", /*tp_name*/
   sizeof(PyhlNodelist), /*tp_size*/
   0, /*tp_itemsize*/
   /* methods */
   (destructor)_dealloc, /*tp_dealloc*/
   0, /*tp_print*/
-  (getattrfunc)_getattr, /*tp_getattr*/
+  (getattrfunc)0,               /*tp_getattr*/
   0, /*tp_setattr*/
-  0, /*tp_compare*/
-  0, /*tp_repr*/
-  0, /*tp_as_number */
+  0,                            /*tp_compare*/
+  0,                            /*tp_repr*/
+  0,                            /*tp_as_number */
   0,
-  0, /*tp_as_mapping */
-  0 /*tp_hash*/
+  0,                            /*tp_as_mapping */
+  0,                            /*tp_hash*/
+  (ternaryfunc)0,               /*tp_call*/
+  (reprfunc)0,                  /*tp_str*/
+  (getattrofunc)_getattro,      /*tp_getattro*/
+  (setattrofunc)0,              /*tp_setattro*/
+  0,                            /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+  0,                            /*tp_doc*/
+  (traverseproc)0,              /*tp_traverse*/
+  (inquiry)0,                   /*tp_clear*/
+  0,                            /*tp_richcompare*/
+  0,                            /*tp_weaklistoffset*/
+  0,                            /*tp_iter*/
+  0,                            /*tp_iternext*/
+  methods,                     /*tp_methods*/
+  0,                            /*tp_members*/
+  0,                            /*tp_getset*/
+  0,                            /*tp_base*/
+  0,                            /*tp_dict*/
+  0,                            /*tp_descr_get*/
+  0,                            /*tp_descr_set*/
+  0,                            /*tp_dictoffset*/
+  0,                            /*tp_init*/
+  0,                            /*tp_alloc*/
+  0,                            /*tp_new*/
+  0,                            /*tp_free*/
+  0,                            /*tp_is_gc*/
 };
 
-statichere PyTypeObject PyhlNode_Type =
+static PyTypeObject PyhlNode_Type =
 {
-  PyObject_HEAD_INIT(NULL)0, /*ob_size*/
+  PyVarObject_HEAD_INIT(NULL, 0) /*ob_size*/
   "PyhlNodeCore", /*tp_name*/
   sizeof(PyhlNode), /*tp_size*/
   0, /*tp_itemsize*/
   /* methods */
   (destructor)_dealloc_pyhlnode,/*tp_dealloc*/
   0, /*tp_print*/
-  (getattrfunc)_getattr_node, /*tp_getattr*/
+  (getattrfunc)0,               /*tp_getattr*/
   0, /*tp_setattr*/
-  0, /*tp_compare*/
-  0, /*tp_repr*/
-  0, /*tp_as_number */
+  0,                            /*tp_compare*/
+  0,                            /*tp_repr*/
+  0,                            /*tp_as_number */
   0,
-  0, /*tp_as_mapping */
-  0 /*tp_hash*/
+  0,                            /*tp_as_mapping */
+  0,                            /*tp_hash*/
+  (ternaryfunc)0,               /*tp_call*/
+  (reprfunc)0,                  /*tp_str*/
+  (getattrofunc)_getattr_nodeo, /*tp_getattro*/
+  (setattrofunc)0,              /*tp_setattro*/
+  0,                            /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+  0,                            /*tp_doc*/
+  (traverseproc)0,              /*tp_traverse*/
+  (inquiry)0,                   /*tp_clear*/
+  0,                            /*tp_richcompare*/
+  0,                            /*tp_weaklistoffset*/
+  0,                            /*tp_iter*/
+  0,                            /*tp_iternext*/
+  node_methods,                     /*tp_methods*/
+  0,                            /*tp_members*/
+  0,                            /*tp_getset*/
+  0,                            /*tp_base*/
+  0,                            /*tp_dict*/
+  0,                            /*tp_descr_get*/
+  0,                            /*tp_descr_set*/
+  0,                            /*tp_dictoffset*/
+  0,                            /*tp_init*/
+  0,                            /*tp_alloc*/
+  0,                            /*tp_new*/
+  0,                            /*tp_free*/
+  0,                            /*tp_is_gc*/
 };
 
-statichere PyTypeObject PyhlFileCreationProperty_Type =
+static PyTypeObject PyhlFileCreationProperty_Type =
 {
-  PyObject_HEAD_INIT(NULL)0, /*ob_size*/
+  PyVarObject_HEAD_INIT(NULL, 0) /*ob_size*/
   "PyhlFileCreationProperty", /*tp_name*/
   sizeof(PyhlFileCreationProperty), /*tp_size*/
   0, /*tp_itemsize*/
   /* methods */
   (destructor)_dealloc_pyhlfilecreationproperty,/*tp_dealloc*/
   0, /*tp_print*/
-  (getattrfunc)_getattr_filecreationproperty, /*tp_getattr*/
-  (setattrfunc)_setattr_filecreationproperty, /*tp_setattr*/
-  0, /*tp_compare*/
-  0, /*tp_repr*/
-  0, /*tp_as_number */
+  (getattrfunc)0,               /*tp_getattr*/
+  (setattrfunc)0,               /*tp_setattr*/
+  0,                            /*tp_compare*/
+  0,                            /*tp_repr*/
+  0,                            /*tp_as_number */
   0,
-  0, /*tp_as_mapping */
-  0 /*tp_hash*/
+  0,                            /*tp_as_mapping */
+  0,                            /*tp_hash*/
+  (ternaryfunc)0,               /*tp_call*/
+  (reprfunc)0,                  /*tp_str*/
+  (getattrofunc)_getattr_filecreationpropertyo,   /*tp_getattro*/
+  (setattrofunc)_setattr_filecreationpropertyo,   /*tp_setattro*/
+  0,                            /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+  0,                            /*tp_doc*/
+  (traverseproc)0,              /*tp_traverse*/
+  (inquiry)0,                   /*tp_clear*/
+  0,                            /*tp_richcompare*/
+  0,                            /*tp_weaklistoffset*/
+  0,                            /*tp_iter*/
+  0,                            /*tp_iternext*/
+  filecreationproperty_methods, /*tp_methods*/
+  0,                            /*tp_members*/
+  0,                            /*tp_getset*/
+  0,                            /*tp_base*/
+  0,                            /*tp_dict*/
+  0,                            /*tp_descr_get*/
+  0,                            /*tp_descr_set*/
+  0,                            /*tp_dictoffset*/
+  0,                            /*tp_init*/
+  0,                            /*tp_alloc*/
+  0,                            /*tp_new*/
+  0,                            /*tp_free*/
+  0,                            /*tp_is_gc*/
 };
 
-statichere PyTypeObject PyhlCompression_Type =
+static PyTypeObject PyhlCompression_Type =
 {
-  PyObject_HEAD_INIT(NULL)0, /*ob_size*/
+  PyVarObject_HEAD_INIT(NULL, 0) /*ob_size*/
   "PyhlCompression", /*tp_name*/
   sizeof(PyhlCompression), /*tp_size*/
   0, /*tp_itemsize*/
   /* methods */
   (destructor)_dealloc_pyhlcompression,/*tp_dealloc*/
   0, /*tp_print*/
-  (getattrfunc)_getattr_compression, /*tp_getattr*/
-  (setattrfunc)_setattr_compression, /*tp_setattr*/
-  0, /*tp_compare*/
-  0, /*tp_repr*/
-  0, /*tp_as_number */
+  (getattrfunc)0,               /*tp_getattr*/
+  (setattrfunc)0,               /*tp_setattr*/
+  0,                            /*tp_compare*/
+  0,                            /*tp_repr*/
+  0,                            /*tp_as_number */
   0,
-  0, /*tp_as_mapping */
-  0 /*tp_hash*/
+  0,                            /*tp_as_mapping */
+  0,                            /*tp_hash*/
+  (ternaryfunc)0,               /*tp_call*/
+  (reprfunc)0,                  /*tp_str*/
+  (getattrofunc)_getattr_compressiono,   /*tp_getattro*/
+  (setattrofunc)_setattr_compressiono,   /*tp_setattro*/
+  0,                            /*tp_as_buffer*/
+  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+  0,                            /*tp_doc*/
+  (traverseproc)0,              /*tp_traverse*/
+  (inquiry)0,                   /*tp_clear*/
+  0,                            /*tp_richcompare*/
+  0,                            /*tp_weaklistoffset*/
+  0,                            /*tp_iter*/
+  0,                            /*tp_iternext*/
+  compression_methods,          /*tp_methods*/
+  0,                            /*tp_members*/
+  0,                            /*tp_getset*/
+  0,                            /*tp_base*/
+  0,                            /*tp_dict*/
+  0,                            /*tp_descr_get*/
+  0,                            /*tp_descr_set*/
+  0,                            /*tp_dictoffset*/
+  0,                            /*tp_init*/
+  0,                            /*tp_alloc*/
+  0,                            /*tp_new*/
+  0,                            /*tp_free*/
+  0,                            /*tp_is_gc*/
 };
 
 /**
@@ -2309,47 +2380,56 @@ static PyMethodDef functions[] = {
 /**
  * Initializes PyHL.
  */
-void init_pyhl(void)
+MOD_INIT(_pyhl)
 {
-  PyObject *m, *d;
-  PyObject *tmp;
-  PyhlNodelist_Type.ob_type = &PyType_Type;
-  PyhlNode_Type.ob_type = &PyType_Type;
+  PyObject *module=NULL,*dictionary=NULL;
+  PyObject *tmp = NULL;
 
-  m = Py_InitModule("_pyhl",functions);
-  d = PyModule_GetDict(m);
+  MOD_INIT_SETUP_TYPE(PyhlNodelist_Type, &PyType_Type);
+  MOD_INIT_SETUP_TYPE(PyhlNode_Type, &PyType_Type);
 
-  ErrorObject = PyString_FromString("_pyhl.error");
-  if (ErrorObject == NULL || PyDict_SetItemString(d, "error", ErrorObject) != 0) {
+  MOD_INIT_VERIFY_TYPE_READY(&PyhlNodelist_Type);
+  MOD_INIT_VERIFY_TYPE_READY(&PyhlNode_Type);
+
+  MOD_INIT_DEF(module, "_pyhl", NULL/*doc*/, functions);
+  if (module == NULL) {
+    return MOD_INIT_ERROR;
+  }
+
+  dictionary = PyModule_GetDict(module);
+
+  ErrorObject = PyErr_NewException("_pyhl.error", NULL, NULL);
+  if (ErrorObject == NULL || PyDict_SetItemString(dictionary, "error", ErrorObject) != 0) {
     Py_FatalError("Can't define _pyhl.error");
+    return MOD_INIT_ERROR;
   }
 
   tmp = PyInt_FromLong(ATTRIBUTE_ID);
-  PyDict_SetItemString(d, "ATTRIBUTE_ID", tmp);
+  PyDict_SetItemString(dictionary, "ATTRIBUTE_ID", tmp);
   Py_XDECREF(tmp);
 
   tmp = PyInt_FromLong(GROUP_ID);
-  PyDict_SetItemString(d,"GROUP_ID",tmp);
+  PyDict_SetItemString(dictionary,"GROUP_ID",tmp);
   Py_XDECREF(tmp);
 
   tmp = PyInt_FromLong(DATASET_ID);
-  PyDict_SetItemString(d,"DATASET_ID",tmp);
+  PyDict_SetItemString(dictionary,"DATASET_ID",tmp);
   Py_XDECREF(tmp);
 
   tmp = PyInt_FromLong(TYPE_ID);
-  PyDict_SetItemString(d,"TYPE_ID",tmp);
+  PyDict_SetItemString(dictionary,"TYPE_ID",tmp);
   Py_XDECREF(tmp);
 
   tmp = PyInt_FromLong(REFERENCE_ID);
-  PyDict_SetItemString(d,"REFERENCE_ID",tmp);
+  PyDict_SetItemString(dictionary,"REFERENCE_ID",tmp);
   Py_XDECREF(tmp);
 
   tmp = PyInt_FromLong(CT_ZLIB);
-  PyDict_SetItemString(d,"COMPRESSION_ZLIB",tmp);
+  PyDict_SetItemString(dictionary,"COMPRESSION_ZLIB",tmp);
   Py_XDECREF(tmp);
 
   tmp = PyInt_FromLong(CT_SZLIB);
-  PyDict_SetItemString(d,"COMPRESSION_SZLIB",tmp);
+  PyDict_SetItemString(dictionary,"COMPRESSION_SZLIB",tmp);
   Py_XDECREF(tmp);
 
   import_array(); /*To make sure I get access to Numeric*/
@@ -2357,4 +2437,6 @@ void init_pyhl(void)
   HL_init();
   /* We really should not have debug mode set to 2 */
   HL_setDebugMode(0);
+
+  return MOD_INIT_SUCCESS(module);
 }

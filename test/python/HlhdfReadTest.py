@@ -54,7 +54,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadChar(self):
@@ -67,7 +67,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
     
   def testReadSchar(self):
@@ -80,7 +80,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
     
   def testReadUchar(self):
@@ -93,7 +93,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadShort(self):
@@ -106,7 +106,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
  
   def testReadUshort(self):
@@ -119,7 +119,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadInt(self):
@@ -132,7 +132,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadUint(self):
@@ -145,7 +145,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadLong(self):
@@ -158,7 +158,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadUlong(self):
@@ -171,7 +171,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadLlong(self):
@@ -184,7 +184,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadUllong(self):
@@ -197,7 +197,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadFloat(self):
@@ -210,7 +210,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadDouble(self):
@@ -223,7 +223,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
     
   def testReadHsize(self):
@@ -236,7 +236,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
     
   def testReadHerr(self):
@@ -249,7 +249,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
     
   def testReadHbool(self):
@@ -262,7 +262,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadRootReferenceToLongarray(self):
@@ -275,7 +275,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadRaveDatatype(self):
@@ -284,20 +284,20 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       x=node.data()
       self.fail("expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass
     self.assertEqual("/RaveDatatype", node.name())
     self.assertEqual(_pyhl.TYPE_ID, node.type())
     try:
       x=node.rawdata()
       self.fail("expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass
     
     try:
       x = node.compound_data()
       self.fail("Expected exception")
-    except AttributeError, e:
+    except AttributeError:
       pass
 
   def testReadDoubleArray(self):
@@ -313,7 +313,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     
   def testReadFloatArray(self):
@@ -329,7 +329,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
 
   def verifyCharacterData(self, size, arr):
@@ -370,12 +370,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass    
 
   def testReadDoubleDataset(self):
@@ -391,12 +391,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass    
 
   def testReadFloatDataset(self):
@@ -412,12 +412,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadGroupInGroup(self):
@@ -433,12 +433,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadIntDataset(self):
@@ -454,12 +454,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadLongDataset(self):
@@ -475,12 +475,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
     
   def testReadScharDataset(self):
@@ -496,12 +496,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     
   def testReadShortDataset(self):
@@ -517,12 +517,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     
   def testReadUcharDataset(self):
@@ -538,12 +538,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass     
 
   def testReadUintDataset(self):
@@ -559,12 +559,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadUshortDataset(self):
@@ -580,12 +580,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadIntarray(self):
@@ -598,12 +598,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadLongarray(self):
@@ -616,12 +616,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadDataset1Attribute(self):
@@ -648,7 +648,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadReferenceToFloatDataset(self):
@@ -661,7 +661,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
 
   def testReadReferenceToGroup(self):
@@ -674,7 +674,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass 
     
   def testReadStringArray(self):
@@ -686,12 +686,12 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       arr = node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     try:
       a=node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
 
   def testReadDatatype(self):
@@ -701,19 +701,19 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       node.data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
 
     try:
       node.rawdata()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     
     try:
       node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
      
   def testReadCompoundAttribute_byType(self):
@@ -750,13 +750,14 @@ class HlhdfReadTest(unittest.TestCase):
     self.assertEqual("/compoundgroup/attribute2", node.name())
     self.assertEqual("compound", node.format())
     self.assertEqual(_pyhl.ATTRIBUTE_ID, node.type())
+    b=node.rawdata()
     rinfo_obj.fromstring(node.rawdata())
     self.assertEqual(99, rinfo_obj.xsize)
     self.assertEqual(109, rinfo_obj.ysize)
     self.assertEqual(150.0, rinfo_obj.xscale)
     self.assertEqual(150.0, rinfo_obj.yscale)
     self.assertTrue(numpy.all(rinfo_obj.area_extent == (10.0,20.0,30.0,40.0)))
-  
+    
   def testReadCompoundAttribute2_byDictionary(self):
     node=self.h5nodelist.fetchNode("/compoundgroup/attribute2")
     self.assertEqual("compound", node.format())
@@ -790,7 +791,7 @@ class HlhdfReadTest(unittest.TestCase):
     try:
       node.compound_data()
       self.fail("Expected AttributeError")
-    except AttributeError, e:
+    except AttributeError:
       pass
     
   def testReadUnnamedCompoundAttribute_byDictionary(self):
@@ -853,7 +854,7 @@ class HlhdfReadTest(unittest.TestCase):
 
   def testGetNodeNames(self):
     names = self.h5nodelist.getNodeNames()
-    self.assertFalse(names.has_key("/"));
+    self.assertFalse("/" in names);
 
   def testReadNullterminatedString(self):
     nodelist = _pyhl.read_nodelist(self.STRINGSFIXTURE)
@@ -888,7 +889,6 @@ class HlhdfReadTest(unittest.TestCase):
     node= nl.fetchNode("/variable")
     self.assertEqual("this is a variable length string", node.data())
     self.assertEqual("this is a variable length string\x00", node.rawdata())
-
       
 if __name__ == "__main__":
     unittest.main()

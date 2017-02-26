@@ -30,7 +30,7 @@ class HlhdfFileCreationPropertyTest(unittest.TestCase):
       try:
         fcp.sizes = t
         self.fail("Expected AttributeError")
-      except AttributeError, e:
+      except AttributeError:
         pass
       self.assertEqual(curr, fcp.sizes)
 

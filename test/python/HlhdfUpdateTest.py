@@ -117,12 +117,12 @@ class HlhdfUpdateTest(unittest.TestCase):
     # Verify
     nl = _pyhl.read_nodelist(self.TESTFILE)
     b = nl.fetchNode("/root/group1")
-    self.assertEquals("/root/group1", b.name())
-    self.assertEquals(_pyhl.GROUP_ID, b.type())
+    self.assertEqual("/root/group1", b.name())
+    self.assertEqual(_pyhl.GROUP_ID, b.type())
 
     b = nl.fetchNode("/group2")
-    self.assertEquals("/group2", b.name())
-    self.assertEquals(_pyhl.GROUP_ID, b.type())
+    self.assertEqual("/group2", b.name())
+    self.assertEqual(_pyhl.GROUP_ID, b.type())
 
   def testUpdateReferences(self):
     a = _pyhl.read_nodelist(self.TESTFILE)
@@ -213,7 +213,6 @@ class HlhdfUpdateTest(unittest.TestCase):
     b=a.fetchNode("/RaveType")
     #self.assertEqual("UNDEFINED", b.format())
     #self.assertEqual(_pyhl.TYPE_ID, b.type())
-    print "DATA: " + `b.data()`
     # Add a value using the named type
     rinfo_obj =_rave_info_type.object()
     rinfo_obj.xsize = 98

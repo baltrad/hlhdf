@@ -39,50 +39,50 @@ class HlhdfNodeTest(unittest.TestCase):
     nodelist.selectAll()
     nodelist.fetch()
     node = nodelist.getNode("/group1/floatdset")
-    self.assertEquals("/group1/floatdset", node.name())
+    self.assertEqual("/group1/floatdset", node.name())
   
   def testSelectFetch_from(self):
     nodelist = _pyhl.read_nodelist(self.TESTFILE, "/group1")
     nodelist.selectNode("/group1/floatdset")
     nodelist.fetch()
     node = nodelist.getNode("/group1/floatdset")
-    self.assertEquals("/group1/floatdset", node.name())
+    self.assertEqual("/group1/floatdset", node.name())
 
   def testFetch_from_group(self):
     nodelist = _pyhl.read_nodelist(self.TESTFILE, "/group1")
     node = nodelist.fetchNode("/group1/floatdset")
-    self.assertEquals("/group1/floatdset", node.name())
+    self.assertEqual("/group1/floatdset", node.name())
 
   def testFetch_from_group_2(self):
     nodelist = _pyhl.read_nodelist(self.TESTFILE, "/group1/")
     node = nodelist.fetchNode("/group1/floatdset")
-    self.assertEquals("/group1/floatdset", node.name())
+    self.assertEqual("/group1/floatdset", node.name())
     
   def testFetch_from_root(self):
     nodelist = _pyhl.read_nodelist(self.TESTFILE, "/")
     node = nodelist.fetchNode("/group1/floatdset")
-    self.assertEquals("/group1/floatdset", node.name())
+    self.assertEqual("/group1/floatdset", node.name())
 
   def testFetch_from_attribute(self):
     try:
       nodelist = _pyhl.read_nodelist(self.TESTFILE, "/hboolvalue")
       self.fail("Expected IOError")
-    except IOError, e:
+    except IOError:
       pass
 
   def testFetch_from_dataset(self):
     nodelist = _pyhl.read_nodelist(self.TESTFILE, "/dataset1")
     node = nodelist.fetchNode("/dataset1/attribute1")
-    self.assertEquals("/dataset1/attribute1", node.name()) 
+    self.assertEqual("/dataset1/attribute1", node.name()) 
     node = nodelist.fetchNode("/dataset1/doublearray")
-    self.assertEquals("/dataset1/doublearray", node.name()) 
+    self.assertEqual("/dataset1/doublearray", node.name()) 
        
   def testFetch_from_dataset_2(self):
     nodelist = _pyhl.read_nodelist(self.TESTFILE, "/dataset1/")
     node = nodelist.fetchNode("/dataset1/attribute1")
-    self.assertEquals("/dataset1/attribute1", node.name()) 
+    self.assertEqual("/dataset1/attribute1", node.name()) 
     node = nodelist.fetchNode("/dataset1/doublearray")
-    self.assertEquals("/dataset1/doublearray", node.name()) 
+    self.assertEqual("/dataset1/doublearray", node.name()) 
 
   def testAddDuplicate_GroupNode(self):
     nodelist = _pyhl.nodelist();
@@ -92,7 +92,7 @@ class HlhdfNodeTest(unittest.TestCase):
     try:
       nodelist.addNode(_pyhl.node(_pyhl.GROUP_ID, "/root/group1"))
       self.fail("Expected IOError")
-    except IOError, e:
+    except IOError:
       pass
 
 
