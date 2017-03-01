@@ -28,7 +28,7 @@
 ############################################################
 include ../def.mk
 
-CFLAGS = $(OPTS) $(CCSHARED) $(DEFS) $(NUMPY_INCLUDE_DIR) $(INCLUDE_PYTHON) $(HDF5_INCDIR) $(ZLIB_INCDIR) -I../hlhdf
+CFLAGS = $(OPTS) -save-temps $(CCSHARED) $(DEFS) $(NUMPY_INCLUDE_DIR) $(INCLUDE_PYTHON) $(HDF5_INCDIR) $(ZLIB_INCDIR) -I../hlhdf
 
 # I gotta learn how to use expanded variables sometime.
 #TEMP= $(CFLAGS)
@@ -36,7 +36,7 @@ CFLAGS = $(OPTS) $(CCSHARED) $(DEFS) $(NUMPY_INCLUDE_DIR) $(INCLUDE_PYTHON) $(HD
 
 TARGET=libpyhlhdf.a
 SOURCES=pyhlhdf_common.c pyhlcompat.c
-INSTALL_HEADERS=pyhlhdf_common.h hlhdf_arrayobject_wrap.h pyhlcompat.c
+INSTALL_HEADERS=pyhlhdf_common.h hlhdf_arrayobject_wrap.h pyhlcompat.h
 
 OBJS=$(SOURCES:.c=.o)
 

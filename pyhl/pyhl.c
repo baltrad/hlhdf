@@ -216,6 +216,7 @@ static PyObject* _pyhl_new_nodelist(PyObject* self, PyObject* args)
   return (PyObject*) retv;
 }
 
+
 /**
  * Creates a new node instance.
  * @param[in] self this instance.
@@ -584,6 +585,7 @@ static PyObject* _pyhl_get_node_names(PyhlNodelist* self, PyObject* args)
       setException(PyExc_TypeError,errbuf);
       goto fail;
     }
+
     if (PyDict_SetItemString(retv, HLNode_getName(node), pyo) == -1) {
       setException(PyExc_AttributeError,"Failed to set dictionary item");
       goto fail;
@@ -714,6 +716,7 @@ static PyObject* _pyhl_get_node(PyhlNodelist* self, PyObject* args)
 
   if (!PyArg_ParseTuple(args, "s", &nodename))
     return NULL;
+
 
   if (!(node = HLNodeList_getNodeByName(self->nodelist, nodename))) {
     sprintf(errbuf, "Could not get node '%s'", nodename);
@@ -1170,7 +1173,6 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
   }
 
   typeSize = H5Tget_size(tmpHid);
-
   if (HLNode_getRank(self->node) == 0) { /*Scalar*/
     switch (H5Tget_class(tmpHid)) {
     case H5T_INTEGER: {
@@ -1212,7 +1214,7 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
       break;
     }
     case H5T_COMPOUND: {
-      retv = PyString_FromStringAndSize((char*)HLNode_getData(self->node), typeSize);
+      retv = PyByteArray_FromStringAndSize((char*)HLNode_getData(self->node), typeSize);
       break;
     }
     case H5T_STRING: {
@@ -1221,9 +1223,9 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
         typeSize = strlen(d);
       }
       if (d[typeSize-1] == '\0') {
-        retv = PyString_FromStringAndSize((char*)HLNode_getData(self->node), typeSize - 1);
+        retv = PyHlhdf_StringOrUnicode_FromASCII((char*)HLNode_getData(self->node), typeSize - 1);
       } else {
-        retv = PyString_FromStringAndSize((char*)HLNode_getData(self->node), typeSize);
+        retv = PyHlhdf_StringOrUnicode_FromASCII((char*)HLNode_getData(self->node), typeSize);
       }
       break;
     }
@@ -1266,7 +1268,7 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
     case H5T_COMPOUND: {
       npts = (size_t)HLNode_getNumberOfPoints(self->node);
       npts *= typeSize;
-      retv = PyString_FromStringAndSize((char*) HLNode_getData(self->node), npts);
+      retv = PyByteArray_FromStringAndSize((char*) HLNode_getData(self->node), npts);
       break;
     }
     case H5T_STRING: {
@@ -1424,7 +1426,7 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
     case H5T_COMPOUND: {
       npts = (size_t)HLNode_getNumberOfPoints(self->node);;
       npts *= typeSize;
-      retv = PyString_FromStringAndSize((char*) HLNode_getRawdata(self->node), npts);
+      retv = PyByteArray_FromStringAndSize((char*) HLNode_getRawdata(self->node), npts);
       break;
     }
     case H5T_STRING: {
@@ -2154,7 +2156,7 @@ static PyTypeObject PyhlNodelist_Type =
   (getattrofunc)_getattro,      /*tp_getattro*/
   (setattrofunc)0,              /*tp_setattro*/
   0,                            /*tp_as_buffer*/
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+  Py_TPFLAGS_DEFAULT,           /*tp_flags*/
   0,                            /*tp_doc*/
   (traverseproc)0,              /*tp_traverse*/
   (inquiry)0,                   /*tp_clear*/
@@ -2199,7 +2201,7 @@ static PyTypeObject PyhlNode_Type =
   (getattrofunc)_getattr_nodeo, /*tp_getattro*/
   (setattrofunc)0,              /*tp_setattro*/
   0,                            /*tp_as_buffer*/
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+  Py_TPFLAGS_DEFAULT,           /*tp_flags*/
   0,                            /*tp_doc*/
   (traverseproc)0,              /*tp_traverse*/
   (inquiry)0,                   /*tp_clear*/
@@ -2207,7 +2209,7 @@ static PyTypeObject PyhlNode_Type =
   0,                            /*tp_weaklistoffset*/
   0,                            /*tp_iter*/
   0,                            /*tp_iternext*/
-  node_methods,                     /*tp_methods*/
+  node_methods,                 /*tp_methods*/
   0,                            /*tp_members*/
   0,                            /*tp_getset*/
   0,                            /*tp_base*/
@@ -2244,7 +2246,7 @@ static PyTypeObject PyhlFileCreationProperty_Type =
   (getattrofunc)_getattr_filecreationpropertyo,   /*tp_getattro*/
   (setattrofunc)_setattr_filecreationpropertyo,   /*tp_setattro*/
   0,                            /*tp_as_buffer*/
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+  Py_TPFLAGS_DEFAULT,           /*tp_flags*/
   0,                            /*tp_doc*/
   (traverseproc)0,              /*tp_traverse*/
   (inquiry)0,                   /*tp_clear*/
@@ -2289,7 +2291,7 @@ static PyTypeObject PyhlCompression_Type =
   (getattrofunc)_getattr_compressiono,   /*tp_getattro*/
   (setattrofunc)_setattr_compressiono,   /*tp_setattro*/
   0,                            /*tp_as_buffer*/
-  Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+  Py_TPFLAGS_DEFAULT,           /*tp_flags*/
   0,                            /*tp_doc*/
   (traverseproc)0,              /*tp_traverse*/
   (inquiry)0,                   /*tp_clear*/
@@ -2387,9 +2389,13 @@ MOD_INIT(_pyhl)
 
   MOD_INIT_SETUP_TYPE(PyhlNodelist_Type, &PyType_Type);
   MOD_INIT_SETUP_TYPE(PyhlNode_Type, &PyType_Type);
+  MOD_INIT_SETUP_TYPE(PyhlFileCreationProperty_Type, &PyType_Type);
+  MOD_INIT_SETUP_TYPE(PyhlCompression_Type, &PyType_Type);
 
   MOD_INIT_VERIFY_TYPE_READY(&PyhlNodelist_Type);
   MOD_INIT_VERIFY_TYPE_READY(&PyhlNode_Type);
+  MOD_INIT_VERIFY_TYPE_READY(&PyhlFileCreationProperty_Type);
+  MOD_INIT_VERIFY_TYPE_READY(&PyhlCompression_Type);
 
   MOD_INIT_DEF(module, "_pyhl", NULL/*doc*/, functions);
   if (module == NULL) {
@@ -2397,7 +2403,6 @@ MOD_INIT(_pyhl)
   }
 
   dictionary = PyModule_GetDict(module);
-
   ErrorObject = PyErr_NewException("_pyhl.error", NULL, NULL);
   if (ErrorObject == NULL || PyDict_SetItemString(dictionary, "error", ErrorObject) != 0) {
     Py_FatalError("Can't define _pyhl.error");

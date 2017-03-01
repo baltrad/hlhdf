@@ -44,23 +44,22 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
  */
 int PyHlhdfAPI_CompareWithASCIIString(PyObject* ptr, const char* name);
 
+/**
+ * Tries to get same behaviour for the result returned when getting a string from the data node. For
+ * 2.7 PyString_FromStringAndSize is used, for 3.x a variant of _PyUnicode_FromASCII.
+ */
+PyObject* PyHlhdf_StringOrUnicode_FromASCII(const char *buffer, Py_ssize_t size);
 
-#ifndef PyInt_Check
+#if PY_MAJOR_VERSION >= 3
+#define PyString_FromStringAndSize(str, len) PyUnicode_FromStringAndSize(str, len)
 #define PyInt_Check             PyLong_Check
 #define PyInt_FromLong          PyLong_FromLong
 #define PyInt_AsLong            PyLong_AsLong
 #define PyInt_Type              PyLong_Type
-#endif
-
-#ifndef PyString_Check
 #define PyString_Check          PyUnicode_Check
 #define PyString_AsString       PyUnicode_AsUTF8
 #define PyString_FromString     PyUnicode_FromString
 #define PyString_FromFormat     PyUnicode_FromFormat
-#endif
-
-#ifndef PyString_FromStringAndSize
-#define PyString_FromStringAndSize PyUnicode_FromStringAndSize
 #endif
 
 #if PY_MAJOR_VERSION >= 3
@@ -77,9 +76,10 @@ int PyHlhdfAPI_CompareWithASCIIString(PyObject* ptr, const char* name);
 #define MOD_INIT_ERROR        NULL
 #define MOD_INIT_SUCCESS(val) val
 #define MOD_INIT(name)        PyMODINIT_FUNC PyInit_##name(void)
+
 #define MOD_INIT_DEF(ob, name, doc, methods) \
   static struct PyModuleDef moduledef = { \
-    PyModuleDef_HEAD_INIT, name, doc, -1, methods, }; \
+    PyModuleDef_HEAD_INIT, name, doc, -1, methods, NULL, NULL, NULL, NULL }; \
     ob = PyModule_Create(&moduledef);
 
 #define MOD_INIT_SETUP_TYPE(itype, otype) Py_TYPE(&itype) = otype
@@ -94,6 +94,7 @@ int PyHlhdfAPI_CompareWithASCIIString(PyObject* ptr, const char* name);
 #define MOD_INIT_SETUP_TYPE(itype, otype) itype.ob_type = otype
 #define MOD_INIT_VERIFY_TYPE_READY(type)
 #endif
+
 
 /**
  * Macros that can be used to simplify way of generating __dir__ content that is necessary for executing dir() on an object

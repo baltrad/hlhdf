@@ -2130,7 +2130,7 @@ fi
 BAD_INSTALL_DIR=no
 if [ -d "${prefix}" ]; then
   if [ -d "${prefix}/include" ]; then
-    PINS_INCL_FILES=`ls -1 "${prefix}/include" | grep -v hlhdf`
+    PINS_INCL_FILES=`ls -1 "${prefix}/include" | grep -v hlhdf | grep -v pyhl`
     if [ "x$PINS_INCL_FILES" != "x" ]; then
       BAD_INSTALL_DIR=yes
     fi
