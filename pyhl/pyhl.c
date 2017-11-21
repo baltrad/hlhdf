@@ -753,12 +753,15 @@ static PyObject* _pyhl_node_set_scalar_value(PyhlNode* self, PyObject* args)
   int itemSize;
   char* hltypename;
   PyObject* data;
+  long hid_long = -1;
   hid_t lhid = -1;
   hid_t tmpHid = -1;
   int chkVal = 0;
 
-  if (!PyArg_ParseTuple(args, "iOsi", &itemSize, &data, &hltypename, &lhid))
+  if (!PyArg_ParseTuple(args, "iOsl", &itemSize, &data, &hltypename, &hid_long))
     return NULL;
+
+  lhid = (hid_t)hid_long;
 
   if (!self->node) {
     setException(PyExc_AttributeError,"The responsibility of the node has been dropped, probably by doing a addNode");
@@ -1097,8 +1100,10 @@ fail:
 static PyObject* _pyhl_node_commit(PyhlNode* self, PyObject* args)
 {
   hid_t dType;
-  if (!PyArg_ParseTuple(args, "i", &dType))
+  long dType_long;
+  if (!PyArg_ParseTuple(args, "l", &dType_long))
     return NULL;
+  dType = (hid_t)dType_long;
   if (HLNode_getType(self->node) != TYPE_ID) {
     setException(PyExc_AttributeError,"Trying to commit a node which not is a type node");
     return NULL;
