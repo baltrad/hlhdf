@@ -537,7 +537,8 @@ hid_t getFixedType(hid_t type)
     HL_SPEWDEBUG0("This is of type H5T_STRING");
     mtype = H5Tcopy(H5T_C_S1);
     if (H5Tis_variable_str(type)) {
-      H5Tset_size(mtype, H5T_VARIABLE);
+      HL_H5T_CLOSE(mtype);
+      mtype = H5Tcopy(type);
     } else {
       H5Tset_size(mtype, size);
     }
