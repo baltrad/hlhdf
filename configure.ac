@@ -238,6 +238,7 @@ AC_CHECK_PROGS(AR, ar aal, ar)
 
 PY_INCLUDES=
 PY_SITEPACK=
+PY_LIBDIR=
 PYOPT=
 PYLDFLAGS=
 PYLDSHARED=
@@ -262,6 +263,14 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
   fi
   AC_MSG_RESULT($PY_SITEPACK)
 
+  AC_MSG_CHECKING(for python library dir)
+  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
+    PY_LIBDIR=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_config_var('LIBDIR'))" | grep -v "^None\$"`
+  else
+    PY_LIBDIR="$PY_EXEC_INSTALLDIR/lib"
+  fi
+  AC_MSG_RESULT($PY_LIBDIR)
+  
   dnl Checks for typedefs, structures and compiler characteristics
   AC_MSG_CHECKING(for python options)
   if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
@@ -804,6 +813,7 @@ AC_SUBST(PYTHON_BINARY)
 AC_SUBST(CC)
 AC_SUBST(PY_INCLUDES)
 AC_SUBST(PY_SITEPACK)
+AC_SUBST(PY_LIBDIR)
 AC_SUBST(HLHDF_VERSION)
 AC_SUBST(HLHDF_PATCH_LEVEL)
 AC_SUBST(HL_INSTALL)

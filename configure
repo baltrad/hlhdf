@@ -641,6 +641,7 @@ PYOPT
 HL_INSTALL
 HLHDF_PATCH_LEVEL
 HLHDF_VERSION
+PY_LIBDIR
 PY_SITEPACK
 PY_INCLUDES
 PYTHON_BINARY
@@ -4424,6 +4425,7 @@ test -n "$AR" || AR="ar"
 
 PY_INCLUDES=
 PY_SITEPACK=
+PY_LIBDIR=
 PYOPT=
 PYLDFLAGS=
 PYLDSHARED=
@@ -4451,6 +4453,16 @@ $as_echo_n "checking for python lib site-packages... " >&6; }
   fi
   { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PY_SITEPACK" >&5
 $as_echo "$PY_SITEPACK" >&6; }
+
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for python library dir" >&5
+$as_echo_n "checking for python library dir... " >&6; }
+  if [ "x$GOTDISTUTILS" = "xyes" ]; then
+    PY_LIBDIR=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_config_var('LIBDIR'))" | grep -v "^None\$"`
+  else
+    PY_LIBDIR="$PY_EXEC_INSTALLDIR/lib"
+  fi
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $PY_LIBDIR" >&5
+$as_echo "$PY_LIBDIR" >&6; }
 
     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for python options" >&5
 $as_echo_n "checking for python options... " >&6; }
@@ -6162,6 +6174,7 @@ $as_echo "No" >&6; }
   *)
     ;;
 esac
+
 
 
 

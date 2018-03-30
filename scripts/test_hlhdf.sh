@@ -47,8 +47,9 @@ TESTPYTHON=`fgrep COMPILE_FOR_PYTHON "${DEF_MK_FILE}" | sed -e"s/\(COMPILE_FOR_P
 # RUN THE PYTHON TESTS
 if test "${TESTPYTHON}" = "yes"; then
 HDF5_LDPATH=`fgrep HDF5_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(HDF5_LIBDIR=[ \t]*-L\)//"`
+PY_LIBDIR=`fgrep PY_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(PY_LIBDIR=[ \t]*\)//"`
 LIBHLHDFPATH="${SCRIPTPATH}/../hlhdf"
-export LD_LIBRARY_PATH="${LIBHLHDFPATH}:${HDF5_LDPATH}"
+export LD_LIBRARY_PATH="${LIBHLHDFPATH}:${PY_LIBDIR}:${HDF5_LDPATH}"
 export PYHLPATH="${SCRIPTPATH}/../pyhl"
 export XRUNNERPATH="${SCRIPTPATH}/../test/lib"
 
@@ -57,7 +58,7 @@ if test "${PYTHONPATH}" != ""; then
 else
   export PYTHONPATH="${PYHLPATH}:${XRUNNERPATH}"
 fi
-
+echo "$LD_LIBRARY_PATH"
 cd "${SCRIPTPATH}/../test/python"
 $PYTHON_BIN HlhdfTestSuite.py
 VAL=$?
