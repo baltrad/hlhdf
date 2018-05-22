@@ -24,7 +24,7 @@
 #
 # Date:		2009-06-15
 ############################################################
-include ../def.mk
+-include ../def.mk
 
 CFLAGS = $(OPTS) $(DEFS) $(HDF5_INCDIR) $(ZLIB_INCDIR) $(SZLIB_INCDIR)
 LDFLAGS=  -L. $(HDF5_LIBDIR) $(ZLIB_LIBDIR) $(SZLIB_LIBDIR)

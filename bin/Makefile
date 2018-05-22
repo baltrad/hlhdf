@@ -8,7 +8,7 @@
 #
 # History:	2000-03-22 Created by Anders Henja
 ############################################################
-include ../def.mk
+-include ../def.mk
 
 CFLAGS = $(OPTS) $(DEFS) $(HDF5_INCDIR) $(ZLIB_INCDIR) $(SZLIB_INCDIR) -I../hlhdf
 LDFLAGS=  -L. -L../hlhdf $(HDF5_LIBDIR) $(ZLIB_LIBDIR) $(SZLIB_LIBDIR)
@@ -69,7 +69,7 @@ test:
 
 .PHONY: install
 install:
-	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLDEC) "$(prefix)/bin/$(TARGET_HLDEC)"
-	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLENC) "$(prefix)/bin/$(TARGET_HLENC)"
-	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLLIST) "$(prefix)/bin/$(TARGET_HLLIST)"
+	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLDEC) "$(DESTDIR)$(prefix)/bin/$(TARGET_HLDEC)"
+	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLENC) "$(DESTDIR)$(prefix)/bin/$(TARGET_HLENC)"
+	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLLIST) "$(DESTDIR)$(prefix)/bin/$(TARGET_HLLIST)"
 

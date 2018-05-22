@@ -186,10 +186,13 @@ create_directory "$INSTALLDIR/$VERSION/bin" || exit 255
 create_directory "$INSTALLDIR/$VERSION/include" || exit 255
 create_directory "$INSTALLDIR/$VERSION/lib" || exit 255
 create_directory "$INSTALLDIR/$VERSION/mkf" || exit 255
-create_symbolic_link "$INSTALLDIR/bin" "$INSTALLDIR/$VERSION/bin" || exit 255
-create_symbolic_link "$INSTALLDIR/include" "$INSTALLDIR/$VERSION/include" || exit 255
-create_symbolic_link "$INSTALLDIR/lib" "$INSTALLDIR/$VERSION/lib" || exit 255
-create_symbolic_link "$INSTALLDIR/mkf" "$INSTALLDIR/$VERSION/mkf" || exit 255
+pushd .
+cd "$INSTALLDIR"
+create_symbolic_link "bin" "$VERSION/bin" || exit 255
+create_symbolic_link "include" "$VERSION/include" || exit 255
+create_symbolic_link "lib" "$VERSION/lib" || exit 255
+create_symbolic_link "mkf" "$VERSION/mkf" || exit 255
+popd
 
 echo "$VERSION" > "$INSTALLDIR/.version"
 if [ $? -ne 0 ]; then

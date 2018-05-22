@@ -1,0 +1,14 @@
+opt/baltrad/hlhdf/default/include/hlhdf.h
+opt/baltrad/hlhdf/default/include/hlhdf_alloc.h
+opt/baltrad/hlhdf/default/include/hlhdf_arrayobject_wrap.h
+opt/baltrad/hlhdf/default/include/hlhdf_compound.h
+opt/baltrad/hlhdf/default/include/hlhdf_compound_utils.h
+opt/baltrad/hlhdf/default/include/hlhdf_debug.h
+opt/baltrad/hlhdf/default/include/hlhdf_node.h
+opt/baltrad/hlhdf/default/include/hlhdf_nodelist.h
+opt/baltrad/hlhdf/default/include/hlhdf_read.h
+opt/baltrad/hlhdf/default/include/hlhdf_types.h
+opt/baltrad/hlhdf/default/include/hlhdf_write.h
+opt/baltrad/hlhdf/default/include/pyhlhdf_common.h
+opt/baltrad/hlhdf/default/lib/libhlhdf.a
+opt/baltrad/hlhdf/default/lib/libpyhlhdf.a

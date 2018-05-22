@@ -1,0 +1,24 @@
+Source: hlhdf
+Section: science
+Priority: extra
+Maintainer: Povi Software LLC <laur@baltrad.eu>
+Build-Depends: debhelper (>= 8.0.0), libhdf5-dev, zlib1g-dev, python2.7-dev, python-numpy, libatlas-base-dev, python
+Standards-Version: 3.9.4
+X-Python-Version: >=2.7
+
+Package: hlhdf
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, libhdf5-10
+Description: High Level Interface to the HDF5 File Format
+
+Package: hlhdf-dev
+Section: devel
+Architecture: any
+Depends: ${misc:Depends}, hlhdf
+Description: Development files of the HDF5 interface
+
+Package: hlhdf-python
+Section: python
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${python:Depends}, python-numpy, hlhdf
+Description: Development files of the HDF5 interface

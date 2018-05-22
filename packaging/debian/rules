@@ -1,0 +1,36 @@
+#!/usr/bin/make -f
+# -*- makefile -*-
+# Sample debian/rules that uses debhelper.
+# This file was originally written by Joey Hess and Craig Small.
+# As a special exception, when this file is copied by dh-make into a
+# dh-make output file, you may use that output file without restriction.
+# This special exception was added by Craig Small in version 0.37 of dh-make.
+
+# Uncomment this to turn on verbose mode.
+export DH_VERBOSE=1
+export DH_OPTIONS=-v
+#BUILDROOT=/usr/src/packages/BUILD/debian/tmp
+BUILDROOT=/tmp/baltrad-builds
+%:
+	dh $@ --with python2
+override_dh_auto_configure:
+	./configure --prefix=/opt/baltrad/hlhdf --with-python=yes --with-hdf5=/usr/include/hdf5/serial,/usr/lib/x86_64-linux-gnu/hdf5/serial --with-zlib=/usr/include,/lib/x86_64-linux-gnu
+override_dh_auto_build:
+	make
+override_dh_installdirs:
+	mkdir -p $(BUILDROOT)/etc/ld.so.conf.d/baltrad/hlhdf 
+	echo "/opt/baltrad/hlhdf/default/lib" > $(BUILDROOT)/etc/ld.so.conf.d/hlhdf.conf
+override_dh_auto_install:
+	mkdir -p $(BUILDROOT)/opt/baltrad
+	$(MAKE) DESTDIR=$(BUILDROOT) prefix=/opt/baltrad/hlhdf install
+override_dh_shlibdeps:
+	dh_shlibdeps -l $(BUILDROOT)/opt/baltrad/hlhdf/default/lib
+override_dh_install:
+	dh_python2
+	dh_numpy
+	dh_install --sourcedir=$(BUILDROOT)
+	dh_link
+build:
+	dh build
+
+

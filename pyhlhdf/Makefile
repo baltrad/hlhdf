@@ -26,7 +26,7 @@
 #
 # History:	2000-03-22 Created by Anders Henja
 ############################################################
-include ../def.mk
+-include ../def.mk
 
 CFLAGS = $(OPTS) -save-temps $(CCSHARED) $(DEFS) $(NUMPY_INCLUDE_DIR) $(INCLUDE_PYTHON) $(HDF5_INCDIR) $(ZLIB_INCDIR) -I../hlhdf
 
@@ -63,8 +63,8 @@ distribution:
 
 .PHONY: install
 install:
-	@"$(HL_INSTALL)" -f -o -C $(TARGET) "$(prefix)/lib/$(TARGET)"
+	@"$(HL_INSTALL)" -f -o -C $(TARGET) "$(DESTDIR)$(prefix)/lib/$(TARGET)"
 	@for i in $(INSTALL_HEADERS) ; \
 	do \
-		"$(HL_INSTALL)" -f -o -m644 -C $$i "$(prefix)/include/$$i"; \
+		"$(HL_INSTALL)" -f -o -m644 -C $$i "$(DESTDIR)$(prefix)/include/$$i"; \
 	done	

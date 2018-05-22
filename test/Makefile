@@ -26,7 +26,7 @@
 #
 # History:	2009-06-10 Created by Anders Henja
 ############################################################
-include ../def.mk
+-include ../def.mk
 
 SHELL=/bin/sh
 

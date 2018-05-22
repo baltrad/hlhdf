@@ -26,7 +26,7 @@
 #
 # History:	2000-03-22 Created by Anders Henja
 ############################################################
-include ../def.mk
+-include ../def.mk
 
 CFLAGS= $(OPTS) $(CCSHARED) $(DEFS) -I../hlhdf -I../pyhlhdf $(NUMPY_INCLUDE_DIR) \
 	$(INCLUDE_PYTHON) \
@@ -73,8 +73,8 @@ distribution:
 
 .PHONY: install
 install:
-	@"$(HL_INSTALL)" -f -o -C $(TARGET) "$(prefix)/lib/$(TARGET)"
+	@"$(HL_INSTALL)" -f -o -C $(TARGET) "$(DESTDIR)$(prefix)/lib/$(TARGET)"
 	@echo "$(prefix)/lib" > hlhdf.tmp
-	@"$(HL_INSTALL)" -f -o -C -m644 hlhdf.tmp "$(prefix)/hlhdf.pth"
+	@"$(HL_INSTALL)" -f -o -C -m644 hlhdf.tmp "$(DESTDIR)$(prefix)/hlhdf.pth"
 	@\rm -f hlhdf.tmp
 

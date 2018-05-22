@@ -1,0 +1,4 @@
+python:Depends=python-numpy (>= 1:1.10.0~b1), python-numpy-abi9
+shlibs:Depends=libc6 (>= 2.14), libhdf5-10
+misc:Depends=
+misc:Pre-Depends=

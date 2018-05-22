@@ -26,7 +26,7 @@
 #
 # History:	2000-03-22 Created by Anders Henja
 ############################################################
-include ./def.mk
+-include ./def.mk
 
 SHELL=/bin/sh
 
@@ -103,7 +103,7 @@ test:
 .PHONY: install
 install:
 	@chmod +x ./scripts/prepare_installdir.sh
-	@./scripts/prepare_installdir.sh "$(prefix)"
+	@./scripts/prepare_installdir.sh "$(DESTDIR)$(prefix)"
 	@for i in $(SOURCE_DIRS) ; \
 	do \
 		echo "------Installing from directory $$i------"; \
@@ -112,11 +112,11 @@ install:
 		$(MAKE) install || exit 255; \
 		cd "$$TDIR"; \
 	done
-	@"$(HL_INSTALL)" -f -o -C -m644 def.mk "$(prefix)/mkf/hldef.mk"
-	@"$(HL_INSTALL)" -f -o -C ./scripts/install-sh.sh "$(prefix)/bin/hlinstall.sh"
+	@"$(HL_INSTALL)" -f -o -C -m644 def.mk "$(DESTDIR)$(prefix)/mkf/hldef.mk"
+	@"$(HL_INSTALL)" -f -o -C ./scripts/install-sh.sh "$(DESTDIR)$(prefix)/bin/hlinstall.sh"
 
 .PHONY: rollbackinstall
 rollbackinstall:
 	@chmod +x ./scripts/rollback_installation.sh
-	@./scripts/rollback_installation.sh "$(prefix)"
+	@./scripts/rollback_installation.sh "$(DESTDIR)$(prefix)"
   

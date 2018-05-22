@@ -26,7 +26,7 @@
 #
 # History:	2009-06-15 Created by Anders Henja
 ############################################################
-include ../../def.mk
+-include ../../def.mk
 
 ifeq ($(GOT_SZ_COMPRESS),yes)
   LIB_SZLIB=-lsz
