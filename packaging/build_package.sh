@@ -65,7 +65,7 @@ prepare_and_build_centos()
   if [ -f "$RPM_TOP_DIR/SOURCES/$2-$3.tar.gz" ]; then
     \rm -f "$RPM_TOP_DIR/SOURCES/$2-$3.tar.gz"
   fi
-  cp -f "packaging/centos/$2.conf" "$RPM_TOP_DIR/SOURCES/$2.conf"
+  cp -f "packaging/centos/*.conf" "$RPM_TOP_DIR/SOURCES/"
   #HOW DO WE DETERMINE BUILDROOT? NOW, just fake it...
   git archive --format="tar.gz" --prefix="$2-$3/" master -o "$RPM_TOP_DIR/SOURCES/$2-$3.tar.gz"
   if [ $? -ne 0 ]; then
