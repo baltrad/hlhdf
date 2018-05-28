@@ -12,6 +12,7 @@ PACKAGE_VERSION=$2
 BUILD_NUMBER=$3
 NODE_NAME=$4
 SPECFILE=$PACKAGE_NAME.spec
+
 if [ $# -eq 5 ]; then
   SPECFILE=$5
 fi
@@ -54,14 +55,29 @@ prepare_and_build_debian()
 
 prepare_and_build_centos()
 {
-  rpmbuild --define "version $2" --define "snapshot $3" -v -ba $1
+  if [ ! -z "${RPM_ROOT}" ]; then
+    RPM_TOP_DIR="${RPM_ROOT}"
+  else
+    RPM_TOP_DIR=`rpmbuild --eval '%_topdir'`
+  fi
+
+  #First we need to create a source tarball. Remove the old one
+  if [ -f "$RPM_TOP_DIR/SOURCES/$2-$3.tar.gz" ]; then
+    \rm -f "$RPM_TOP_DIR/SOURCES/$2-$3.tar.gz"
+  fi
+  cp -f "packaging/centos/$2.conf" "$RPM_TOP_DIR/SOURCES/$2.conf"
+  #HOW DO WE DETERMINE BUILDROOT? NOW, just fake it...
+  git archive --format="tar.gz" --prefix="$2-$3/" master -o "$RPM_TOP_DIR/SOURCES/$2-$3.tar.gz"
+  if [ $? -ne 0 ]; then
+    echo "Failed to create source archive..."
+    exit 127
+  fi
+  rpmbuild --define="version $3" --define "snapshot $4" -v -ba $1
 }
 
 if [ "$BUILD_NUMBER" = "" ]; then
   BUILD_NUMBER=1
 fi
-
-#echo "BUILD_NUMBER=$BUILD_NUMBER, NODE_NAME=$NODE_NAME"
 
 OS_VARIANT=`get_os_version`
 
@@ -72,7 +88,7 @@ if [ "$OS_VARIANT" = "Ubuntu-16.04" ]; then
   prepare_and_build_debian $PACKAGE_NAME $PACKAGE_VERSION-$BUILD_NUMBER
 elif [ "$OS_VARIANT" = "CentOS-7" ]; then
   echo "Redhat build"
-  prepare_and_build_centos $SPECFILE $PACKAGE_VERSION $BUILD_NUMBER
+  prepare_and_build_centos $SPECFILE $PACKAGE_NAME $PACKAGE_VERSION $BUILD_NUMBER
 fi
 
 
