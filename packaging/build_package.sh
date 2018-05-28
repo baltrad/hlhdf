@@ -14,10 +14,11 @@ NODE_NAME=$4
 SPECFILE=$PACKAGE_NAME.spec
 INSTALL_ARTIFACTS=false
 
-if [ $# -eq 5 ]; then
+if [ $# -gt 4 ]; then
   SPECFILE=$5
 fi
-if [ $# -eq 6 ]; then
+
+if [ $# -gt 5 ]; then
   INSTALL_ARTIFACTS=$6
 fi
 
@@ -79,9 +80,9 @@ prepare_and_build_centos()
     exit 127
   fi
   rpmbuild --define="version $3" --define "snapshot $4" -v -ba $1
-  if [ "$5" -eq "true" ]; then
-    if [ $? -eq 0 -a "$RPM_PCK_DIR" != "" ]; then
-      sudo rpm -ivh "$RPM_PCK_DIR/$2*-$3-$4*.$RPM_ARCH_DIR.rpm"
+  if [ $? -eq 0 -a "$5" = "true" ]; then
+    if [ "$RPM_PCK_DIR" != "" ]; then
+      sudo rpm -Uvh "$RPM_PCK_DIR/$2*-$3-$4*.$RPM_ARCH_DIR.rpm"
     fi
   fi
 }
