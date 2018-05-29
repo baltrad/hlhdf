@@ -53,7 +53,7 @@ mkdir -p %{buildroot}/opt/baltrad
 
 make install DESTDIR=%{buildroot}
 mkdir -p %{buildroot}%{python_sitearch}
-mv %{buildroot}%{_prefix}/default/lib/_pyhl.so %{buildroot}%{python_sitearch}/
+mv %{buildroot}%{_prefix}/lib/_pyhl.so %{buildroot}%{python_sitearch}/
 install -p -D -m 0644 %{SOURCE1} %{buildroot}%{_sysconfdir}/ld.so.conf.d/hlhdf-python.conf
 mkdir -p %{buildroot}/usr/lib
 ln -sf ../../opt/baltrad/hlhdf/lib/libhlhdf.so %{buildroot}/usr/lib/libhlhdf.so
@@ -63,39 +63,37 @@ ln -sf ../../opt/baltrad/hlhdf/lib/libhlhdf.so %{buildroot}/usr/lib/libhlhdf.so
 %postun -p /sbin/ldconfig
 
 %files
-%{_prefix}/.version
-%{_prefix}/default/bin/hldec
-%{_prefix}/default/bin/hlenc
-%{_prefix}/default/bin/hlinstall.sh
-%{_prefix}/default/bin/hllist
-%{_prefix}/default/lib/libhlhdf.so
-%{_prefix}/default/mkf/hldef.mk
+%{_prefix}/bin/hldec
+%{_prefix}/bin/hlenc
+%{_prefix}/bin/hlinstall.sh
+%{_prefix}/bin/hllist
+%{_prefix}/lib/libhlhdf.so
+%{_prefix}/mkf/hldef.mk
 %{_prefix}/hlhdf.pth
 %{_prefix}/bin
 %{_prefix}/lib
 %{_prefix}/mkf
 /usr/lib/libhlhdf.so
 
-
 %files python
 %{python_sitearch}/_pyhl.so
 %config(noreplace) %{_sysconfdir}/ld.so.conf.d/hlhdf-python.conf
 
 %files devel
-%{_prefix}/default/include/hlhdf.h
-%{_prefix}/default/include/hlhdf_alloc.h
-%{_prefix}/default/include/hlhdf_arrayobject_wrap.h
-%{_prefix}/default/include/hlhdf_compound.h
-%{_prefix}/default/include/hlhdf_compound_utils.h
-%{_prefix}/default/include/hlhdf_debug.h
-%{_prefix}/default/include/hlhdf_node.h
-%{_prefix}/default/include/hlhdf_nodelist.h
-%{_prefix}/default/include/hlhdf_read.h
-%{_prefix}/default/include/hlhdf_types.h
-%{_prefix}/default/include/hlhdf_write.h
-%{_prefix}/default/include/pyhlhdf_common.h
-%{_prefix}/default/include/pyhlcompat.h
+%{_prefix}/include/hlhdf.h
+%{_prefix}/include/hlhdf_alloc.h
+%{_prefix}/include/hlhdf_arrayobject_wrap.h
+%{_prefix}/include/hlhdf_compound.h
+%{_prefix}/include/hlhdf_compound_utils.h
+%{_prefix}/include/hlhdf_debug.h
+%{_prefix}/include/hlhdf_node.h
+%{_prefix}/include/hlhdf_nodelist.h
+%{_prefix}/include/hlhdf_read.h
+%{_prefix}/include/hlhdf_types.h
+%{_prefix}/include/hlhdf_write.h
+%{_prefix}/include/pyhlhdf_common.h
+%{_prefix}/include/pyhlcompat.h
 %{_prefix}/include
-%{_prefix}/default/lib/libhlhdf.a
-%{_prefix}/default/lib/libpyhlhdf.a
+%{_prefix}/lib/libhlhdf.a
+%{_prefix}/lib/libpyhlhdf.a
 
