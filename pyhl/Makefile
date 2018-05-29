@@ -73,8 +73,8 @@ distribution:
 
 .PHONY: install
 install:
-	@"$(HL_INSTALL)" -f -o -C $(TARGET) "$(DESTDIR)$(prefix)/lib/$(TARGET)"
+	@"$(HL_INSTALL)" -f -C $(TARGET) "$(DESTDIR)$(prefix)/lib/$(TARGET)"
 	@echo "$(prefix)/lib" > hlhdf.tmp
-	@"$(HL_INSTALL)" -f -o -C -m644 hlhdf.tmp "$(DESTDIR)$(prefix)/hlhdf.pth"
+	@"$(HL_INSTALL)" -f -C -m644 hlhdf.tmp "$(DESTDIR)$(prefix)/hlhdf.pth"
 	@\rm -f hlhdf.tmp
 

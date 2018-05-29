@@ -69,7 +69,7 @@ test:
 
 .PHONY: install
 install:
-	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLDEC) "$(DESTDIR)$(prefix)/bin/$(TARGET_HLDEC)"
-	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLENC) "$(DESTDIR)$(prefix)/bin/$(TARGET_HLENC)"
-	@"$(HL_INSTALL)" -f -o -C $(TARGET_HLLIST) "$(DESTDIR)$(prefix)/bin/$(TARGET_HLLIST)"
+	@"$(HL_INSTALL)" -f -C $(TARGET_HLDEC) "$(DESTDIR)$(prefix)/bin/$(TARGET_HLDEC)"
+	@"$(HL_INSTALL)" -f -C $(TARGET_HLENC) "$(DESTDIR)$(prefix)/bin/$(TARGET_HLENC)"
+	@"$(HL_INSTALL)" -f -C $(TARGET_HLLIST) "$(DESTDIR)$(prefix)/bin/$(TARGET_HLLIST)"
 

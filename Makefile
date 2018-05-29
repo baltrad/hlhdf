@@ -32,6 +32,8 @@ SHELL=/bin/sh
 
 TEST_YES=yes
 
+HLHDF_PREPARE_INSTALLDIR=no
+
 ifeq ($(COMPILE_FOR_PYTHON),yes)
   SOURCE_DIRS=hlhdf pyhlhdf pyhl bin test doc doxygen examples scripts
 else
@@ -103,7 +105,7 @@ test:
 .PHONY: install
 install:
 	@chmod +x ./scripts/prepare_installdir.sh
-	@./scripts/prepare_installdir.sh "$(DESTDIR)$(prefix)"
+	@HLHDF_PREPARE_INSTALLDIR=$(HLHDF_PREPARE_INSTALLDIR) ./scripts/prepare_installdir.sh "$(DESTDIR)$(prefix)"
 	@for i in $(SOURCE_DIRS) ; \
 	do \
 		echo "------Installing from directory $$i------"; \
@@ -112,8 +114,8 @@ install:
 		$(MAKE) install || exit 255; \
 		cd "$$TDIR"; \
 	done
-	@"$(HL_INSTALL)" -f -o -C -m644 def.mk "$(DESTDIR)$(prefix)/mkf/hldef.mk"
-	@"$(HL_INSTALL)" -f -o -C ./scripts/install-sh.sh "$(DESTDIR)$(prefix)/bin/hlinstall.sh"
+	@"$(HL_INSTALL)" -f -C -m644 def.mk "$(DESTDIR)$(prefix)/mkf/hldef.mk"
+	@"$(HL_INSTALL)" -f -C ./scripts/install-sh.sh "$(DESTDIR)$(prefix)/bin/hlinstall.sh"
 
 .PHONY: rollbackinstall
 rollbackinstall:

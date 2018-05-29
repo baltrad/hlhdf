@@ -63,8 +63,8 @@ distribution:
 
 .PHONY: install
 install:
-	@"$(HL_INSTALL)" -f -o -C $(TARGET) "$(DESTDIR)$(prefix)/lib/$(TARGET)"
+	@"$(HL_INSTALL)" -f -C $(TARGET) "$(DESTDIR)$(prefix)/lib/$(TARGET)"
 	@for i in $(INSTALL_HEADERS) ; \
 	do \
-		"$(HL_INSTALL)" -f -o -m644 -C $$i "$(DESTDIR)$(prefix)/include/$$i"; \
+		"$(HL_INSTALL)" -f -m644 -C $$i "$(DESTDIR)$(prefix)/include/$$i"; \
 	done	

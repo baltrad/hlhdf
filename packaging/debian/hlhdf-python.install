@@ -1,3 +1,2 @@
-opt/baltrad/hlhdf/lib/_pyhl.so usr/lib/python2.7/dist-packages
 opt/baltrad/hlhdf/hlhdf.pth usr/lib/python2.7/dist-packages
 etc/ld.so.conf.d/hlhdf.conf

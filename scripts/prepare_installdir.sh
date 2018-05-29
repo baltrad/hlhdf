@@ -97,6 +97,12 @@ if [ $# -ne 1 ]; then
 fi
 INSTALLDIR=$1
 
+if [ "$HLHDF_PREPARE_INSTALLDIR" = "no" ]; then
+  echo "Ignoring directory preparation"
+  exit 0
+fi
+
+
 SCRFILE=`python -c "import os;print os.path.abspath(\"$0\")"`
 SCRIPTPATH=`dirname "$SCRFILE"`
 VERSION=default
@@ -186,13 +192,13 @@ create_directory "$INSTALLDIR/$VERSION/bin" || exit 255
 create_directory "$INSTALLDIR/$VERSION/include" || exit 255
 create_directory "$INSTALLDIR/$VERSION/lib" || exit 255
 create_directory "$INSTALLDIR/$VERSION/mkf" || exit 255
-pushd .
+REMEMBERME=`pwd`
 cd "$INSTALLDIR"
 create_symbolic_link "bin" "$VERSION/bin" || exit 255
 create_symbolic_link "include" "$VERSION/include" || exit 255
 create_symbolic_link "lib" "$VERSION/lib" || exit 255
 create_symbolic_link "mkf" "$VERSION/mkf" || exit 255
-popd
+cd "$REMEMBERME"
 
 echo "$VERSION" > "$INSTALLDIR/.version"
 if [ $? -ne 0 ]; then

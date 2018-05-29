@@ -1,8 +1,7 @@
-opt/baltrad/hlhdf/.version
-opt/baltrad/hlhdf/default/bin/hldec opt/baltrad/hlhdf/bin
-opt/baltrad/hlhdf/default/bin/hlenc opt/baltrad/hlhdf/bin
-opt/baltrad/hlhdf/default/bin/hlinstall.sh opt/baltrad/hlhdf/bin
-opt/baltrad/hlhdf/default/bin/hllist opt/baltrad/hlhdf/bin
-opt/baltrad/hlhdf/default/lib/libhlhdf.so opt/baltrad/hlhdf/lib
-opt/baltrad/hlhdf/default/mkf/hldef.mk opt/baltrad/hlhdf/mkf
+opt/baltrad/hlhdf/bin/hldec
+opt/baltrad/hlhdf/bin/hlenc
+opt/baltrad/hlhdf/bin/hlinstall.sh
+opt/baltrad/hlhdf/bin/hllist
+opt/baltrad/hlhdf/lib/libhlhdf.so
+opt/baltrad/hlhdf/mkf/hldef.mk
 
