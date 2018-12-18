@@ -103,7 +103,7 @@ if [ "$HLHDF_PREPARE_INSTALLDIR" = "no" ]; then
 fi
 
 
-SCRFILE=`python -c "import os;print os.path.abspath(\"$0\")"`
+SCRFILE=`python -c "import os;print(os.path.abspath(\"$0\"))"`
 SCRIPTPATH=`dirname "$SCRFILE"`
 VERSION=default
 if [ -f "$SCRIPTPATH/../.version" ]; then

@@ -61,7 +61,7 @@ create_new_version() {
 CURRENT_DIR=`pwd`
 #SCRIPTPATH=`dirname "$(readlink -f $0)"`
 
-SCRFILE=`python -c "import os;print os.path.abspath(\"$0\")"`
+SCRFILE=`python -c "import os;print(os.path.abspath(\"$0\"))"`
 SCRIPTPATH=`dirname "$SCRFILE"`
 
 cd "$SCRIPTPATH/.."

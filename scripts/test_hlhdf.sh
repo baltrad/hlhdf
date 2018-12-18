@@ -28,7 +28,7 @@
 #
 # History:  2009-06-15 Created by Anders Henja
 ############################################################
-SCRFILE=`python -c "import os;print os.path.abspath(\"$0\")"`
+SCRFILE=`python -c "import os;print(os.path.abspath(\"$0\"))"`
 SCRIPTPATH=`dirname "$SCRFILE"`
 
 DEF_MK_FILE="${SCRIPTPATH}/../def.mk"

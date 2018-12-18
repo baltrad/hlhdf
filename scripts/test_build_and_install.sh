@@ -594,7 +594,7 @@ execute_illegal_config_prefix_lib() {
   return 0
 }
 
-SCRFILE=`python -c "import os;print os.path.abspath(\"$0\")"`
+SCRFILE=`python -c "import os;print(os.path.abspath(\"$0\"))"`
 SCRIPTPATH=`dirname "$SCRFILE"`
 cd "$SCRIPTPATH/.."
 

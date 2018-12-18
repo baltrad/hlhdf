@@ -39,7 +39,7 @@ fi
 CONFIGURECMD="$1"
 RELNBR="$2"
 
-SCRFILE=`python -c "import os;print os.path.abspath(\"$0\")"`
+SCRFILE=`python -c "import os;print(os.path.abspath(\"$0\"))"`
 SCRIPTPATH=`dirname "$SCRFILE"`
 cd "$SCRIPTPATH/.."
 
