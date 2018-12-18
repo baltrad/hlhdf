@@ -49,7 +49,7 @@ if test "${TESTPYTHON}" = "yes"; then
   HDF5_LDPATH=`fgrep HDF5_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(HDF5_LIBDIR=[ \t]*-L\)//"`
   PY_LIBDIR=`fgrep PY_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(PY_LIBDIR=[ \t]*\)//"`
   LIBHLHDFPATH="${SCRIPTPATH}/../hlhdf"
-  export LD_LIBRARY_PATH="${LIBHLHDFPATH}:${PY_LIBDIR}:${HDF5_LDPATH}"
+  export LD_LIBRARY_PATH="${LIBHLHDFPATH}:${PY_LIBDIR}:${HDF5_LDPATH}:${LD_LIBRARY_PATH}"
   export PYHLPATH="${SCRIPTPATH}/../pyhl"
   export XRUNNERPATH="${SCRIPTPATH}/../test/lib"
 
