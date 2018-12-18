@@ -46,34 +46,33 @@ TESTPYTHON=`fgrep COMPILE_FOR_PYTHON "${DEF_MK_FILE}" | sed -e"s/\(COMPILE_FOR_P
 
 # RUN THE PYTHON TESTS
 if test "${TESTPYTHON}" = "yes"; then
-HDF5_LDPATH=`fgrep HDF5_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(HDF5_LIBDIR=[ \t]*-L\)//"`
-PY_LIBDIR=`fgrep PY_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(PY_LIBDIR=[ \t]*\)//"`
-LIBHLHDFPATH="${SCRIPTPATH}/../hlhdf"
-export LD_LIBRARY_PATH="${LIBHLHDFPATH}:${PY_LIBDIR}:${HDF5_LDPATH}"
-export PYHLPATH="${SCRIPTPATH}/../pyhl"
-export XRUNNERPATH="${SCRIPTPATH}/../test/lib"
+  HDF5_LDPATH=`fgrep HDF5_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(HDF5_LIBDIR=[ \t]*-L\)//"`
+  PY_LIBDIR=`fgrep PY_LIBDIR "${DEF_MK_FILE}" | sed -e"s/\(PY_LIBDIR=[ \t]*\)//"`
+  LIBHLHDFPATH="${SCRIPTPATH}/../hlhdf"
+  export LD_LIBRARY_PATH="${LIBHLHDFPATH}:${PY_LIBDIR}:${HDF5_LDPATH}"
+  export PYHLPATH="${SCRIPTPATH}/../pyhl"
+  export XRUNNERPATH="${SCRIPTPATH}/../test/lib"
 
-if test "${PYTHONPATH}" != ""; then
-  export PYTHONPATH="${PYHLPATH}:${XRUNNERPATH}:${PYTHONPATH}"
-else
-  export PYTHONPATH="${PYHLPATH}:${XRUNNERPATH}"
-fi
-echo "$LD_LIBRARY_PATH"
-cd "${SCRIPTPATH}/../test/python"
-$PYTHON_BIN HlhdfTestSuite.py
-VAL=$?
-if [ $VAL != 0 ]; then
-  RESULT=$VAL
-fi
-\rm -f TEST-unittest.TestSuite.xml
+  if test "${PYTHONPATH}" != ""; then
+    export PYTHONPATH="${PYHLPATH}:${XRUNNERPATH}:${PYTHONPATH}"
+  else
+    export PYTHONPATH="${PYHLPATH}:${XRUNNERPATH}"
+  fi
+  echo "$LD_LIBRARY_PATH"
+  cd "${SCRIPTPATH}/../test/python"
+  $PYTHON_BIN HlhdfTestSuite.py
+  VAL=$?
+  if [ $VAL != 0 ]; then
+    RESULT=$VAL
+  fi
+  \rm -f TEST-unittest.TestSuite.xml
 
-$PYTHON_BIN HlhdfXmlTestSuite.py
+  $PYTHON_BIN HlhdfXmlTestSuite.py
 
-VAL=$?
-if [ $RESULT -eq 0 -a $VAL -ne 0 ]; then
-  RESULT=$VAL
-fi
-
+  VAL=$?
+  if [ $RESULT -eq 0 -a $VAL -ne 0 ]; then
+    RESULT=$VAL
+  fi
 fi
 
 #RUN OTHER ESSENTIAL TESTS
