@@ -113,6 +113,16 @@ if [[ "x$py3support" = "xyes" ]]; then
   COMPILE_FOR_PYTHON=yes
 fi
 
+AC_ARG_WITH(py3bin, [  --with-py3bin=python3  What python 3 binary to use],
+		    ,withval=python3)
+if [[ "$PYBIN" = "python3" ]]; then
+  AC_MSG_CHECKING(what python3 binary to use)
+  if [[ "$withval" != "python3" ]]; then
+    PYBIN=$withval
+  fi
+  AC_MSG_RESULT($PYBIN)
+fi
+
 PYTHON_BINARY=$PYBIN
 
 # Check for machine type or hardware-platform (32 bit e.g. = i386 or 64 bit = x86_64):
