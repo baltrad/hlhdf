@@ -175,6 +175,22 @@ void HLNode_setMark(HL_Node* node, const HL_NodeMark mark);
 HL_NodeMark HLNode_getMark(HL_Node* node);
 
 /**
+ * Returns if the data for this node has been extracted from the hdf5 file or not.
+ * Useful if implementing for example lazy-loading or similar features.
+ * @param[in] node - the node
+ * @return 1 if data has been fetched from HDF5 file, otherwise 0
+ */
+int HLNode_fetched(HL_Node* node);
+
+/**
+ * Sets if this node has got its data fetched or not.
+ * @param[in] node - the node
+ * @param[in] fetched - 1 if data fetched, otherwise 0
+ */
+void HLNode_setFetched(HL_Node* node, int fetched);
+
+
+/**
  * Gets the type of the node
  * @param[in] node the node
  * @return the type of the node

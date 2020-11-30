@@ -51,6 +51,7 @@ struct _HL_Node {
    HL_DataType dataType;       /**< Type of data */
    hid_t hdfId;                /**< The hdf id that this node represents (used internally)*/
    HL_NodeMark mark;           /**< Current state of this node */
+   int fetched;                /**< 0 if the data has not been fetched from disk, otherwise 0 */
    HL_CompoundTypeDescription* compoundDescription; /**< The compound type description if this is a TYPE node*/
    HL_Compression* compression; /**< Compression settings for this node */
 };
@@ -201,6 +202,7 @@ HL_Node* HLNode_new(const char* name)
   retv->dataType = DTYPE_UNDEFINED_ID;
   retv->hdfId = -1;
   retv->mark = NMARK_CREATED;
+  retv->fetched = 0;
   retv->compoundDescription = NULL;
   retv->compression = NULL;
 
@@ -497,6 +499,18 @@ HL_NodeMark HLNode_getMark(HL_Node* node)
 {
   HL_ASSERT((node != NULL), "HLNode_getMark called with node == NULL");
   return node->mark;
+}
+
+int HLNode_fetched(HL_Node* node)
+{
+  HL_ASSERT((node != NULL), "HLNode_fetched called with node == NULL");
+  return node->fetched;
+}
+
+void HLNode_setFetched(HL_Node* node, int fetched)
+{
+  HL_ASSERT((node != NULL), "HLNode_fetched called with node == NULL");
+  node->fetched = fetched;
 }
 
 HL_Type HLNode_getType(HL_Node* node)

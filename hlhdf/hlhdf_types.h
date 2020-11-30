@@ -248,7 +248,8 @@ typedef enum HL_NodeMark {
   NMARK_ORIGINAL=0, /**< Nothing has been done on the node, e.g. it has been read but nothing else */
   NMARK_CREATED,    /**< If a node has been created but not been written */
   NMARK_CHANGED,    /**< If a nodes value has been changed and needs to be written */
-  NMARK_SELECT      /**< The node has been marked for fetching but the read has not been performed yet. */
+  NMARK_SELECT,     /**< The node has been marked for fetching but the read has not been performed yet. */
+  NMARK_SELECTMETA  /**< Special variant for marking datasets that we are only interested in the metadata */
 } HL_NodeMark;
 
 /**

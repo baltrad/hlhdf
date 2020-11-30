@@ -508,6 +508,7 @@ static int fillAttributeNode(hid_t file_id, HL_Node* node)
     goto fail;
   }
   HLNode_setMark(node, NMARK_ORIGINAL);
+  HLNode_setFetched(node, 1);
 
   result = 1;
 fail:
@@ -566,6 +567,7 @@ static int fillReferenceNode(hid_t file_id, HL_Node* node)
   HLNodePrivate_setRawdata(node, strlen(refername)+1, (unsigned char*)HLHDF_STRDUP(refername));
   HLNode_setDimensions(node, 0, NULL);
   HLNode_setMark(node, NMARK_ORIGINAL);
+  HLNode_setFetched(node, 1);
 
   strtype = H5Tcopy(H5T_C_S1);
   H5Tset_size(strtype, strlen(refername)+1);
@@ -647,6 +649,21 @@ static int fillDatasetNode(hid_t file_id, HL_Node* node)
       HLNode_setCompoundDescription(node, descr);
     }
 
+    if(!HLNodePrivate_setTypeIdAndDeriveFormat(node, mtype)) {
+      HL_ERROR0("Failed to set type and format");
+      goto fail;
+    }
+
+    /* If we are fetching dataset meta, we need to leave after type has been set. */
+    if (HLNode_getMark(node) == NMARK_SELECTMETA) {
+      HLNode_setMark(node, NMARK_ORIGINAL);
+      HL_H5D_CLOSE(obj);
+      HL_H5T_CLOSE(type);
+      HL_H5S_CLOSE(f_space);
+      HL_H5T_CLOSE(mtype);
+      return 1;
+    }
+
     if (H5Sis_simple(f_space) >= 0) { /*Only allow simple dataspace, nothing else supported by HDF5 anyway */
       unsigned char* dataptr = NULL;
       size_t dSize = H5Tget_size(mtype);
@@ -672,13 +689,9 @@ static int fillDatasetNode(hid_t file_id, HL_Node* node)
     goto fail;
   }
 
-  if(!HLNodePrivate_setTypeIdAndDeriveFormat(node, mtype)) {
-    HL_ERROR0("Failed to set type and format");
-    goto fail;
-  }
-
   /* Mark the node as original */
   HLNode_setMark(node, NMARK_ORIGINAL);
+  HLNode_setFetched(node, 1);
 
   status = 1;
 fail:
@@ -701,6 +714,7 @@ static int fillGroupNode(hid_t file_id, HL_Node* node)
   }
 
   HLNode_setMark(node, NMARK_ORIGINAL);
+  HLNode_setFetched(node, 1);
 
   HL_H5G_CLOSE(obj);
   return 1;
@@ -733,6 +747,7 @@ static int fillTypeNode(hid_t file_id, HL_Node* node)
   typelist = NULL; /* Ownership transfered. */
 
   HLNode_setMark(node, NMARK_ORIGINAL);
+  HLNode_setFetched(node, 1);
 
   HLNodePrivate_setHdfID(node, obj); /*Save hdfid for later use, which means that obj not should be closed now. */
   //@todo This causes the file not to be closed when atempting to update a file.
@@ -1051,6 +1066,48 @@ int HLNodeList_selectMetadataNodes(HL_NodeList* nodelist)
 }
 
 /* ---------------------------------------
+ * SELECT_ALL NODES EXCEPT DATASETS DATA
+ * VOLATILE: Do not attempt to access dataset arrays after calling this.
+ * --------------------------------------- */
+int HLNodeList_selectAllMetadataNodes(HL_NodeList* nodelist)
+{
+  int i = 0;
+  int nNodes = -1;
+  HL_DEBUG0("ENTER: selectAllNodesExceptDatasets");
+  nNodes = HLNodeList_getNumberOfNodes(nodelist);
+  for (i = 0; i < nNodes; i++) {
+    HL_Node* node = HLNodeList_getNodeByIndex(nodelist, i);
+    if (HLNode_getType(node) != DATASET_ID) {
+      HLNode_setMark(node, NMARK_SELECT);
+    } else {
+      HLNode_setMark(node, NMARK_SELECTMETA);
+    }
+  }
+
+  return 1;
+}
+
+/* ---------------------------------------
+ * SELECT_ALL DATASET NODES
+ * VOLATILE: Do not attempt to access anything but dataset arrays after calling this.
+ * --------------------------------------- */
+int HLNodeList_selectOnlyDatasetNodes(HL_NodeList* nodelist)
+{
+  int i = 0;
+  int nNodes = -1;
+  HL_DEBUG0("ENTER: selectAllNodesExceptDatasets");
+  nNodes = HLNodeList_getNumberOfNodes(nodelist);
+  for (i = 0; i < nNodes; i++) {
+    HL_Node* node = HLNodeList_getNodeByIndex(nodelist, i);
+    if (HLNode_getType(node) == DATASET_ID) {
+      HLNode_setMark(node, NMARK_SELECT);
+    }
+  }
+
+  return 1;
+}
+
+/* ---------------------------------------
  * DE-SELECT_NODE
  * --------------------------------------- */
 int HLNodeList_deselectNode(HL_NodeList* nodelist, const char* name)
@@ -1117,7 +1174,7 @@ int HLNodeList_fetchMarkedNodes(HL_NodeList* nodelist)
       HL_ERROR1("Error occured when fetching node at index %d", i);
       goto fail;
     }
-    if (HLNode_getMark(node) == NMARK_SELECT) {
+    if (HLNode_getMark(node) == NMARK_SELECT || HLNode_getMark(node) == NMARK_SELECTMETA) {
       if (!fillNodeWithData(file_id, node)) {
         HL_ERROR1("Error occured when trying to fill node '%s'",HLNode_getName(node));
         goto fail;

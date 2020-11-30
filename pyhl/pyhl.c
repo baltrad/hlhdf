@@ -619,6 +619,20 @@ static PyObject* _pyhl_select_metadata(PyhlNodelist* self, PyObject* args)
   return Py_None;
 }
 
+static PyObject* _pyhl_select_all_metadata(PyhlNodelist* self, PyObject* args)
+{
+  HLNodeList_selectAllMetadataNodes(self->nodelist);
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
+static PyObject* _pyhl_select_only_datasets(PyhlNodelist* self, PyObject* args)
+{
+  HLNodeList_selectOnlyDatasetNodes(self->nodelist);
+  Py_INCREF(Py_None);
+  return Py_None;
+}
+
 static PyObject* _pyhl_select_node(PyhlNodelist* self, PyObject* args)
 {
   char* nodename;
@@ -1741,6 +1755,8 @@ static struct PyMethodDef methods[] =
   { "getNodeNames", (PyCFunction) _pyhl_get_node_names, 1 },
   { "selectAll", (PyCFunction) _pyhl_select_all, 1 },
   { "selectMetadata", (PyCFunction) _pyhl_select_metadata, 1 },
+  { "selectAllMetadata", (PyCFunction) _pyhl_select_all_metadata, 1 },
+  { "selectOnlyDatasets", (PyCFunction) _pyhl_select_only_datasets, 1 },
   { "selectNode", (PyCFunction) _pyhl_select_node, 1 },
   { "deselectNode", (PyCFunction) _pyhl_deselect_node, 1 },
   { "fetch", (PyCFunction) _pyhl_fetch, 1 },

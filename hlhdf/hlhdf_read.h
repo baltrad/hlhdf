@@ -66,13 +66,31 @@ int HLNodeList_selectNode(HL_NodeList* nodelist, const char* name);
 int HLNodeList_selectAllNodes(HL_NodeList* nodelist);
 
 /**
- * Selects all metadata nodes in the nodelist to be fetched, ie. dataset attributes but no dataset arrays.
+ * Selects all metadata nodes in the nodelist to be fetched, ie. dataset attributes but no dataset arrays or arrays.
  * <b>VOLATILE: Do not attempt to access dataset arrays after calling this.</b>
  * @ingroup hlhdf_c_apis
  * @param[in] nodelist the node list
  * @return 1 on success, otherwise 0
  */
 int HLNodeList_selectMetadataNodes(HL_NodeList* nodelist);
+
+/**
+ * Selects all metadata including metadata about datasets but will exclude data for datasets..
+ * <b>VOLATILE: Do not attempt to access dataset arrays after calling this.</b>
+ * @ingroup hlhdf_c_apis
+ * @param[in] nodelist the node list
+ * @return 1 on success, otherwise 0
+ */
+int HLNodeList_selectAllMetadataNodes(HL_NodeList* nodelist);
+
+/**
+ * Only select data set nodes for fetching. This is useful if for example wanting to
+ * first read metadata. Then depending on content fetch dataset nodes.
+ * @ingroup hlhdf_c_apis
+ * @param[in] nodelist the node list
+ * @return 1 on success, otherwise 0
+ */
+int HLNodeList_selectOnlyDatasetNodes(HL_NodeList* nodelist);
 
 /**
  * De-selects the node named 'name' to be retrived when fetching data from the nodelist file.
