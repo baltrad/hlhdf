@@ -30,6 +30,7 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
 #include "pyhlhdf_common.h"  /* this includes arrayobject.h */
 #include "hlhdf.h"
 #include "hlhdf_compound_utils.h"
+#include "structmember.h"
 
 /** Sets an exception in the python interpreter and returns NULL which will generate an exception */
 #define raiseException(type,msg)\
@@ -223,12 +224,17 @@ static struct PyMethodDef object_methods[] =
 {
    {"fromstring",(PyCFunction)_rave_info_object_fromstring,1},
    {"tostring",(PyCFunction)_rave_info_object_tostring,1},
-   {"xsize",NULL},
-   {"ysize",NULL},
-   {"xscale",NULL},
-   {"yscale",NULL},
-   {"area_extent",NULL},
    {NULL,NULL} /*Sentinel*/
+};
+
+static struct PyMemberDef object_members[] =
+{
+    {"xsize",0},
+    {"ysize",0},
+    {"xscale",0},
+    {"yscale",0},
+    {"area_extent",0},
+    {NULL,0} /*Sentinel*/
 };
 
 static PyObject* _getattr_typeo(RaveInfoType* self, PyObject* name)
@@ -379,8 +385,8 @@ static PyTypeObject RaveInfoObject_Type = {
     0,                            /*tp_weaklistoffset*/
     0,                            /*tp_iter*/
     0,                            /*tp_iternext*/
-    object_methods,                 /*tp_methods*/
-    0,                            /*tp_members*/
+    object_methods,               /*tp_methods*/
+    object_members,               /*tp_members*/
     0,                            /*tp_getset*/
     0,                            /*tp_base*/
     0,                            /*tp_dict*/
