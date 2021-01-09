@@ -55,7 +55,7 @@ int main(int argc, char** argv) {
   const char* variableLengthStr = "this is a variable length string";
 
   memset(nullpaddedStr, 0, sizeof(char)*27);
-  strncpy(nullpaddedStr, "this is a nullpadded string", strlen("this is a nullpadded string"));
+  memcpy(nullpaddedStr, "this is a nullpadded string", strlen("this is a nullpadded string"));
 
   file_id = H5Fcreate("strings_fixture.h5", H5F_ACC_TRUNC, H5P_DEFAULT, H5P_DEFAULT);
   if (file_id < 0) {

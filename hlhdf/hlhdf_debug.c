@@ -100,11 +100,11 @@ static void HL_DefaultHdf5ErrorFunction(unsigned n, const H5E_error_t* rowmsg)
     char* minorError = NULL;
     fprintf(stderr, "  HDF5-ERROR: #%03d: %s line %d in %s: %s\n", n,
             rowmsg->file_name, rowmsg->line, rowmsg->func_name, rowmsg->desc);
-    fprintf(stderr, "    major(%d): %s\n", rowmsg->maj_num,
+    fprintf(stderr, "    major(%ld): %s\n", rowmsg->maj_num,
             H5Eget_major(rowmsg->maj_num));
     minorError = H5Eget_minor(rowmsg->min_num);
     if (minorError != NULL) {
-      fprintf(stderr, "    minor(%d): %s\n", rowmsg->min_num,
+      fprintf(stderr, "    minor(%ld): %s\n", rowmsg->min_num,
               minorError);
       free(minorError);
     }

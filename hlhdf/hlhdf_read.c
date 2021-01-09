@@ -176,7 +176,7 @@ static herr_t refGroupLocationIterator(hid_t gid, const char* name,
   void* op_data)
 {
   ReferenceLookup* lookup = (ReferenceLookup*) op_data;
-  char tmp1[512], tmp2[512];
+  char tmp1[1024], tmp2[1024];
   H5G_stat_t statbuf;
   hid_t obj = -1;
   HL_DEBUG0("ENTER: refGroupLocationIterator");
@@ -933,7 +933,7 @@ static herr_t hlhdf_node_visitor(hid_t g_id, const char *name, const H5O_info_t 
     break;
   }
   default: {
-    fprintf(stderr, "(%d) UNKNOWN: %s\n", g_id, name);
+    fprintf(stderr, "(%ld) UNKNOWN: %s\n", g_id, name);
     break;
   }
   }

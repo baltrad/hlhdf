@@ -36,6 +36,7 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
 #include "hlhdf_node_private.h"
 #include "hlhdf_debug.h"
 #include "hlhdf_defines_private.h"
+#include "structmember.h"
 
 /**
  * @defgroup pyhl_api PyHL Python-API Reference Manual
@@ -895,18 +896,16 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
   PyObject* data;
   hid_t lhid = -1;
   char* hltypename;
-  int itemSize;
-  int n;
+  int itemSize = 0;
+  int n = 0;
   hsize_t dims[4];
   int i;
   int ndim;
   PyObject* pyo = NULL;
   size_t tmpSize;
 
-  if (!PyArg_ParseTuple(args, "iOOsi", &itemSize, &pydims, &data, &hltypename,
-                        &lhid))
+  if (!PyArg_ParseTuple(args, "iOOsi", &itemSize, &pydims, &data, &hltypename, &lhid))
     return NULL;
-
   if (!self->node) {
     setException(PyExc_AttributeError,"The responsibility of the node has been dropped, probably by doing a addNode");
     return NULL;
@@ -980,6 +979,10 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
         pyo=NULL;
       }
       itemSize = maxstrlen + 1;
+      if (itemSize < 0 || n < 0) {
+        setException(PyExc_RuntimeError,"Invalid programming");
+        goto fail;
+      }
       if(!(tmpData=HLHDF_MALLOC(itemSize * n))) {
         setException(PyExc_MemoryError,"Could not allocate memory for strings");
         goto fail;
@@ -989,7 +992,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
         char* tmpstr;
         pyo = PySequence_GetItem(data,i);
         tmpstr = PyString_AsString(pyo);
-        strncpy(&tmpData[i*itemSize],tmpstr,strlen(tmpstr));
+        memcpy(&tmpData[i*itemSize],tmpstr,strlen(tmpstr));
       }
       if ((strtype = H5Tcopy(H5T_C_S1))<0) {
         setException(PyExc_MemoryError,"Could not create a string type");
@@ -1564,7 +1567,7 @@ static PyObject* getPythonObjectFromNode(HL_CompoundTypeAttribute* descr,
     memcpy((unsigned char*) &val, &data[offset], descr->size);
     pyo = PyInt_FromLong((long) val);
   } else {
-    char errmsg[256];
+    char errmsg[300];
     sprintf(errmsg, "Unsupported data type '%s'\n", descr->format);
     setException(PyExc_AttributeError,errmsg);
   }
@@ -1886,15 +1889,15 @@ static struct PyMethodDef node_methods[] =
  * here anyway, If the value is set to 2048, then the default file access property will
  * be used. For more information about meta_block_size, see the hdf5 documentation.
  */
-static struct PyMethodDef filecreationproperty_methods[] =
+static struct PyMemberDef filecreationproperty_members[] =
 {
-  { "version", NULL },
-  { "userblock", NULL },
-  { "sizes", NULL },
-  { "sym_k", NULL },
-  { "istore_k", NULL },
-  { "meta_block_size", NULL },
-  { NULL, NULL }
+  { "version", 0 },
+  { "userblock", 0 },
+  { "sizes", 0 },
+  { "sym_k", 0 },
+  { "istore_k", 0 },
+  { "meta_block_size", 0 },
+  { NULL, 0 }
 };
 
 /**
@@ -1927,17 +1930,17 @@ static struct PyMethodDef filecreationproperty_methods[] =
  * \li <b>szlib_px_per_block</b>: The block size must be even, with typical values
  * being 8,10,16 and 32. The more pixel values vary, the smaller this number should be.
  */
-static struct PyMethodDef compression_methods[] =
+static struct PyMemberDef compression_members[] =
 {
-  { "type", NULL },
-  { "level", NULL },
-  { "szlib_mask", NULL },
-  { "szlib_px_per_block", NULL },
-  { "H5_SZIP_CHIP_OPTION_MASK", NULL },
-  { "H5_SZIP_ALLOW_K13_OPTION_MASK", NULL },
-  { "H5_SZIP_EC_OPTION_MASK", NULL },
-  { "H5_SZIP_NN_OPTION_MASK", NULL },
-  { NULL, NULL }
+  { "type", 0 },
+  { "level", 0 },
+  { "szlib_mask", 0 },
+  { "szlib_px_per_block", 0 },
+  { "H5_SZIP_CHIP_OPTION_MASK", 0 },
+  { "H5_SZIP_ALLOW_K13_OPTION_MASK", 0 },
+  { "H5_SZIP_EC_OPTION_MASK", 0 },
+  { "H5_SZIP_NN_OPTION_MASK", 0 },
+  { NULL, 0 }
 };
 
 static PyObject* _getattro(PyhlNodelist* self, PyObject* name)
@@ -2275,8 +2278,8 @@ static PyTypeObject PyhlFileCreationProperty_Type =
   0,                            /*tp_weaklistoffset*/
   0,                            /*tp_iter*/
   0,                            /*tp_iternext*/
-  filecreationproperty_methods, /*tp_methods*/
-  0,                            /*tp_members*/
+  0,                            /*tp_methods*/
+  filecreationproperty_members, /*tp_members*/
   0,                            /*tp_getset*/
   0,                            /*tp_base*/
   0,                            /*tp_dict*/
@@ -2320,8 +2323,8 @@ static PyTypeObject PyhlCompression_Type =
   0,                            /*tp_weaklistoffset*/
   0,                            /*tp_iter*/
   0,                            /*tp_iternext*/
-  compression_methods,          /*tp_methods*/
-  0,                            /*tp_members*/
+  0,                            /*tp_methods*/
+  compression_members,          /*tp_members*/
   0,                            /*tp_getset*/
   0,                            /*tp_base*/
   0,                            /*tp_dict*/
