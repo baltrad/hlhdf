@@ -964,8 +964,11 @@ HL_NodeList* HLNodeList_readFrom(const char* filename, const char* fromPath)
     HL_ERROR1("Failed to open file %s",filename);
     goto fail;
   }
-
+#ifdef USE_HDF5_1_12_API    
+  if (H5Oget_info_by_name(file_id, fromPath, &objectInfo, H5O_INFO_ALL, H5P_DEFAULT)<0) {
+#else
   if (H5Oget_info_by_name(file_id, fromPath, &objectInfo, H5P_DEFAULT)<0) {
+#endif  
     HL_ERROR0("fromPath needs to be a dataset or group when opening a file.");
     goto fail;
   }
@@ -979,7 +982,11 @@ HL_NodeList* HLNodeList_readFrom(const char* filename, const char* fromPath)
   vs.path = (char*)fromPath;
   vs.nodelist = retv;
 
+#ifdef USE_HDF5_1_12_API 
+  if (H5Ovisit_by_name(file_id, fromPath, H5_INDEX_NAME, H5_ITER_INC, hlhdf_node_visitor, &vs, H5O_INFO_ALL, H5P_DEFAULT)<0) {
+#else
   if (H5Ovisit_by_name(file_id, fromPath, H5_INDEX_NAME, H5_ITER_INC, hlhdf_node_visitor, &vs, H5P_DEFAULT)<0) {
+#endif  
     HL_ERROR0("Could not iterate over file");
     goto fail;
   }

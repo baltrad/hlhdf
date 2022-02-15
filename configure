@@ -621,6 +621,7 @@ ac_includes_default="\
 
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
+HDF5_VERSION_CFLAG
 HDF5_LIBDIR
 HDF5_INCDIR
 SZLIB_LIBDIR
@@ -5611,6 +5612,66 @@ if [ "x$GOT_HDF_INC" = "xno" -o "x$GOT_HDF_LIB" = "xno" ]; then
 	as_fn_error $? "\"Could not successfully find the hdf5 library\"" "$LINENO" 5
 fi
 
+FOUND_VERSION=1
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking For HDF5 version" >&5
+$as_echo_n "checking For HDF5 version... " >&6; }
+
+if test "$cross_compiling" = yes; then :
+  { { $as_echo "$as_me:${as_lineno-$LINENO}: error: in \`$ac_pwd':" >&5
+$as_echo "$as_me: error: in \`$ac_pwd':" >&2;}
+as_fn_error $? "cannot run test program while cross compiling
+See \`config.log' for more details" "$LINENO" 5; }
+else
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdio.h>
+#include <hdf5.h>
+
+int
+main ()
+{
+
+  FILE* fp = fopen("conftest.out", "w");
+  fprintf(fp, "%s\n", H5_VERSION);
+  fclose(fp);
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_run "$LINENO"; then :
+  H5_VERSION=`cat conftest.out`
+else
+  FOUND_VERSION=0
+fi
+rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
+  conftest.$ac_objext conftest.beam conftest.$ac_ext
+fi
+
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $H5_VERSION" >&5
+$as_echo "$H5_VERSION" >&6; }
+
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking If HDF5 1.12 API should be used" >&5
+$as_echo_n "checking If HDF5 1.12 API should be used... " >&6; }
+USE_HDF5_1_12_API=no
+if [ "$FOUND_VERSION" = "1" ]; then
+  MAJOR_H5=$(echo $H5_VERSION | cut -d'.' -f1)
+  MINOR_H5=$(echo $H5_VERSION | cut -d'.' -f2)
+  if [ "$MAJOR_H5" != "" -a "$MINOR_H5" != "" ]; then
+    if [ $MAJOR_H5 -ge 1 -a $MINOR_H5 -ge 12 ]; then
+      USE_HDF5_1_12_API=yes
+    fi
+  fi
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $USE_HDF5_1_12_API" >&5
+$as_echo "$USE_HDF5_1_12_API" >&6; }
+
+if [ "$USE_HDF5_1_12_API" = "yes" ]; then
+  HDF5_VERSION_CFLAG=-DUSE_HDF5_1_12_API
+fi
+
 SZLIB_INCDIR=
 SZLIB_LIBDIR=
 GOT_SZ_COMPRESS=no
@@ -6218,6 +6279,7 @@ esac
 
 
 #Substitute the ZLIB and HDF5 arguments
+
 
 
 

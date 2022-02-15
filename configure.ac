@@ -651,6 +651,39 @@ if [[ "x$GOT_HDF_INC" = "xno" -o "x$GOT_HDF_LIB" = "xno" ]]; then
 	AC_MSG_ERROR("Could not successfully find the hdf5 library")
 fi
 
+dnl -- Try to identify HDF5 version
+FOUND_VERSION=1
+AC_MSG_CHECKING(For HDF5 version)
+
+AC_RUN_IFELSE([AC_LANG_PROGRAM([
+#include <stdio.h>
+#include <hdf5.h>
+],
+[
+  FILE* fp = fopen("conftest.out", "w");
+  fprintf(fp, "%s\n", H5_VERSION);
+  fclose(fp);
+])],[H5_VERSION=`cat conftest.out`],[FOUND_VERSION=0],[])
+
+AC_MSG_RESULT($H5_VERSION)
+
+AC_MSG_CHECKING(If HDF5 1.12 API should be used)
+USE_HDF5_1_12_API=no
+if [[ "$FOUND_VERSION" = "1" ]]; then
+  MAJOR_H5=$(echo $H5_VERSION | cut -d'.' -f1)
+  MINOR_H5=$(echo $H5_VERSION | cut -d'.' -f2)
+  if [[ "$MAJOR_H5" != "" -a "$MINOR_H5" != "" ]]; then
+    if [[ $MAJOR_H5 -ge 1 -a $MINOR_H5 -ge 12 ]]; then
+      USE_HDF5_1_12_API=yes
+    fi
+  fi
+fi
+AC_MSG_RESULT($USE_HDF5_1_12_API)
+
+if [[ "$USE_HDF5_1_12_API" = "yes" ]]; then
+  HDF5_VERSION_CFLAG=-DUSE_HDF5_1_12_API
+fi
+
 dnl -----------------------------
 dnl Is the szlib present? It has a header file 'szlib.h' and a library -lsz.
 dnl Their locations might be specified with the --enable-szlib'
@@ -848,5 +881,6 @@ AC_SUBST(SZLIB_INCDIR)
 AC_SUBST(SZLIB_LIBDIR)
 AC_SUBST(HDF5_INCDIR)
 AC_SUBST(HDF5_LIBDIR)
+AC_SUBST(HDF5_VERSION_CFLAG)
 
 AC_OUTPUT(def.mk)

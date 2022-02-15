@@ -1090,7 +1090,11 @@ int openGroupOrDataset(hid_t file_id, const char* name, hid_t* lid, HL_Type* typ
     herr_t infoStatus = -1;
     int enableReporting = HL_isErrorReportingEnabled();
     HL_disableErrorReporting(); /*Bypass the error reporting, if failed to open a dataset/or group*/
+#ifdef USE_HDF5_1_12_API    
+    infoStatus = H5Oget_info_by_name(file_id, name, &objectInfo, H5O_INFO_ALL, H5P_DEFAULT);
+#else
     infoStatus = H5Oget_info_by_name(file_id, name, &objectInfo, H5P_DEFAULT);
+#endif    
     if (enableReporting) {
       HL_enableErrorReporting();
     }
