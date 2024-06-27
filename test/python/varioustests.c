@@ -24,6 +24,7 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Various functions that are used during the testing
  */
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
 #include <pyhlcompat.h>
 /** To ensure that arrayobject is imported correctly */
 #define HLHDF_PYMODULE_WITH_IMPORT_ARRAY
@@ -93,5 +94,6 @@ MOD_INIT(_varioustests)
     Py_FatalError("Can't define _varioustests.error");
     return MOD_INIT_ERROR;
   }
+  import_array();
   return MOD_INIT_SUCCESS(module);
 }

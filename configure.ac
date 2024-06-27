@@ -34,7 +34,8 @@ dnl	This file is an input file used by the GNU "autoconf" program to
 dnl	generate the file "configure", which is run during HLHDF
 dnl	installation to configure the system for the local environment.
 
-AC_INIT(./hlhdf/hlhdf.h)
+AC_INIT
+AC_CONFIG_SRCDIR([./hlhdf/hlhdf.h])
 
 HLHDF_VERSION=1.0
 HLHDF_PATCH_LEVEL=0
@@ -103,7 +104,7 @@ case $withval in
 esac
 
 PYBIN=python
-py3support=no
+py3support=yes
 AC_ARG_ENABLE(py3support,
   [  --enable-py3support     Builds rave with support for python3.],
   py3support=$enableval)
@@ -238,7 +239,7 @@ esac
 
 #Note, since I've worked a little to determine fortran compiler,
 #I must switch back to 'C' in order to get the rest to work.
-AC_LANG_C
+AC_LANG([C])
 
 AC_PROG_RANLIB
 AC_PROG_CC
@@ -401,13 +402,13 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
 		numpy_inc="`echo $withval`"
 		FOUND_NUMPY_INC=no
 		numpy_inc_app=
-      if test "xyes" = "x$numpy_inc"; then
-         TESTNUMPYDIR=`$PYBIN -c "import numpy; print(eval(\"numpy.__\"+\"file__\"))"`
-         if test $? -ne 0; then
-            numpy_inc="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
-         else
-            numpy_inc=`echo $TESTNUMPYDIR | sed -e"s/\/__init__.pyc//" | sed -e"s/\/__init__.py//"`
-         fi
+    if test "xyes" = "x$numpy_inc"; then
+      TESTNUMPYDIR=`$PYBIN -c "import numpy; print(eval(\"numpy.__\"+\"file__\"))"`
+      if test $? -ne 0; then
+        numpy_inc="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
+      else
+        numpy_inc=`echo $TESTNUMPYDIR | sed -e"s/\/__init__.pyc//" | sed -e"s/\/__init__.py//"`
+      fi
 		fi
 		if [[ -f $numpy_inc/arrayobject.h ]]; then
 			numpy_inc_app=
@@ -415,17 +416,36 @@ if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
 		elif [[ -f $numpy_inc/numpy/arrayobject.h ]]; then
 			numpy_inc_app="/numpy"
 			FOUND_NUMPY_INC=yes
-      elif [[ -f $numpy_inc/core/include/numpy/arrayobject.h ]]; then
-          numpy_inc_app="/core/include/numpy"
+    elif [[ -f $numpy_inc/core/include/numpy/arrayobject.h ]]; then
+      numpy_inc_app="/core/include/numpy"
+      FOUND_NUMPY_INC=yes
+    elif [[ -f $numpy_inc/numpy/core/include/numpy/arrayobject.h ]]; then
+      numpy_inc_app="/numpy/core/include/numpy"
+      FOUND_NUMPY_INC=yes
+    else
+      TEST_INCLUDE=`$PYBIN -c "import numpy; print(numpy.get_include())"`
+      if test "x" != "x$TEST_INCLUDE"; then
+        if [[ -f "$TEST_INCLUDE/arrayobject.h" ]]; then
+          numpy_inc="$TEST_INCLUDE"
+          numpy_inc_app=
           FOUND_NUMPY_INC=yes
-      elif [[ -f $numpy_inc/numpy/core/include/numpy/arrayobject.h ]]; then
-          numpy_inc_app="/numpy/core/include/numpy"
+        elif [[ -f "$TEST_INCLUDE/numpy/arrayobject.h" ]]; then
+          numpy_inc="$TEST_INCLUDE"
+          numpy_inc_app=/numpy
           FOUND_NUMPY_INC=yes
+        fi
+      fi
 		fi
 		if test "xyes" != "x$FOUND_NUMPY_INC"; then
 			AC_MSG_ERROR(Could not locate arrayobject.h)
 		fi
-		NUMPY_INCLUDE_DIR="-I$numpy_inc$numpy_inc_app"
+    NUMPYDIR=`basename $numpy_inc$numpy_inc_app`
+    if [[ "$NUMPYDIR" = "numpy" ]]; then
+      NUMPYBASEDIR=`dirname $numpy_inc$numpy_inc_app`
+		  NUMPY_INCLUDE_DIR="-I$NUMPYBASEDIR -I$NUMPYBASEDIR/numpy"
+    else
+      NUMPY_INCLUDE_DIR="-I$NUMPYBASEDIR -I$numpy_inc$numpy_inc_app"
+    fi
 		;;
   esac
 else
@@ -489,13 +509,13 @@ LINKER_FORCED_STATIC=""
 LIBS="-Xlinker -Bstatic -lz -Xlinker -Bdynamic"
 
 AC_MSG_CHECKING(Gnu(Linux) linker options ($LIBS))
-AC_TRY_RUN([
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 main()
 {
     int i;
     return 0;
-}],try_ok=yes,try_ok=no,try_ok=no)
+}]])],[try_ok=yes],[try_ok=no],[try_ok=no])
 
 if [[ "x$try_ok" = "xyes" ]]; then
   AC_MSG_RESULT("Yes")
@@ -511,13 +531,13 @@ dnl if you can use a dynamiz libz instead.
 if [[ "$try_ok" = "no" ]]; then
 LIBS=" -Xlinker -Bdynamic -lz"
 AC_MSG_CHECKING(Gnu(Linux) linker options ($LIBS))
-AC_TRY_RUN([
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 main()
 {
     int i;
     return 0;
-}],try_ok=yes,try_ok=no,try_ok=no)
+}]])],[try_ok=yes],[try_ok=no],[try_ok=no])
 if [[ "x$try_ok" = "xyes" ]]; then
   AC_MSG_RESULT("Yes")
   LINKER_FORCED_SHARED="-Xlinker -Bdynamic"
@@ -530,13 +550,13 @@ fi
 if [[ "x$LINKER_FORCED_SHARED" = "x" ]]; then
   LIBS="-no_so -lz -so_archive"
   AC_MSG_CHECKING(OSF1 linker options ($LIBS))
-  AC_TRY_RUN([
+  AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 main()
 {
      int i;
      return 0;
-}],try_ok=yes,try_ok=no,try_ok=no)
+}]])],[try_ok=yes],[try_ok=no],[try_ok=no])
 
   if [[ "x$try_ok" = "xyes" ]]; then
     AC_MSG_RESULT("Yes")
@@ -550,13 +570,13 @@ fi
 if [[ "x$LINKER_FORCED_SHARED" = "x" ]]; then
   LIBS="-Bstatic -lz -Bdynamic"
   AC_MSG_CHECKING(Sun linker options ($LIBS))
-  AC_TRY_RUN([
+  AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 main()
 {
     int i;
     return 0;
-}],try_ok=yes,try_ok=no,try_ok=no)
+}]])],[try_ok=yes],[try_ok=no],[try_ok=no])
 
   if [[ "x$try_ok" = "xyes" ]]; then
     AC_MSG_RESULT("Yes")
@@ -570,13 +590,13 @@ fi
 if [[ "x$LINKER_FORCED_SHARED" = "x" ]]; then
   LIBS="-static -lz -dynamic"
   AC_MSG_CHECKING(Linux(Should never work) linker options ($LIBS))
-  AC_TRY_RUN([
+  AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 main()
 {
     int i;
     return 0;
-}],try_ok=yes,try_ok=no,try_ok=no)
+}]])],[try_ok=yes],[try_ok=no],[try_ok=no])
 
   if [[ "x$try_ok" = "xyes" ]]; then
     AC_MSG_RESULT("Yes")
@@ -806,13 +826,13 @@ if [[ "x$COMPILE_FOR_FORTRAN" != "xno" ]]; then
 
   if [[ "x$LDFLAGS" != "x" ]]; then
     AC_MSG_CHECKING([Linker Options on $system with $LDFLAGS $LIBS])
-    AC_TRY_RUN([
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <stdio.h>
 main()
 {
   int i;
   return 0;
-}],try_ok=yes,try_ok=no,try_ok=no)
+}]])],[try_ok=yes],[try_ok=no],[try_ok=no])
   fi
 
   if [[ "x$try_ok" = "xyes" ]]; then
@@ -833,12 +853,12 @@ case $system in
     CPPFLAGS="-Ae $PYDEFS -I. $HDF5_INCDIR $ZLIB_INCDIR"
     LDFLAGS="-L. $HDF5_LIBDIR $ZLIB_LIBDIR"
     LIBS="$LINKER_FORCED_STATIC -lhdf5 -lz $LINKER_FORCED_SHARED -lm"
-    AC_TRY_RUN([
+    AC_RUN_IFELSE([AC_LANG_SOURCE([[
 #include <hdf5.h>
 main()
 {
   return 0;
-}],try_ok=yes,try_ok=no,try_ok=no)
+}]])],[try_ok=yes],[try_ok=no],[try_ok=no])
     if [[ "x$try_ok" = "xyes" ]]; then
       PYDEFS="-Ae $PYDEFS"
       AC_MSG_RESULT(Yes)
@@ -883,4 +903,5 @@ AC_SUBST(HDF5_INCDIR)
 AC_SUBST(HDF5_LIBDIR)
 AC_SUBST(HDF5_VERSION_CFLAG)
 
-AC_OUTPUT(def.mk)
+AC_CONFIG_FILES([def.mk])
+AC_OUTPUT

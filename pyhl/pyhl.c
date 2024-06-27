@@ -22,6 +22,9 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
  * @author Anders Henja (Swedish Meteorological and Hydrological Institute, SMHI)
  * @date 2009-06-13
  */
+
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
 #include <pyhlcompat.h>
 
 /**
@@ -854,7 +857,7 @@ static PyObject* _pyhl_node_set_scalar_value(PyhlNode* self, PyObject* args)
       goto fail;
     }
   } else if (strcmp(hltypename, "string") == 0) {
-    char* mData = PyString_AsString(data);
+    char* mData = (char*)PyString_AsString(data);
     if (!mData || !HLNode_setScalarValue(self->node, strlen(mData) + 1,
                                          (unsigned char*) mData, hltypename, -1)) {
       setException(PyExc_ValueError,"Could not set scalar string");
@@ -918,7 +921,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
 
   if (PyArray_Check(data) && HL_isFormatSupported(hltypename)) {
     /*Ahh plain array*/
-    if (PyObject_Length(pydims) != ((PyArrayObject*) data)->nd) {
+    if (PyObject_Length(pydims) != PyArray_NDIM((PyArrayObject*)data)) {
       setException(PyExc_ValueError,"Rank of Array != no of dims");
       goto fail;
     }
@@ -931,7 +934,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       dims[i] = PyInt_AsLong(pyo);
       Py_XDECREF(pyo);
       pyo=NULL;
-      if(dims[i]!=((PyArrayObject*)data)->dimensions[i]) {
+      if(dims[i] != PyArray_DIMS((PyArrayObject*)data)[i]) {
         setException(PyExc_AttributeError,"Array dimensions != list dimensions");
         goto fail;
       }
@@ -940,12 +943,11 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       setException(PyExc_ValueError,"Could not determine size");
       goto fail;
     }
-    if(tmpSize!=((PyArrayObject*)data)->descr->elsize) {
+    if(tmpSize!=PyArray_ITEMSIZE((PyArrayObject*)data)) {
       setException(PyExc_ValueError,"Type sizes are different between format and array");
       goto fail;
     }
-    if(!HLNode_setArrayValue(self->node,tmpSize,ndim,dims,(unsigned char*)((PyArrayObject*)data)->data,
-            hltypename,-1)) {
+    if(!HLNode_setArrayValue(self->node,tmpSize,ndim,dims,(unsigned char*)PyArray_DATA((PyArrayObject*)data), hltypename,-1)) {
       setException(PyExc_AttributeError,"Could not set array data");
       goto fail;
     }
@@ -968,7 +970,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
           setException(PyExc_AttributeError,"Could not get list item");
           goto fail;
         }
-        if(!(tmpstr = PyString_AsString(pyo))) {
+        if(!(tmpstr = (char*)PyString_AsString(pyo))) {
           setException(PyExc_AttributeError,"Could not translate data to a string");
           goto fail;
         }
@@ -991,7 +993,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
       for(i=0;i<n;i++) {
         char* tmpstr;
         pyo = PySequence_GetItem(data,i);
-        tmpstr = PyString_AsString(pyo);
+        tmpstr = (char*)PyString_AsString(pyo);
         memcpy(&tmpData[i*itemSize],tmpstr,strlen(tmpstr));
       }
       if ((strtype = H5Tcopy(H5T_C_S1))<0) {
@@ -1069,7 +1071,7 @@ static PyObject* _pyhl_node_set_array_value(PyhlNode* self, PyObject* args)
     HLHDF_FREE(tmpData);
   } else if(strcmp(hltypename,"compound")==0) {
     size_t tmpLen=0;
-    char* tmpData=PyString_AsString(data);
+    char* tmpData=(char*)PyString_AsString(data);
     if(!tmpData) {
       setException(PyExc_AttributeError,"Could not translate data to a string");
       goto fail;
@@ -1214,10 +1216,14 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
         long v;
         memcpy(&v, HLNode_getData(self->node), typeSize);
         retv = PyInt_FromLong((long) v);
-      } else {
+      } else if (typeSize <= sizeof(long long)) {
         long long v;
         memcpy(&v, HLNode_getData(self->node), typeSize);
         retv = PyLong_FromLongLong(v);
+      } else {
+        sprintf(errbuf, "To big type size: %ld", typeSize);
+        setException(PyExc_TypeError,errbuf);
+        return NULL;
       }
       break;
     }
@@ -1281,9 +1287,9 @@ static PyObject* _pyhl_node_data(PyhlNode* self, PyObject* args)
         goto fail;
       }
       nbytes = (int)HLNode_getNumberOfPoints(self->node);
-      nbytes *= ((PyArrayObject*) retv)->descr->elsize;
+      nbytes *= PyArray_ITEMSIZE((PyArrayObject*)retv);
 
-      memcpy(((PyArrayObject*) retv)->data, (unsigned char*) HLNode_getData(self->node),
+      memcpy(PyArray_DATA((PyArrayObject*)retv), (unsigned char*) HLNode_getData(self->node),
              nbytes);
       break;
     }
@@ -1381,10 +1387,13 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
         long v;
         memcpy(&v, HLNode_getRawdata(self->node), typeSize);
         retv = PyInt_FromLong((long) v);
-      } else {
+      } else if (typeSize <= sizeof(long long)) {
         long long v;
         memcpy(&v, HLNode_getRawdata(self->node), typeSize);
         retv = PyLong_FromLongLong(v);
+      } else {
+        setException(PyExc_AttributeError,"Can't handle type size");
+        return NULL;
       }
       break;
     }
@@ -1440,9 +1449,8 @@ static PyObject* _pyhl_node_rawdata(PyhlNode* self, PyObject* args)
         goto fail;
       }
       nbytes = (int)HLNode_getNumberOfPoints(self->node);
-      nbytes *= ((PyArrayObject*) retv)->descr->elsize;
-      memcpy(((PyArrayObject*) retv)->data,
-             HLNode_getRawdata(self->node), nbytes);
+      nbytes *= PyArray_ITEMSIZE((PyArrayObject*)retv);
+      memcpy(PyArray_DATA((PyArrayObject*)retv), HLNode_getRawdata(self->node), nbytes);
       break;
     }
     case H5T_COMPOUND: {

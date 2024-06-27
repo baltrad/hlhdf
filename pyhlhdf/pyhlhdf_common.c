@@ -24,6 +24,9 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
  *
  * Utility functions for working with python objects.
  */
+
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION
+
 #include "pyhlhdf_common.h"
 
 /**********************************************************
@@ -569,27 +572,27 @@ int pyarraytypeFromHdfType(const char* format)
     return -1;
 
   if (strcmp(format, "char") == 0) {
-    return PyArray_CHAR;
+    return NPY_STRING;
   } else if (strcmp(format, "schar") == 0) {
-    return PyArray_BYTE;
+    return NPY_BYTE;
   } else if (strcmp(format, "uchar") == 0) {
-    return PyArray_UBYTE;
+    return NPY_UBYTE;
   } else if (strcmp(format, "short") == 0) {
-    return PyArray_SHORT;
+    return NPY_SHORT;
   } else if (strcmp(format, "ushort") == 0) {
-    return PyArray_USHORT;
+    return NPY_USHORT;
   } else if (strcmp(format, "int") == 0) {
-    return PyArray_INT;
+    return NPY_INT;
   } else if (strcmp(format, "uint") == 0) {
-    return PyArray_UINT;
+    return NPY_UINT;
   } else if (strcmp(format, "long") == 0) {
-    return PyArray_LONG;
+    return NPY_LONG;
   } else if (strcmp(format, "ulong") == 0) {
-    return PyArray_ULONG;
+    return NPY_ULONG;
   } else if (strcmp(format, "float") == 0) {
-    return PyArray_FLOAT;
+    return NPY_FLOAT;
   } else if (strcmp(format, "double") == 0) {
-    return PyArray_DOUBLE;
+    return NPY_DOUBLE;
   } else {
     fprintf(stderr, "Unsupported type %s\n", format);
     return -1;

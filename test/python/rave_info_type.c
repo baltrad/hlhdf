@@ -24,6 +24,7 @@ along with HLHDF.  If not, see <http://www.gnu.org/licenses/>.
  *
  * C-definition of a compound type usable from python
  */
+#define NPY_NO_DEPRECATED_API NPY_1_7_API_VERSION 
 #include <pyhlcompat.h>
 /** To ensure that arrayobject is imported correctly */
 #define HLHDF_PYMODULE_WITH_IMPORT_ARRAY
