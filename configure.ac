@@ -37,6 +37,8 @@ dnl	installation to configure the system for the local environment.
 AC_INIT
 AC_CONFIG_SRCDIR([./hlhdf/hlhdf.h])
 
+m4_include([m4/check_python.m4])
+
 HLHDF_VERSION=1.0
 HLHDF_PATCH_LEVEL=0
 
@@ -90,42 +92,6 @@ else
   ac_sys_release=`uname -r`
 fi
 
-AC_ARG_WITH(python,[  --with-python=(yes|no)     Compile for python],
-	    ,withval=yes)
-
-COMPILE_FOR_PYTHON=yes
-
-case $withval in
-  no)
-	COMPILE_FOR_PYTHON=no
-	;;
-  *)
-	;;
-esac
-
-PYBIN=python
-py3support=yes
-AC_ARG_ENABLE(py3support,
-  [  --enable-py3support     Builds rave with support for python3.],
-  py3support=$enableval)
-if [[ "x$py3support" = "xyes" ]]; then
-  PYOPT="$PYOPT -DPY3_SUPPORT"
-  PYBIN=python3
-  COMPILE_FOR_PYTHON=yes
-fi
-
-AC_ARG_WITH(py3bin, [  --with-py3bin=python3  What python 3 binary to use],
-		    ,withval=python3)
-if [[ "$PYBIN" = "python3" ]]; then
-  AC_MSG_CHECKING(what python3 binary to use)
-  if [[ "$withval" != "python3" ]]; then
-    PYBIN=$withval
-  fi
-  AC_MSG_RESULT($PYBIN)
-fi
-
-PYTHON_BINARY=$PYBIN
-
 # Check for machine type or hardware-platform (32 bit e.g. = i386 or 64 bit = x86_64):
 bit64="no"
 AC_MSG_CHECKING([hardware platform])
@@ -140,87 +106,20 @@ else
     AC_MSG_RESULT($hardware)
 fi
 
-# Check for programs which are useful when generating
-# the makefile.
-# Hmm, I'd better check the compiler after the python check,
-# seems like I've got slight problems otherwise
-#
+CHECK_PYTHON()
+
+if [[ "$PYTHON_SUPPRESSED" != "yes" ]]; then
+  if [[ "$PYTHON_CHECK_OK" != "yes" -o "$PYTHON_FOUND" != "yes" ]]; then
+    AC_MSG_ERROR([Failed to identify and/or configure python settings])
+  fi
+fi
+
+
 AC_PROG_RANLIB
 AC_PROG_CC
 AC_PROG_CPP
 AC_SUBST(AR)
 AC_CHECK_PROGS(AR, ar aal, ar)
-
-# Check for python version
-PYVERSION=
-if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
-  AC_MSG_CHECKING(for python version)
-  PYVERSION=`$PYBIN -c "import sys; print(sys.version[[:3]])"`
-  AC_MSG_RESULT($PYVERSION)
-fi
-
-# Check if python has got distutils (makes life a whole lot easier)
-GOTDISTUTILS=no
-enabledistutils=yes
-AC_ARG_ENABLE(distutil-check,
-  [  --enable-distutil-check     Atempts to use python distutils for inquirying for settings. Defaults to yes.],
-  enabledistutils=$enableval)
-  
-if [[ "x$COMPILE_FOR_PYTHON" = "xyes" -a "x$enabledistutils" = "xyes" ]]; then
-  AC_MSG_CHECKING(for python distutils)
-  GOTDISTUTILS="no"
-  XYZ=`$PYBIN -c "from distutils import sysconfig"`
-  if [[ $? -eq 0 ]]; then
-    GOTDISTUTILS="yes"
-  fi
-  AC_MSG_RESULT($GOTDISTUTILS)
-fi
-
-# Check for exec install dir if distutils not should be used
-PY_EXEC_INSTALLDIR=
-if [[ "x$COMPILE_FOR_PYTHON" = "xyes" -a "x$GOTDISTUTILS" = "xno" ]]; then
-  AC_MSG_CHECKING(for python install dir)
-  PY_EXEC_INSTALLDIR=`$PYBIN -c "import sys; print(sys.exec_prefix)"`
-  AC_MSG_RESULT($PY_EXEC_INSTALLDIR)
-fi
-
-# Atempt to locate Makefile used for building python
-PY_CONFIG_MAKE=
-if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
-  AC_MSG_CHECKING(for python Makefile)
-  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PY_CONFIG_MAKE=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_makefile_filename())" | grep -v "^None\$"`
-  else
-    if [[ "x$bit64" = "xyes" ]]; then
-      PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib64/python$PYVERSION/config/Makefile"
-    fi
-    if [[ ! -f "$PY_CONFIG_MAKE" ]]; then
-      PY_CONFIG_MAKE="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/config/Makefile"
-    fi
-  fi
-  
-  if [[ ! -f "$PY_CONFIG_MAKE" ]]; then
-    AC_MSG_ERROR(failed to locate Makefile)
-  else
-    AC_MSG_RESULT($PY_CONFIG_MAKE)
-  fi
-fi
-
-#
-# Extract what compiler the python binary was compiled with
-#
-AC_MSG_CHECKING(for the compiler used for generating python)
-if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
-  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYCC=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_config_var(\"CC\"))" | grep -v "^None\$"`
-  else
-    PYCC=`cat $PY_CONFIG_MAKE | sed -n "/^CC=/p" | sed -e "s/CC=//g" | awk '{print $1}'`
-  fi
-  AC_MSG_RESULT($PYCC)
-  CC=$PYCC
-else
-  AC_MSG_RESULT(suppressed)
-fi
 
 dnl Check for programs which are useful when generating
 dnl the makefile.
@@ -256,73 +155,18 @@ PYLDSHARED=
 PYCCSHARED=
 PYDEFS=
 
-if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
-  AC_MSG_CHECKING(for python includes)
-  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PY_INCLUDES=`$PYBIN -c "from distutils import sysconfig;print(sysconfig.get_python_inc())" | grep -v "^None\$"`
-  else
-    PY_INCLUDES="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
-  fi
-  AC_MSG_RESULT($PY_INCLUDES)
-  PY_INCLUDES="-I$PY_INCLUDES"
-
-  AC_MSG_CHECKING(for python lib site-packages)
-  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PY_SITEPACK=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_python_lib())" | grep -v "^None\$"`
-  else
-    PY_SITEPACK="$PY_EXEC_INSTALLDIR/lib/python$PYVERSION/site-packages"
-  fi
-  AC_MSG_RESULT($PY_SITEPACK)
-
-  AC_MSG_CHECKING(for python library dir)
-  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PY_LIBDIR=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_config_var('LIBDIR'))" | grep -v "^None\$"`
-  else
-    PY_LIBDIR="$PY_EXEC_INSTALLDIR/lib"
-  fi
-  AC_MSG_RESULT($PY_LIBDIR)
-  
-  dnl Checks for typedefs, structures and compiler characteristics
-  AC_MSG_CHECKING(for python options)
-  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYOPT=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_config_var(\"OPT\"))" | grep -v "^None\$"`
-  else
-    PYOPT=`cat $PY_CONFIG_MAKE | sed -n "/^OPT=/p" | sed -n -e"s/^OPT=[[ 	]]*\(.*\)/\1/p"`
-  fi
-  AC_MSG_RESULT($PYOPT)
-
-  AC_MSG_CHECKING(for ldflags)
-  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYLDFLAGS=`$PYBIN -c "from distutils import sysconfig; print(sysconfig.get_config_var(\"LDFLAGS\"))" | grep -v "^None\$"`
-  else
-    PYLDFLAGS=`cat $PY_CONFIG_MAKE | sed -n "/^LDFLAGS=/p" | sed -n -e"s/^LDFLAGS=[[  ]]*\(.*\)/\1/p"`
-  fi
-  AC_MSG_RESULT($PYLDFLAGS)
-
-  AC_MSG_CHECKING(for ldshared)
-  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYLDSHARED=`$PYBIN  -c "from distutils import sysconfig; print(sysconfig.get_config_var(\"LDSHARED\"))" | grep -v "^None\$"`
-  else
-    PYLDSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^LDSHARED=/p" | sed -n -e"s/^LDSHARED=[[   ]]*\(.*\)/\1/p"`
-  fi
-  AC_MSG_RESULT($PYLDSHARED)
-
-  AC_MSG_CHECKING(for ccshared)
-  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYCCSHARED=`$PYBIN  -c "from distutils import sysconfig; print(sysconfig.get_config_var(\"CCSHARED\"))" | grep -v "^None\$"`
-  else
-    PYCCSHARED=`cat $PY_CONFIG_MAKE | sed -n "/^CCSHARED=/p" | sed -n -e"s/^CCSHARED=[[ 	]]*\(.*\)/\1/p"`
-  fi
-  AC_MSG_RESULT($PYCCSHARED)
-
-  AC_MSG_CHECKING(for defs)
-  if [[ "x$GOTDISTUTILS" = "xyes" ]]; then
-    PYDEFS=`$PYBIN  -c "from distutils import sysconfig; xyz=sysconfig.get_config_var(\"DEFS\")" | grep -v "^None\$"`
-  else
-    PYDEFS=`cat $PY_CONFIG_MAKE | sed -n "/^DEFS=/p" | sed -n -e"s/^DEFS=[[ 	]]*\(.*\)/\1/p"`
-  fi
-  AC_MSG_RESULT($PYDEFS)
+if [[ "$PYTHON_SUPPRESSED" != "yes" ]]; then
+  COMPILE_FOR_PYTHON="yes"
+  PYBIN="$PYTHON_BINARY"
+  PY_INCLUDES="$PYTHON_INCLUDE"
+  PY_SITEPACK="$PYTHON_SITEPACK"
+  PY_LIBDIR="$PYTHON_LIBDIR"
+  PYOPT="$PYTHON_OPTS"
+  PYLDFLAGS="$PYTHON_LDFLAGS"
+  PYLDSHARED="$PYTHON_LDSHARED"
+  PYCCSHARED="$PYTHON_CCSHARED"
 else
+
 AC_MSG_CHECKING(CCSHARED)
 if test -z "$CCSHARED"
 then
