@@ -5404,7 +5404,6 @@ fi
 printf "%s\n" "$PYLDSHARED" >&6; }
 fi
 
-echo "PY_INCLUDES=$PY_INCLUDES"
 numpy_do_check="yes"
 if [ "$PYTHON_SUPPRESSED" == "yes" ]; then
   numpy_do_check="no"

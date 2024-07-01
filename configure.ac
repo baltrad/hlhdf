@@ -230,7 +230,6 @@ fi
 AC_MSG_RESULT($PYLDSHARED)
 fi
 
-echo "PY_INCLUDES=$PY_INCLUDES"
 numpy_do_check="yes"
 if [[ "$PYTHON_SUPPRESSED" == "yes" ]]; then
   numpy_do_check="no"
