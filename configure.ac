@@ -38,6 +38,7 @@ AC_INIT
 AC_CONFIG_SRCDIR([./hlhdf/hlhdf.h])
 
 m4_include([m4/check_python.m4])
+m4_include([m4/check_numpy.m4])
 
 HLHDF_VERSION=1.0
 HLHDF_PATCH_LEVEL=0
@@ -229,72 +230,14 @@ fi
 AC_MSG_RESULT($PYLDSHARED)
 fi
 
-dnl -----------------------------
-dnl Try to locate the numpy include file 'arrayobject.h' automatically,
-dnl if this does not succeed, then the user has to specify this argument
-dnl manually.
-dnl -----------------------------
-AC_ARG_WITH(numpy,[  --with-numpy=INC     Use the numpy include file],
-		,withval=yes)
-NUMPY_INCLUDE_DIR=
-if [[ "x$COMPILE_FOR_PYTHON" = "xyes" ]]; then
-  case $withval in
-	no)
-		AC_MSG_ERROR(You can not remove dependencies to numpy)
-		;;
-	*)
-		numpy_inc="`echo $withval`"
-		FOUND_NUMPY_INC=no
-		numpy_inc_app=
-    if test "xyes" = "x$numpy_inc"; then
-      TESTNUMPYDIR=`$PYBIN -c "import numpy; print(eval(\"numpy.__\"+\"file__\"))"`
-      if test $? -ne 0; then
-        numpy_inc="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
-      else
-        numpy_inc=`echo $TESTNUMPYDIR | sed -e"s/\/__init__.pyc//" | sed -e"s/\/__init__.py//"`
-      fi
-		fi
-		if [[ -f $numpy_inc/arrayobject.h ]]; then
-			numpy_inc_app=
-			FOUND_NUMPY_INC=yes
-		elif [[ -f $numpy_inc/numpy/arrayobject.h ]]; then
-			numpy_inc_app="/numpy"
-			FOUND_NUMPY_INC=yes
-    elif [[ -f $numpy_inc/core/include/numpy/arrayobject.h ]]; then
-      numpy_inc_app="/core/include/numpy"
-      FOUND_NUMPY_INC=yes
-    elif [[ -f $numpy_inc/numpy/core/include/numpy/arrayobject.h ]]; then
-      numpy_inc_app="/numpy/core/include/numpy"
-      FOUND_NUMPY_INC=yes
-    else
-      TEST_INCLUDE=`$PYBIN -c "import numpy; print(numpy.get_include())"`
-      if test "x" != "x$TEST_INCLUDE"; then
-        if [[ -f "$TEST_INCLUDE/arrayobject.h" ]]; then
-          numpy_inc="$TEST_INCLUDE"
-          numpy_inc_app=
-          FOUND_NUMPY_INC=yes
-        elif [[ -f "$TEST_INCLUDE/numpy/arrayobject.h" ]]; then
-          numpy_inc="$TEST_INCLUDE"
-          numpy_inc_app=/numpy
-          FOUND_NUMPY_INC=yes
-        fi
-      fi
-		fi
-		if test "xyes" != "x$FOUND_NUMPY_INC"; then
-			AC_MSG_ERROR(Could not locate arrayobject.h)
-		fi
-    NUMPYDIR=`basename $numpy_inc$numpy_inc_app`
-    if [[ "$NUMPYDIR" = "numpy" ]]; then
-      NUMPYBASEDIR=`dirname $numpy_inc$numpy_inc_app`
-		  NUMPY_INCLUDE_DIR="-I$NUMPYBASEDIR -I$NUMPYBASEDIR/numpy"
-    else
-      NUMPY_INCLUDE_DIR="-I$NUMPYBASEDIR -I$numpy_inc$numpy_inc_app"
-    fi
-		;;
-  esac
-else
-  AC_MSG_CHECKING(for numpy)
-  AC_MSG_RESULT(suppressed)
+echo "PY_INCLUDES=$PY_INCLUDES"
+numpy_do_check="yes"
+if [[ "$PYTHON_SUPPRESSED" == "yes" ]]; then
+  numpy_do_check="no"
+fi
+CHECK_NUMPY("$numpy_do_check", "$PYBIN", "$PY_INCLUDES")
+if [[ "$NUMPY_CFG_SUCCESS" = "yes" ]]; then
+  NUMPY_INCLUDE_DIR="$NUMPY_INCLUDE"
 fi
 
 dnl -----------------------------

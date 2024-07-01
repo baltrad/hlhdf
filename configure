@@ -1371,7 +1371,9 @@ Optional Packages:
   --with-python=yes|no|<python binary>
                           name of python binary or full path to python binary
   --with-fortran=yes|no Configure with fortran
-  --with-numpy=INC     Use the numpy include file
+  --with-numpy=<includepath>
+                          location of the numpy include headers (excluding
+                          /numpy)
   --with-zlib=INC,LIB     Use the GNU zlib compression
   --with-hdf5=INC,LIB       Use the HDF5 library
   --with-szlib=INC,LIB     Use the szlib compression
@@ -2427,6 +2429,42 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 #   PYTHON_LDFLAGS=
 #   PYTHON_LDSHARED=
 #   PYTHON_CCSHARED=
+#
+# LICENSE
+#   Copyright (c) 2024 Anders Henja (anders@henjab.se)
+#
+#   Copying and distribution of this file, with or without modification, are
+#   permitted in any medium without royalty provided the copyright notice
+#   and this notice are preserved. This file is offered as-is, without any
+#   warranty.
+
+
+#
+# SYNOPSIS
+#
+#   CHECK_NUMPY(check-numpy, python-binary, python-include-flags)
+#
+#   - check-numpy            - if the numpy check should be searched for or not. If specifying "no", numpy check will be supressed
+#   - python-binary          - the python binary that will be used with numpy
+#   - python-include-flags   - when doing compile tests the include flags for including Python.h is necessary
+#
+#
+# DESCRIPTION
+#
+#   Macro for identifying python numpy
+#
+#   The macro provides two options.
+#
+#   --with-numpy=[includepath]
+#                        where path should be the include path where the numpy include headers are residing. Default is to use the python binary to identify
+#                        the include path. Otherwise you will need to provide --with-numpy
+#
+#
+#   This macro will atempt to identify and extract all variables that are necessary to compile and build a python c module.
+#   It has only been verified for python3. It assumes that python3 sysconfig exists.
+#
+#   The following variables will be set.
+#   - NUMPY_INCLUDE    The include path for building with numpy
 #
 # LICENSE
 #   Copyright (c) 2024 Anders Henja (anders@henjab.se)
@@ -5366,92 +5404,11 @@ fi
 printf "%s\n" "$PYLDSHARED" >&6; }
 fi
 
-
-# Check whether --with-numpy was given.
-if test ${with_numpy+y}
-then :
-  withval=$with_numpy;
-else $as_nop
-  withval=yes
+echo "PY_INCLUDES=$PY_INCLUDES"
+numpy_do_check="yes"
+if [ "$PYTHON_SUPPRESSED" == "yes" ]; then
+  numpy_do_check="no"
 fi
-
-NUMPY_INCLUDE_DIR=
-if [ "x$COMPILE_FOR_PYTHON" = "xyes" ]; then
-  case $withval in
-	no)
-		as_fn_error $? "You can not remove dependencies to numpy" "$LINENO" 5
-		;;
-	*)
-		numpy_inc="`echo $withval`"
-		FOUND_NUMPY_INC=no
-		numpy_inc_app=
-    if test "xyes" = "x$numpy_inc"; then
-      TESTNUMPYDIR=`$PYBIN -c "import numpy; print(eval(\"numpy.__\"+\"file__\"))"`
-      if test $? -ne 0; then
-        numpy_inc="$PY_EXEC_INSTALLDIR/include/python$PYVERSION"
-      else
-        numpy_inc=`echo $TESTNUMPYDIR | sed -e"s/\/__init__.pyc//" | sed -e"s/\/__init__.py//"`
-      fi
-		fi
-		if [ -f $numpy_inc/arrayobject.h ]; then
-			numpy_inc_app=
-			FOUND_NUMPY_INC=yes
-		elif [ -f $numpy_inc/numpy/arrayobject.h ]; then
-			numpy_inc_app="/numpy"
-			FOUND_NUMPY_INC=yes
-    elif [ -f $numpy_inc/core/include/numpy/arrayobject.h ]; then
-      numpy_inc_app="/core/include/numpy"
-      FOUND_NUMPY_INC=yes
-    elif [ -f $numpy_inc/numpy/core/include/numpy/arrayobject.h ]; then
-      numpy_inc_app="/numpy/core/include/numpy"
-      FOUND_NUMPY_INC=yes
-    else
-      TEST_INCLUDE=`$PYBIN -c "import numpy; print(numpy.get_include())"`
-      if test "x" != "x$TEST_INCLUDE"; then
-        if [ -f "$TEST_INCLUDE/arrayobject.h" ]; then
-          numpy_inc="$TEST_INCLUDE"
-          numpy_inc_app=
-          FOUND_NUMPY_INC=yes
-        elif [ -f "$TEST_INCLUDE/numpy/arrayobject.h" ]; then
-          numpy_inc="$TEST_INCLUDE"
-          numpy_inc_app=/numpy
-          FOUND_NUMPY_INC=yes
-        fi
-      fi
-		fi
-		if test "xyes" != "x$FOUND_NUMPY_INC"; then
-			as_fn_error $? "Could not locate arrayobject.h" "$LINENO" 5
-		fi
-    NUMPYDIR=`basename $numpy_inc$numpy_inc_app`
-    if [ "$NUMPYDIR" = "numpy" ]; then
-      NUMPYBASEDIR=`dirname $numpy_inc$numpy_inc_app`
-		  NUMPY_INCLUDE_DIR="-I$NUMPYBASEDIR -I$NUMPYBASEDIR/numpy"
-    else
-      NUMPY_INCLUDE_DIR="-I$NUMPYBASEDIR -I$numpy_inc$numpy_inc_app"
-    fi
-		;;
-  esac
-else
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for numpy" >&5
-printf %s "checking for numpy... " >&6; }
-  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: suppressed" >&5
-printf "%s\n" "suppressed" >&6; }
-fi
-
-ZLIB_INCDIR=
-ZLIB_LIBDIR=
-
-
-# Check whether --with-zlib was given.
-if test ${with_zlib+y}
-then :
-  withval=$with_zlib;
-else $as_nop
-  withval=yes
-fi
-
-case $withval in
-    yes)
 
 ac_header= ac_cache=
 for ac_item in $ac_header_c_list
@@ -5482,7 +5439,159 @@ then :
 printf "%s\n" "#define STDC_HEADERS 1" >>confdefs.h
 
 fi
-ac_fn_c_check_header_compile "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
+
+
+NUMPY_SUPRESSED=yes
+NUMPY_FOUND=no
+NUMPY_CFG_SUCCESS=no
+NUMPY_INCLUDE=no
+
+check_numpy_arg_python_do_check="$numpy_do_check"
+check_numpy_arg_python_binary="$PYBIN"
+check_numpy_arg_python_include="$PY_INCLUDES"
+check_numpy_cfg_error=no
+
+# Add a default --with-numpy configuration option.
+withval=
+
+# Check whether --with-numpy was given.
+if test ${with_numpy+y}
+then :
+  withval=$with_numpy;  if test "$withval" != ""; then
+      check_numpy_include_path="$withval"
+    fi
+
+else $as_nop
+  check_numpy_include_path=""
+
+fi
+
+
+if [ "$check_numpy_arg_python_do_check" != "no" ]; then
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Using python binary '$check_numpy_arg_python_binary'" >&5
+printf "%s\n" "$as_me: Using python binary '$check_numpy_arg_python_binary'" >&6;}
+
+  if [ "$check_numpy_include_path" == "" ]; then
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking if it possible to import numpy" >&5
+printf %s "checking if it possible to import numpy... " >&6; }
+    `$check_numpy_arg_python_binary -c "import numpy" >> /dev/null 2>&1`
+    if [ $? -ne 0 ]; then
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: no" >&5
+printf "%s\n" "no" >&6; }
+      check_numpy_cfg_error=yes
+    else
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+printf "%s\n" "yes" >&6; }
+    fi
+
+    if [ "$check_numpy_cfg_error" == "no" ]; then
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for numpy major version" >&5
+printf %s "checking for numpy major version... " >&6; }
+      check_numpy_npy_version=`$check_numpy_arg_python_binary -c "import numpy; print(numpy.version.version.split('.')[0])"`
+      if [ "$check_numpy_npy_version" == "2" ]; then
+        NUMPY_VERSION=2
+      else
+        NUMPY_VERSION=1
+      fi
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $NUMPY_VERSION" >&5
+printf "%s\n" "$NUMPY_VERSION" >&6; }
+    fi
+
+    if [ "$check_numpy_cfg_error" == "no" ]; then
+      # First we do the simplest way and try to use numpy to identify include directory
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for numpy include using numpy.get_include" >&5
+printf %s "checking for numpy include using numpy.get_include... " >&6; }
+      check_numpy_include_path=`$check_numpy_arg_python_binary -c "import numpy; print(numpy.get_include())"`
+      if [ $? -ne 0 ]; then
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: not working" >&5
+printf "%s\n" "not working" >&6; }
+      else
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $check_numpy_include_path" >&5
+printf "%s\n" "$check_numpy_include_path" >&6; }
+      fi
+    fi
+  fi
+
+  if [ "$check_numpy_cfg_error" == "no" ]; then
+    if [ "$check_numpy_include_path" != "" ]; then
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for arrayobject.h" >&5
+printf %s "checking for arrayobject.h... " >&6; }
+      check_numpy_found_path=
+      if [ -f $check_numpy_include_path/arrayobject.h ]; then
+        check_numpy_found_path="$check_numpy_include_path"
+      elif [ -f $check_numpy_include_path/numpy/arrayobject.h ]; then
+			  check_numpy_found_path="$check_numpy_include_path/numpy"
+      elif [ -f $check_numpy_include_path/core/include/numpy/arrayobject.h ]; then
+        check_numpy_found_path="$check_numpy_include_path/core/include/numpy"
+      elif [ -f $numpy_inc/numpy/core/include/numpy/arrayobject.h ]; then
+        check_numpy_found_path="$check_numpy_include_path/numpy/core/include/numpy"
+      fi
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $check_numpy_found_path" >&5
+printf "%s\n" "$check_numpy_found_path" >&6; }
+    fi
+
+    check_numpy_saved_CPPFLAGS="$CPPFLAGS"
+
+    if [ "$check_numpy_found_path" != "" ]; then
+      check_numpy_found_dirname=`dirname $check_numpy_found_path`
+      CPPFLAGS="$CPPFLAGS $check_numpy_arg_python_include -I$check_numpy_found_dirname -I$check_numpy_found_path"
+    fi
+
+    check_numpy_cc_ok=no
+           for ac_header in arrayobject.h
+do :
+  ac_fn_c_check_header_compile "$LINENO" "arrayobject.h" "ac_cv_header_arrayobject_h" "$ac_includes_default"
+if test "x$ac_cv_header_arrayobject_h" = xyes
+then :
+  printf "%s\n" "#define HAVE_ARRAYOBJECT_H 1" >>confdefs.h
+ check_numpy_cc_ok=yes
+       check_numpy_includes="-I$check_numpy_found_dirname -I$check_numpy_found_path"
+else $as_nop
+  check_numpy_cc_ok=no
+
+fi
+
+done
+
+    CPPFLAGS="$check_numpy_saved_CPPFLAGS"
+
+    if [ "$check_numpy_cc_ok" != "yes" ]; then
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: Could not compile with arrayobject.h" >&5
+printf "%s\n" "$as_me: Could not compile with arrayobject.h" >&6;}
+    fi
+
+    if [ "$check_numpy_found_path" != "" ]; then
+      NUMPY_FOUND=yes
+    fi
+    NUMPY_CFG_SUCCESS=$check_numpy_cc_ok
+    NUMPY_INCLUDE="$check_numpy_includes"
+    NUMPY_SUPRESSED=no
+  fi
+else
+  { printf "%s\n" "$as_me:${as_lineno-$LINENO}: numpy check suppressed" >&5
+printf "%s\n" "$as_me: numpy check suppressed" >&6;}
+fi
+
+
+if [ "$NUMPY_CFG_SUCCESS" = "yes" ]; then
+  NUMPY_INCLUDE_DIR="$NUMPY_INCLUDE"
+fi
+
+ZLIB_INCDIR=
+ZLIB_LIBDIR=
+
+
+# Check whether --with-zlib was given.
+if test ${with_zlib+y}
+then :
+  withval=$with_zlib;
+else $as_nop
+  withval=yes
+fi
+
+case $withval in
+    yes)
+	ac_fn_c_check_header_compile "$LINENO" "zlib.h" "ac_cv_header_zlib_h" "$ac_includes_default"
 if test "x$ac_cv_header_zlib_h" = xyes
 then :
   printf "%s\n" "#define HAVE_ZLIB_H 1" >>confdefs.h
