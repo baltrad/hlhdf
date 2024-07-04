@@ -334,7 +334,7 @@ static PyTypeObject RaveInfoType_Type = {
     (getattrofunc)_getattr_typeo, /*tp_getattro*/
     (setattrofunc)0,              /*tp_setattro*/
     0,                            /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT,           /*tp_flags*/
     0,                            /*tp_doc*/
     (traverseproc)0,              /*tp_traverse*/
     (inquiry)0,                   /*tp_clear*/
@@ -378,7 +378,7 @@ static PyTypeObject RaveInfoObject_Type = {
     (getattrofunc)_getattro_object,/*tp_getattro*/
     (setattrofunc)_setattro_object,/*tp_setattro*/
     0,                            /*tp_as_buffer*/
-    Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_GC, /*tp_flags*/
+    Py_TPFLAGS_DEFAULT,           /*tp_flags*/
     0,                            /*tp_doc*/
     (traverseproc)0,              /*tp_traverse*/
     (inquiry)0,                   /*tp_clear*/
