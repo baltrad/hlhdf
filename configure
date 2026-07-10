@@ -6314,7 +6314,7 @@ if [ "$FOUND_VERSION" = "1" ]; then
   MAJOR_H5=$(echo $H5_VERSION | cut -d'.' -f1)
   MINOR_H5=$(echo $H5_VERSION | cut -d'.' -f2)
   if [ "$MAJOR_H5" != "" -a "$MINOR_H5" != "" ]; then
-    if [ $MAJOR_H5 -ge 1 -a $MINOR_H5 -ge 12 ]; then
+    if [ $MAJOR_H5 -gt 1 -o $MINOR_H5 -ge 12 ]; then
       USE_HDF5_1_12_API=yes
     fi
   fi
