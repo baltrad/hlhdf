@@ -6266,7 +6266,7 @@ fi
 
 FOUND_VERSION=1
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking For HDF5 version" >&5
-printf %s "checking For HDF5 version... " >&6; }
+printf %s "checking for HDF5 version... " >&6; }
 
 if test "$cross_compiling" = yes
 then :
@@ -6308,13 +6308,13 @@ fi
 printf "%s\n" "$H5_VERSION" >&6; }
 
 { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking If HDF5 1.12 API should be used" >&5
-printf %s "checking If HDF5 1.12 API should be used... " >&6; }
+printf %s "checking if HDF5 1.12 API should be used... " >&6; }
 USE_HDF5_1_12_API=no
 if [ "$FOUND_VERSION" = "1" ]; then
   MAJOR_H5=$(echo $H5_VERSION | cut -d'.' -f1)
   MINOR_H5=$(echo $H5_VERSION | cut -d'.' -f2)
   if [ "$MAJOR_H5" != "" -a "$MINOR_H5" != "" ]; then
-    if [ $MAJOR_H5 -gt 1 -o $MINOR_H5 -ge 12 ]; then
+    if [ $MAJOR_H5 -eq 1 -a $MINOR_H5 -ge 12 ] || [ $MAJOR_H5 -ge 2 ]; then
       USE_HDF5_1_12_API=yes
     fi
   fi
