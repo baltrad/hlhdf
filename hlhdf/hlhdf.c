@@ -478,7 +478,7 @@ hid_t createHlHdfFile(const char* filename,
       fileId = H5Fcreate(filename, H5F_ACC_TRUNC, propId, fileaccesspropertyId);
     } else {
       fileId = H5Fcreate(filename, H5F_ACC_TRUNC, propId, H5P_DEFAULT);
-      return fileId;
+      goto done;
     }
   }
 
